@@ -1,0 +1,72 @@
+<html>
+
+<head>
+    <script type="text/javascript" src="app.js"></script>
+    <style type="text/css">
+        * { 
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background-color: black;
+        }
+
+        .wrapper {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 100%;
+            align-items: stretch;
+            justify-items: stretch;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #playarea {
+            display: grid;
+            align-items: center;
+            justify-items: center;
+        }
+
+        #sidebar {
+            display: grid;
+            height: 100%;
+            grid-template-rows: min-content 1fr;
+            background-color: #222;
+        }
+        
+        #messages {
+            display: grid;
+            overflow-y: auto;
+            background: #000;
+            color: #ccc;
+            font-family: "Comic Sans MS";
+        }
+
+        .msg-thought {
+            font-style: italic;
+            color: #666;
+        }
+
+        h1 {
+            display: grid;
+            color: #aaa;
+            font-family: "Comic Sans MS";
+            font-size: 90%;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div id="playarea"></div>
+        <div id="sidebar">
+            <h1>s o u l 💀 e a t e r</h1>
+            <div id="messages"></div>
+        </div>
+    </div>
+</body>
+
+</html>
