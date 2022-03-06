@@ -1,4 +1,25 @@
 (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __propIsEnum = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues = (a, b) => {
+    for (var prop in b || (b = {}))
+      if (__hasOwnProp.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    if (__getOwnPropSymbols)
+      for (var prop of __getOwnPropSymbols(b)) {
+        if (__propIsEnum.call(b, prop))
+          __defNormalProp(a, prop, b[prop]);
+      }
+    return a;
+  };
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+
   // node_modules/rot-js/lib/rng.js
   var FRAC = 23283064365386963e-26;
   var RNG = class {
@@ -147,8 +168,22 @@
   };
 
   // node_modules/rot-js/lib/util.js
+  var util_exports = {};
+  __export(util_exports, {
+    capitalize: () => capitalize,
+    clamp: () => clamp,
+    format: () => format,
+    mod: () => mod
+  });
   function mod(x, n) {
     return (x % n + n) % n;
+  }
+  function clamp(val, min = 0, max = 1) {
+    if (val < min)
+      return min;
+    if (val > max)
+      return max;
+    return val;
   }
   function capitalize(string) {
     return string.charAt(0).toUpperCase() + string.substring(1);
@@ -2284,7 +2319,7 @@ void main() {
       this._map[x][y] = value;
     }
     create(callback) {
-      let newMap = this._fillMap(0);
+      let newMap2 = this._fillMap(0);
       let born = this._options.born;
       let survive = this._options.survive;
       for (let j = 0; j < this._height; j++) {
@@ -2298,13 +2333,13 @@ void main() {
           let cur = this._map[i][j];
           let ncount = this._getNeighbors(i, j);
           if (cur && survive.indexOf(ncount) != -1) {
-            newMap[i][j] = 1;
+            newMap2[i][j] = 1;
           } else if (!cur && born.indexOf(ncount) != -1) {
-            newMap[i][j] = 1;
+            newMap2[i][j] = 1;
           }
         }
       }
-      this._map = newMap;
+      this._map = newMap2;
       callback && this._serviceCallback(callback);
     }
     _serviceCallback(callback) {
@@ -3314,6 +3349,9 @@ void main() {
   var F2 = 0.5 * (Math.sqrt(3) - 1);
   var G2 = (3 - Math.sqrt(3)) / 6;
 
+  // node_modules/rot-js/lib/index.js
+  var Util = util_exports;
+
   // src/app.ts
   var verminHP = { n: 1, sides: 1, mod: 0 };
   function asRoll(n, sides, mod2) {
@@ -3331,6 +3369,7 @@ void main() {
     wall: "#",
     floor: ".",
     rock: ".",
+    insect: "i",
     worm: "w"
   };
   var Tiles = {
@@ -3340,10 +3379,17 @@ void main() {
   };
   var MonsterArchetypes = {
     maggot: {
-      name: "maggot",
+      name: "maggot heap",
       danger: 1,
       glyph: "worm",
       appearing: asRoll(1, 4, 3),
+      hp: verminHP
+    },
+    gnatSwarm: {
+      name: "gnat swarm",
+      danger: 1,
+      glyph: "insect",
+      appearing: asRoll(2, 4, 0),
       hp: verminHP
     }
   };
@@ -3353,11 +3399,29 @@ void main() {
       hp: doRoll(MonsterArchetypes[archetype].hp)
     };
   }
+  var DeathMessages = {
+    drain: "%S crumbles into dust."
+  };
   var Commands = {
     h: movePlayer(-1, 0),
     l: movePlayer(1, 0),
     j: movePlayer(0, 1),
-    k: movePlayer(0, -1)
+    k: movePlayer(0, -1),
+    d: () => {
+      let c = contentsAt(Game.player.x, Game.player.y);
+      if (c.monster) {
+        let arch = MonsterArchetypes[c.monster.archetype];
+        if (c.monster.hp > 1) {
+          msg.angry("The wretched creature resists!");
+        } else {
+          msg.log("You devour the essence of %s.", describe(c));
+          Game.player.essence += arch.danger;
+          killMonsterAt(c, "drain");
+        }
+      } else {
+        msg.think("Nothing is here to drain of essence.");
+      }
+    }
   };
   var Game = {
     viewport: {
@@ -3367,11 +3431,13 @@ void main() {
     player: {
       x: 10,
       y: 10,
+      essence: 0,
       energy: 1,
-      glyph: "player"
+      glyph: "player",
+      knownMonsters: {}
     },
     map: {
-      danger: 1,
+      danger: 5,
       w: 80,
       h: 80,
       tiles: [],
@@ -3385,9 +3451,163 @@ void main() {
     commandQueue: [],
     uiCallback: () => {
     },
-    logCallback: (msg, msgType) => {
+    logCallback: (msg2, msgType) => {
     }
   };
+  function newMap(opts) {
+    Game.map.tiles = [];
+    Game.map.monsters = [];
+    Game.map.memory = [];
+    if (opts) {
+      Game.map = __spreadValues(__spreadValues({}, Game.map), opts);
+    }
+    Game.map.tiles.fill(Tiles.rock, 0, Game.map.h * Game.map.w);
+    Game.map.monsters.fill(null, 0, Game.map.w * Game.map.h);
+    Game.map.memory.fill([null, null], 0, Game.map.w * Game.map.h);
+    let map = new map_default.Digger(Game.map.w, Game.map.h);
+    map.create();
+    let rooms = map.getRooms();
+    for (let room of rooms) {
+      room.create((x, y, v) => {
+        Game.map.tiles[x + y * Game.map.w] = v === 1 ? Tiles.wall : Tiles.floor;
+      });
+    }
+    rooms = rng_default.shuffle(rooms);
+    const startRoom = rooms.shift();
+    const [px, py] = startRoom.getCenter();
+    Game.player.x = px;
+    Game.player.y = py;
+    const eligibleMonsters = Object.keys(MonsterArchetypes).filter((id) => MonsterArchetypes[id].danger <= Game.map.danger);
+    for (let room of rooms) {
+      const mArch = rng_default.getItem(eligibleMonsters);
+      let appearing = doRoll(MonsterArchetypes[mArch].appearing);
+      while (appearing > 0) {
+        let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
+        let my = rng_default.getUniformInt(room.getTop(), room.getBottom());
+        let c = contentsAt(mx, my);
+        if (!c.blocked) {
+          Game.map.monsters[mx + my * Game.map.w] = spawnMonster(mArch);
+        }
+        appearing -= 1;
+      }
+    }
+    for (let corridor of map.getCorridors()) {
+      corridor.create((x, y, v) => {
+        Game.map.tiles[x + y * Game.map.w] = Tiles.floor;
+      });
+    }
+  }
+  function tileAt(x, y) {
+    return Game.map.tiles[x + y * Game.map.w];
+  }
+  function monsterAt(x, y) {
+    return Game.map.monsters[x + y * Game.map.w];
+  }
+  function playerAt(x, y) {
+    return Game.player.x === x && Game.player.y === y;
+  }
+  function contentsAt(x, y) {
+    let tile = tileAt(x, y);
+    let monster = monsterAt(x, y);
+    let player = playerAt(x, y);
+    let archetype = (monster == null ? void 0 : monster.archetype) || null;
+    let blocked = player;
+    if (tile == null ? void 0 : tile.blocks) {
+      blocked = true;
+    }
+    if (monster && monster.hp > 1) {
+      blocked = true;
+    }
+    return {
+      x,
+      y,
+      tile,
+      monster,
+      player,
+      blocked,
+      memory: [tile, archetype]
+    };
+  }
+  function describe(c) {
+    if (c.monster) {
+      return "a " + MonsterArchetypes[c.monster.archetype].name;
+    } else {
+      return "something";
+    }
+  }
+  function killMonsterAt(c, death) {
+    if (c.monster) {
+      c.monster.hp = 0;
+      msg.log(DeathMessages[death], describe(c));
+      Game.map.monsters[c.x + c.y * Game.map.w] = null;
+    }
+  }
+  function tick() {
+    if (Game.commandQueue.length == 0) {
+      return;
+    }
+    while (Game.player.energy >= 1) {
+      let nextCommand = Game.commandQueue.shift();
+      if (nextCommand) {
+        Commands[nextCommand]();
+        Game.uiCallback();
+      } else {
+        break;
+      }
+    }
+    if (Game.player.energy < 1) {
+      Game.player.energy += 1;
+    }
+    Game.uiCallback();
+  }
+  function movePlayer(dx, dy) {
+    return () => {
+      const p = Game.player;
+      const nx = p.x + dx;
+      const ny = p.y + dy;
+      const c = contentsAt(nx, ny);
+      if (!c.blocked) {
+        p.x = nx;
+        p.y = ny;
+        p.energy -= 1;
+        if (c.monster) {
+          msg.log("You feel the essence of %s awaiting your grasp.", describe(c));
+          if (!Game.player.knownMonsters[c.monster.archetype]) {
+            Game.player.knownMonsters[c.monster.archetype] = true;
+            let archetype = MonsterArchetypes[c.monster.archetype];
+            if (archetype.danger === 1) {
+              msg.angry("Petty vermin!");
+            }
+          }
+        }
+      } else {
+        if (c.monster) {
+          msg.think("My way is blocked by %s.", describe(c));
+        } else {
+          msg.think("There is no passing this way.");
+        }
+      }
+    };
+  }
+  function mkSay(type) {
+    return (fmt, ...args) => {
+      Game.logCallback(Util.format(fmt, ...args), type);
+    };
+  }
+  var msg = {
+    log: mkSay("normal"),
+    think: mkSay("thought"),
+    angry: mkSay("angry")
+  };
+  function handleInput() {
+    document.addEventListener("keypress", (e) => {
+      let command = Commands[e.key];
+      if (command) {
+        Game.commandQueue.push(e.key);
+        setTimeout(tick, 0);
+      }
+    });
+  }
   function drawMap(display) {
     display.clear();
     let sx = Game.player.x - Game.viewport.width / 2;
@@ -3431,83 +3651,6 @@ void main() {
       }
     });
   }
-  function tileAt(x, y) {
-    return Game.map.tiles[x + y * Game.map.w];
-  }
-  function monsterAt(x, y) {
-    return Game.map.monsters[x + y * Game.map.w];
-  }
-  function playerAt(x, y) {
-    return Game.player.x === x && Game.player.y === y;
-  }
-  function contentsAt(x, y) {
-    let tile = tileAt(x, y);
-    let monster = monsterAt(x, y);
-    let player = playerAt(x, y);
-    let blocked = !tile || tile.blocks || !!monster || player;
-    return {
-      x,
-      y,
-      tile,
-      monster,
-      player,
-      blocked,
-      memory: [tile, monster ? monster.archetype : null]
-    };
-  }
-  function describe(c) {
-    if (c.monster) {
-      return "a " + MonsterArchetypes[c.monster.archetype].name;
-    } else {
-      return "something";
-    }
-  }
-  function tick() {
-    if (Game.commandQueue.length == 0) {
-      return;
-    }
-    while (Game.player.energy >= 1) {
-      let nextCommand = Game.commandQueue.shift();
-      if (nextCommand) {
-        Commands[nextCommand]();
-        Game.uiCallback();
-      } else {
-        break;
-      }
-    }
-    if (Game.player.energy < 1) {
-      Game.player.energy += 1;
-    }
-    Game.uiCallback();
-  }
-  function movePlayer(dx, dy) {
-    return () => {
-      const p = Game.player;
-      const nx = p.x + dx;
-      const ny = p.y + dy;
-      const c = contentsAt(nx, ny);
-      if (!c.blocked) {
-        p.x = nx;
-        p.y = ny;
-        p.energy -= 1;
-      } else {
-        if (c.monster) {
-          Game.logCallback("There is " + describe(c) + " in the way.", "thought");
-        } else {
-          Game.logCallback("The way is blocked.", "thought");
-        }
-      }
-    };
-  }
-  function handleInput() {
-    document.addEventListener("keypress", (e) => {
-      let command = Commands[e.key];
-      if (command) {
-        Game.commandQueue.push(e.key);
-        setTimeout(tick, 0);
-      }
-    });
-  }
   function runGame() {
     let playarea = document.getElementById("playarea");
     let messages = document.getElementById("messages");
@@ -3517,55 +3660,31 @@ void main() {
     let logEl = document.createElement("ul");
     logEl.className = "messageLog";
     messages.appendChild(logEl);
+    let logMessages = [];
     Game.uiCallback = () => {
       drawMap(display);
+      if (logMessages.length > 0) {
+        let logLine = document.createElement("li");
+        for (let [msg2, msgType] of logMessages) {
+          let msgEl = document.createElement("span");
+          msgEl.className = "msg-" + msgType;
+          msgEl.innerHTML = msg2 + " ";
+          logLine.appendChild(msgEl);
+        }
+        logEl.prepend(logLine);
+        logMessages.length = 0;
+      }
+      document.getElementById("essence").innerText = Game.player.essence.toString();
     };
-    Game.logCallback = (msg, msgType) => {
+    Game.logCallback = (msg2, msgType) => {
       if (!msgType) {
         msgType = "info";
       }
-      let msgEl = document.createElement("li");
-      msgEl.className = "msg-" + msgType;
-      msgEl.innerHTML = msg;
-      logEl.prepend(msgEl);
+      logMessages.push([msg2, msgType]);
     };
     handleInput();
-    Game.map.tiles.fill(Tiles.rock, 0, Game.map.h * Game.map.w);
-    Game.map.monsters.fill(null, 0, Game.map.w * Game.map.h);
-    Game.map.memory.fill([null, null], 0, Game.map.w * Game.map.h);
-    let map = new map_default.Digger(Game.map.w, Game.map.h);
-    map.create();
-    let rooms = map.getRooms();
-    for (let room of rooms) {
-      room.create((x, y, v) => {
-        Game.map.tiles[x + y * Game.map.w] = v === 1 ? Tiles.wall : Tiles.floor;
-      });
-    }
-    rooms = rng_default.shuffle(rooms);
-    const startRoom = rooms.shift();
-    const [px, py] = startRoom.getCenter();
-    Game.player.x = px;
-    Game.player.y = py;
-    const eligibleMonsters = Object.keys(MonsterArchetypes).filter((id) => MonsterArchetypes[id].danger <= Game.map.danger);
-    for (let room of rooms) {
-      const mArch = rng_default.getItem(eligibleMonsters);
-      let appearing = doRoll(MonsterArchetypes[mArch].appearing);
-      while (appearing > 0) {
-        let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
-        let my = rng_default.getUniformInt(room.getTop(), room.getBottom());
-        let c = contentsAt(mx, my);
-        if (!c.blocked) {
-          Game.map.monsters[mx + my * Game.map.w] = spawnMonster(mArch);
-        }
-        appearing -= 1;
-      }
-    }
-    for (let corridor of map.getCorridors()) {
-      corridor.create((x, y, v) => {
-        Game.map.tiles[x + y * Game.map.w] = Tiles.floor;
-      });
-    }
-    drawMap(display);
+    newMap();
+    Game.uiCallback();
   }
   window.onload = runGame;
 })();

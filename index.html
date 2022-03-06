@@ -11,6 +11,7 @@
 
         body {
             background-color: black;
+            font-family: "Comic Sans MS";
         }
 
         .wrapper {
@@ -32,7 +33,7 @@
         #sidebar {
             display: grid;
             height: 100%;
-            grid-template-rows: min-content 1fr;
+            grid-template-rows: min-content min-content 1fr;
             background-color: #222;
         }
         
@@ -41,18 +42,38 @@
             overflow-y: auto;
             background: #000;
             color: #ccc;
-            font-family: "Comic Sans MS";
+        }
+
+        #status {
+            display: grid;
+            color: #666;
+            grid-template-columns: 2fr 1fr 2fr 1fr;
+        }
+        
+        .stat-label {
+            text-align: right;
+            padding: 0.2em;
+        }
+
+        .stat-value {
+            background: #000;
+            color: #ccc;
+            font-size: 150%;
+            text-align: center;
         }
 
         .msg-thought {
             font-style: italic;
-            color: #666;
+        }
+        
+        .msg-angry {
+            font-style: italic;
+            color: #a33;
         }
 
         h1 {
             display: grid;
             color: #aaa;
-            font-family: "Comic Sans MS";
             font-size: 90%;
             text-align: center;
         }
@@ -64,6 +85,10 @@
         <div id="playarea"></div>
         <div id="sidebar">
             <h1>s o u l 💀 e a t e r</h1>
+            <div id="status">
+                <div class="stat-label">Essence</div>
+                <div class="stat-value" id="essence">-</div>
+            </div>
             <div id="messages"></div>
         </div>
     </div>
