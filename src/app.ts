@@ -24,6 +24,35 @@ function doRoll(roll: Roll): number {
   return n + roll.mod;
 }
 
+/// Soul Aspects
+
+type Targeting = "seeker";
+type TargetingEffect = { type: "targeting"; targeting: Targeting };
+const isTargeting = (t: WandEffect): t is TargetingEffect =>
+  t.type === "targeting";
+
+type Projectile = "bolt";
+type ProjectileEffect = { type: "projectile"; projectile: Projectile };
+const isProjectile = (t: WandEffect): t is ProjectileEffect =>
+  t.type === "projectile";
+
+type DamageEffect = { type: "damage"; damage: Roll };
+const isDamage = (t: WandEffect): t is DamageEffect => t.type === "damage";
+
+type WandEffect = TargetingEffect | ProjectileEffect | DamageEffect;
+
+const WandEffects: { [id: string]: WandEffect } = {
+  seeker: { type: "targeting", targeting: "seeker" },
+  bolt: { type: "projectile", projectile: "bolt" },
+  weakMana: { type: "damage", damage: asRoll(1, 4, 0) },
+};
+
+type WandSoul = { type: "wand"; name: string };
+type RingSoul = { type: "ring"; name: string };
+type CrownSoul = { type: "crown"; name: string };
+type NoSoul = { type: "none"; name: "raw essence" };
+type Soul = WandSoul | RingSoul | CrownSoul | NoSoul;
+
 /// Character graphics
 
 const Glyphs = {
@@ -95,31 +124,85 @@ type RememberedCell = readonly [Tile | null, ArchetypeID | null];
 
 const DeathMessages: { [type: string]: string } = {
   drain: "%S crumbles into dust.",
+  force: "%S is blown to pieces.",
 };
 
 type DeathType = keyof typeof DeathMessages;
 
 /// Game commands
 
+function gainEssence(amt: number) {
+  Game.player.essence += amt;
+  if (Game.player.essence > Game.player.maxEssence) {
+    Game.player.essence = Game.player.maxEssence;
+    msg.log("Some essence escapes you and dissipates.");
+  }
+}
+
 const Commands: { [key: string]: Function } = {
   h: movePlayer(-1, 0),
   l: movePlayer(1, 0),
   j: movePlayer(0, 1),
   k: movePlayer(0, -1),
+  // (d)evour
   d: () => {
     let c = contentsAt(Game.player.x, Game.player.y);
     if (c.monster) {
       let arch = MonsterArchetypes[c.monster.archetype];
+      Game.player.energy -= 0.5;
       if (c.monster.hp > 1) {
         msg.angry("The wretched creature resists!");
       } else {
         msg.log("You devour the essence of %s.", describe(c));
-        Game.player.essence += arch.danger;
+        gainEssence(arch.danger);
         killMonsterAt(c, "drain");
       }
     } else {
       msg.think("Nothing is here to drain of essence.");
     }
+  },
+  // fire spell
+  " ": () => {
+    let targeting = WandEffects.seeker as TargetingEffect;
+    let projectile = WandEffects.bolt as ProjectileEffect;
+    let damage = WandEffects.weakMana as DamageEffect;
+    let cost = 3;
+    if (cost > Game.player.essence) {
+      msg.angry("I must have more essence!");
+      return;
+    }
+    // Do targeting
+    let target: XYContents | null = null;
+    switch (targeting.targeting) {
+      case "seeker":
+        let closestDistance = 9999;
+        Game.map.fov.compute(
+          Game.player.x,
+          Game.player.y,
+          Game.viewport.width / 2,
+          (x, y, r, v) => {
+            let c = contentsAt(x, y);
+            if (c.monster) {
+              let dist =
+                Math.abs(Game.player.x - x) * Math.abs(Game.player.y - y);
+              if (dist < closestDistance) {
+                closestDistance = dist;
+                target = c;
+              }
+            }
+          }
+        );
+    }
+    if (target) {
+      // TODO: projectiles
+      msg.log("The bolt hits %s!", describe(target)); // todo
+      damageMonsterAt(target, damage.damage);
+    } else {
+      msg.think("I see none here to destroy.");
+      return;
+    }
+    Game.player.essence -= cost;
+    Game.player.energy -= 1.0;
   },
 };
 
@@ -134,6 +217,7 @@ const Game = {
     x: 10,
     y: 10,
     essence: 0,
+    maxEssence: 10,
     energy: 1.0,
     glyph: "player" as GlyphID,
     knownMonsters: {} as { [id: ArchetypeID]: boolean },
@@ -289,6 +373,24 @@ function killMonsterAt(c: XYContents, death: DeathType) {
     c.monster.hp = 0;
     msg.log(DeathMessages[death], describe(c));
     Game.map.monsters[c.x + c.y * Game.map.w] = null;
+  }
+}
+
+function damageMonsterAt(c: XYContents, damage: Roll) {
+  if (c.monster) {
+    let arch = MonsterArchetypes[c.monster.archetype];
+    let wasDying = c.monster.hp <= 1;
+    c.monster.hp -= doRoll(damage);
+    if (c.monster.hp > 1) {
+      // todo
+      msg.log("You see %s shudder!", describe(c));
+    } else {
+      if (wasDying) {
+        killMonsterAt(c, "force"); // todo
+      } else {
+        msg.log("You see %s collapse!", describe(c));
+      }
+    }
   }
 }
 
@@ -465,6 +567,8 @@ function runGame() {
     // Update stat view
     document.getElementById("essence")!.innerText =
       Game.player.essence.toString();
+    document.getElementById("maxEssence")!.innerText =
+      Game.player.maxEssence.toString();
   };
   Game.logCallback = (msg: string, msgType: string | undefined) => {
     if (!msgType) {
