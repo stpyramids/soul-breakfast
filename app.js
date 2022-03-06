@@ -3364,6 +3364,11 @@ void main() {
     }
     return n + roll.mod;
   }
+  var WandEffects = {
+    seeker: { type: "targeting", targeting: "seeker" },
+    bolt: { type: "projectile", projectile: "bolt" },
+    weakMana: { type: "damage", damage: asRoll(1, 4, 0) }
+  };
   var Glyphs = {
     player: "@",
     wall: "#",
@@ -3400,8 +3405,16 @@ void main() {
     };
   }
   var DeathMessages = {
-    drain: "%S crumbles into dust."
+    drain: "%S crumbles into dust.",
+    force: "%S is blown to pieces."
   };
+  function gainEssence(amt) {
+    Game.player.essence += amt;
+    if (Game.player.essence > Game.player.maxEssence) {
+      Game.player.essence = Game.player.maxEssence;
+      msg.log("Some essence escapes you and dissipates.");
+    }
+  }
   var Commands = {
     h: movePlayer(-1, 0),
     l: movePlayer(1, 0),
@@ -3411,16 +3424,51 @@ void main() {
       let c = contentsAt(Game.player.x, Game.player.y);
       if (c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
+        Game.player.energy -= 0.5;
         if (c.monster.hp > 1) {
           msg.angry("The wretched creature resists!");
         } else {
           msg.log("You devour the essence of %s.", describe(c));
-          Game.player.essence += arch.danger;
+          gainEssence(arch.danger);
           killMonsterAt(c, "drain");
         }
       } else {
         msg.think("Nothing is here to drain of essence.");
       }
+    },
+    " ": () => {
+      let targeting = WandEffects.seeker;
+      let projectile = WandEffects.bolt;
+      let damage = WandEffects.weakMana;
+      let cost = 3;
+      if (cost > Game.player.essence) {
+        msg.angry("I must have more essence!");
+        return;
+      }
+      let target = null;
+      switch (targeting.targeting) {
+        case "seeker":
+          let closestDistance = 9999;
+          Game.map.fov.compute(Game.player.x, Game.player.y, Game.viewport.width / 2, (x, y, r, v) => {
+            let c = contentsAt(x, y);
+            if (c.monster) {
+              let dist = Math.abs(Game.player.x - x) * Math.abs(Game.player.y - y);
+              if (dist < closestDistance) {
+                closestDistance = dist;
+                target = c;
+              }
+            }
+          });
+      }
+      if (target) {
+        msg.log("The bolt hits %s!", describe(target));
+        damageMonsterAt(target, damage.damage);
+      } else {
+        msg.think("I see none here to destroy.");
+        return;
+      }
+      Game.player.essence -= cost;
+      Game.player.energy -= 1;
     }
   };
   var Game = {
@@ -3432,6 +3480,7 @@ void main() {
       x: 10,
       y: 10,
       essence: 0,
+      maxEssence: 10,
       energy: 1,
       glyph: "player",
       knownMonsters: {}
@@ -3540,6 +3589,22 @@ void main() {
       c.monster.hp = 0;
       msg.log(DeathMessages[death], describe(c));
       Game.map.monsters[c.x + c.y * Game.map.w] = null;
+    }
+  }
+  function damageMonsterAt(c, damage) {
+    if (c.monster) {
+      let arch = MonsterArchetypes[c.monster.archetype];
+      let wasDying = c.monster.hp <= 1;
+      c.monster.hp -= doRoll(damage);
+      if (c.monster.hp > 1) {
+        msg.log("You see %s shudder!", describe(c));
+      } else {
+        if (wasDying) {
+          killMonsterAt(c, "force");
+        } else {
+          msg.log("You see %s collapse!", describe(c));
+        }
+      }
     }
   }
   function tick() {
@@ -3675,6 +3740,7 @@ void main() {
         logMessages.length = 0;
       }
       document.getElementById("essence").innerText = Game.player.essence.toString();
+      document.getElementById("maxEssence").innerText = Game.player.maxEssence.toString();
     };
     Game.logCallback = (msg2, msgType) => {
       if (!msgType) {

@@ -12,6 +12,7 @@ My in-progress submission to the [challenge](https://itch.io/jam/7drl-challenge-
 - Implemented message log.
 - You can move onto squares with vermin monsters and devour them.
 - You can gain essence from devouring.
+- A basic attack is possible and you can kill monsters and spend essence.
 
 To Do:
 
