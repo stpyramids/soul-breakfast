@@ -33,7 +33,7 @@
         #sidebar {
             display: grid;
             height: 100%;
-            grid-template-rows: min-content min-content 1fr;
+            grid-template-rows: min-content min-content min-content 1fr;
             background-color: #222;
         }
         
@@ -50,12 +50,39 @@
         #status {
             display: grid;
             color: #666;
-            grid-template-columns: 2fr 1fr 2fr 1fr;
+            grid-template-columns: min-content min-content min-content min-content;
+            grid-template-rows: 1fr;
+        }
+
+        #target {
+            display: grid;
+            padding: 0.3em;
+            grid-template-columns: min-content 1fr;
+            grid-template-rows: min-content min-content;
+            align-items: center;
+        }
+
+        #target-glyph {
+            font-size: 150%;
+            width: 1.5em;
+            height: 1.5em;
+            text-align: center;
+            vertical-align: middle;
+            background: #000;
+            color: #ccc;
+        }
+
+        #target-name {
+            margin: 0.3em;
+            height: 100%;
+            vertical-align: middle;
+            background: #000;
+            color: #fff;
         }
         
         .stat-label {
             text-align: right;
-            padding: 0.2em;
+            padding: 0.em;
         }
 
         .stat-value {
@@ -73,6 +100,15 @@
         .msg-angry {
             font-style: italic;
             color: #a33;
+        }
+
+        .msg-combat {
+            color: #933;
+            font-weight: bold;
+        }
+        
+        .msg-essence {
+            color: #36c;
         }
 
         h1 {
@@ -95,6 +131,11 @@
                 <div class="stat-value" id="essence">-</div>
                 <div class="stat-label">/</div>
                 <div class="stat-value" id="maxEssence">-</div>
+            </div>
+            <div id="target">
+                <div id="target-glyph"></div>
+                <div id="target-name"></div>
+                <div id="target-danger"></div>
             </div>
             <div id="messages"></div>
         </div>

@@ -15,9 +15,9 @@
       }
     return a;
   };
-  var __export = (target, all) => {
+  var __export = (target2, all) => {
     for (var name in all)
-      __defProp(target, name, { get: all[name], enumerable: true });
+      __defProp(target2, name, { get: all[name], enumerable: true });
   };
 
   // node_modules/rot-js/lib/rng.js
@@ -3362,7 +3362,8 @@ void main() {
     for (let i = 0; i < roll.n; i += 1) {
       n += rng_default.getUniformInt(1, roll.sides);
     }
-    return n + roll.mod;
+    let v = n + roll.mod;
+    return v;
   }
   var WandEffects = {
     seeker: { type: "targeting", targeting: "seeker" },
@@ -3375,12 +3376,73 @@ void main() {
     floor: ".",
     rock: ".",
     insect: "i",
-    worm: "w"
+    worm: "w",
+    rodent: "r"
   };
   var Tiles = {
     rock: { glyph: "rock", blocks: true },
     wall: { glyph: "wall", blocks: true },
     floor: { glyph: "floor", blocks: false }
+  };
+  var AI = {
+    passive: (c) => {
+      return 1;
+    },
+    wander: (c) => {
+      let nx = c.x + rng_default.getUniformInt(-1, 1);
+      let ny = c.y + rng_default.getUniformInt(-1, 1);
+      let spot = contentsAt(nx, ny);
+      if (!spot.blocked) {
+        Game.map.monsters[c.x + c.y * Game.map.w] = null;
+        Game.map.monsters[nx + ny * Game.map.w] = c.monster;
+      }
+      return 1;
+    },
+    nipper: (c) => {
+      let m = c.monster;
+      let arch = MonsterArchetypes[m.archetype];
+      let attack = Attacks[arch.attack];
+      if (attack.canReachFrom(c)) {
+        attack.attackFrom(c);
+        return 1;
+      } else {
+        return AI.wander(c);
+      }
+    }
+  };
+  var Attacks = {
+    none: {
+      canReachFrom: (c) => false,
+      attackFrom: (c) => {
+      }
+    },
+    bite: {
+      canReachFrom: (c) => (Game.player.x === c.x || Game.player.x === c.x - 1 || Game.player.x === c.x + 1) && (Game.player.y === c.y || Game.player.y === c.y - 1 || Game.player.y === c.y + 1),
+      attackFrom: (c) => {
+        msg.combat("%The snaps at you!", D(c));
+        if (doRoll(asRoll(1, 100, 0)) > 80) {
+          let dmg = doRoll(asRoll(1, 4, 0));
+          msg.combat("Your essence wavers!");
+          Game.player.essence -= dmg;
+          if (Game.player.essence < 0) {
+            Game.player.essence = 0;
+            msg.angry("No!");
+          }
+        }
+      }
+    }
+  };
+  var SoulFactories = {
+    vermin: (a) => ({
+      type: "none",
+      essence: a.danger,
+      name: "transient " + a.name + " essence"
+    }),
+    bulk: (a) => ({
+      type: "generic",
+      essence: a.danger,
+      name: a.name + " essence"
+    })
   };
   var MonsterArchetypes = {
     maggot: {
@@ -3388,31 +3450,55 @@ void main() {
       danger: 1,
       glyph: "worm",
       appearing: asRoll(1, 4, 3),
-      hp: verminHP
+      hp: verminHP,
+      speed: 0.2,
+      ai: "passive",
+      attack: "none",
+      soul: "vermin"
     },
     gnatSwarm: {
       name: "gnat swarm",
       danger: 1,
       glyph: "insect",
       appearing: asRoll(2, 4, 0),
-      hp: verminHP
+      hp: verminHP,
+      speed: 0.25,
+      ai: "wander",
+      attack: "none",
+      soul: "vermin"
+    },
+    giantRat: {
+      name: "giant rat",
+      danger: 2,
+      glyph: "rodent",
+      appearing: asRoll(1, 2, 1),
+      hp: asRoll(1, 4, 1),
+      speed: 0.5,
+      ai: "nipper",
+      attack: "bite",
+      soul: "bulk"
     }
   };
   function spawnMonster(archetype) {
     return {
       archetype,
-      hp: doRoll(MonsterArchetypes[archetype].hp)
+      hp: doRoll(MonsterArchetypes[archetype].hp),
+      energy: 1,
+      dying: false
     };
   }
+  function weakMonster(m) {
+    return m.hp <= 1 || m.dying;
+  }
   var DeathMessages = {
-    drain: "%S crumbles into dust.",
-    force: "%S is blown to pieces."
+    drain: "%The crumbles into dust.",
+    force: "%The is blown to pieces."
   };
   function gainEssence(amt) {
     Game.player.essence += amt;
     if (Game.player.essence > Game.player.maxEssence) {
       Game.player.essence = Game.player.maxEssence;
-      msg.log("Some essence escapes you and dissipates.");
+      msg.essence("Some essence escapes you and dissipates.");
     }
   }
   var Commands = {
@@ -3425,15 +3511,37 @@ void main() {
       if (c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
         Game.player.energy -= 0.5;
-        if (c.monster.hp > 1) {
-          msg.angry("The wretched creature resists!");
-        } else {
-          msg.log("You devour the essence of %s.", describe(c));
-          gainEssence(arch.danger);
+        if (weakMonster(c.monster)) {
+          let soul = SoulFactories[arch.soul](arch);
+          msg.essence("You devour the essence of %the.", D(c));
+          gainEssence(soul.essence);
           killMonsterAt(c, "drain");
+        } else {
+          msg.angry("The wretched creature resists!");
         }
       } else {
         msg.think("Nothing is here to drain of essence.");
+      }
+    },
+    c: () => {
+      let c = contentsAt(Game.player.x, Game.player.y);
+      if (c.monster) {
+        let arch = MonsterArchetypes[c.monster.archetype];
+        let soul = SoulFactories[arch.soul](arch);
+        if (soul.type === "none") {
+          msg.angry("This vermin has no soul worthy of claiming.");
+        } else {
+          Game.player.energy -= 1;
+          if (weakMonster(c.monster)) {
+            msg.essence("You claim the soul of %the.", D(c));
+            Game.player.maxEssence += soul.essence;
+            killMonsterAt(c, "drain");
+          } else {
+            msg.angry("The wretched creature resists!");
+          }
+        }
+      } else {
+        msg.think("No soul is here to claim.");
       }
     },
     " ": () => {
@@ -3445,7 +3553,7 @@ void main() {
         msg.angry("I must have more essence!");
         return;
       }
-      let target = null;
+      let target2 = null;
       switch (targeting.targeting) {
         case "seeker":
           let closestDistance = 9999;
@@ -3455,14 +3563,14 @@ void main() {
               let dist = Math.abs(Game.player.x - x) * Math.abs(Game.player.y - y);
               if (dist < closestDistance) {
                 closestDistance = dist;
-                target = c;
+                target2 = c;
               }
             }
           });
       }
-      if (target) {
-        msg.log("The bolt hits %s!", describe(target));
-        damageMonsterAt(target, damage.damage);
+      if (target2) {
+        msg.combat("The bolt hits %the!", D(target2));
+        damageMonsterAt(target2, damage.damage);
       } else {
         msg.think("I see none here to destroy.");
         return;
@@ -3481,6 +3589,7 @@ void main() {
       y: 10,
       essence: 0,
       maxEssence: 10,
+      speed: 1,
       energy: 1,
       glyph: "player",
       knownMonsters: {}
@@ -3561,10 +3670,10 @@ void main() {
     let player = playerAt(x, y);
     let archetype = (monster == null ? void 0 : monster.archetype) || null;
     let blocked = player;
-    if (tile == null ? void 0 : tile.blocks) {
+    if (!tile || tile.blocks) {
       blocked = true;
     }
-    if (monster && monster.hp > 1) {
+    if (monster) {
       blocked = true;
     }
     return {
@@ -3577,32 +3686,45 @@ void main() {
       memory: [tile, archetype]
     };
   }
-  function describe(c) {
+  function target() {
+    return contentsAt(Game.player.x, Game.player.y);
+  }
+  function D(c) {
     if (c.monster) {
-      return "a " + MonsterArchetypes[c.monster.archetype].name;
+      let monster = c.monster;
+      return {
+        toString: () => MonsterArchetypes[monster.archetype].name,
+        the: () => "the " + MonsterArchetypes[monster.archetype].name
+      };
     } else {
-      return "something";
+      return {
+        toString: () => "something",
+        the: () => "something"
+      };
     }
   }
   function killMonsterAt(c, death) {
     if (c.monster) {
       c.monster.hp = 0;
-      msg.log(DeathMessages[death], describe(c));
+      msg.combat(DeathMessages[death], D(c));
       Game.map.monsters[c.x + c.y * Game.map.w] = null;
     }
   }
   function damageMonsterAt(c, damage) {
     if (c.monster) {
       let arch = MonsterArchetypes[c.monster.archetype];
-      let wasDying = c.monster.hp <= 1;
+      let wasDying = weakMonster(c.monster);
       c.monster.hp -= doRoll(damage);
       if (c.monster.hp > 1) {
-        msg.log("You see %s shudder!", describe(c));
+        msg.combat("You see %the shudder!", D(c));
+      } else if (c.monster.hp == 1) {
+        msg.combat("You see %the stagger!", D(c));
       } else {
         if (wasDying) {
           killMonsterAt(c, "force");
         } else {
-          msg.log("You see %s collapse!", describe(c));
+          msg.combat("You see %the collapse!", D(c));
+          c.monster.dying = true;
         }
       }
     }
@@ -3620,8 +3742,22 @@ void main() {
         break;
       }
     }
+    for (let i = 0; i < Game.map.w * Game.map.h; i++) {
+      if (Game.map.monsters[i]) {
+        const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
+        const m = c.monster;
+        if (!m.dying) {
+          const arch = MonsterArchetypes[m.archetype];
+          const ai = AI[arch.ai];
+          m.energy += arch.speed;
+          while (m.energy >= 1) {
+            m.energy -= ai(c);
+          }
+        }
+      }
+    }
     if (Game.player.energy < 1) {
-      Game.player.energy += 1;
+      Game.player.energy += Game.player.speed;
     }
     Game.uiCallback();
   }
@@ -3631,12 +3767,16 @@ void main() {
       const nx = p.x + dx;
       const ny = p.y + dy;
       const c = contentsAt(nx, ny);
-      if (!c.blocked) {
+      let blocked = c.blocked;
+      if (blocked && c.monster && weakMonster(c.monster)) {
+        blocked = false;
+      }
+      if (!blocked) {
         p.x = nx;
         p.y = ny;
         p.energy -= 1;
         if (c.monster) {
-          msg.log("You feel the essence of %s awaiting your grasp.", describe(c));
+          msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
           if (!Game.player.knownMonsters[c.monster.archetype]) {
             Game.player.knownMonsters[c.monster.archetype] = true;
             let archetype = MonsterArchetypes[c.monster.archetype];
@@ -3647,7 +3787,7 @@ void main() {
         }
       } else {
         if (c.monster) {
-          msg.think("My way is blocked by %s.", describe(c));
+          msg.think("The essence of %the resists my passage.", D(c));
         } else {
           msg.think("There is no passing this way.");
         }
@@ -3662,7 +3802,9 @@ void main() {
   var msg = {
     log: mkSay("normal"),
     think: mkSay("thought"),
-    angry: mkSay("angry")
+    angry: mkSay("angry"),
+    essence: mkSay("essence"),
+    combat: mkSay("combat")
   };
   function handleInput() {
     document.addEventListener("keypress", (e) => {
@@ -3708,7 +3850,7 @@ void main() {
       if (c.player) {
         display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", "#111");
       } else if (c.monster) {
-        display.draw(x - sx, y - sy, Glyphs[MonsterArchetypes[c.monster.archetype].glyph], "#eee", "#111");
+        display.draw(x - sx, y - sy, Glyphs[MonsterArchetypes[c.monster.archetype].glyph], "#eee", c.monster.dying ? "#411" : weakMonster(c.monster) ? "#211" : "#111");
       } else if (c.tile) {
         display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", "#111");
       } else {
@@ -3717,6 +3859,7 @@ void main() {
     });
   }
   function runGame() {
+    Util.format.map.the = "the";
     let playarea = document.getElementById("playarea");
     let messages = document.getElementById("messages");
     let display = new display_default(Game.viewport);
@@ -3741,6 +3884,17 @@ void main() {
       }
       document.getElementById("essence").innerText = Game.player.essence.toString();
       document.getElementById("maxEssence").innerText = Game.player.maxEssence.toString();
+      let m = target().monster;
+      if (m) {
+        let arch = MonsterArchetypes[m.archetype];
+        document.getElementById("target-glyph").innerText = Glyphs[arch.glyph];
+        document.getElementById("target-name").innerText = arch.name + "(" + arch.danger.toString() + ")";
+        document.getElementById("target-danger").innerText = "";
+      } else {
+        document.getElementById("target-glyph").innerText = " ";
+        document.getElementById("target-name").innerText = "";
+        document.getElementById("target-danger").innerText = "";
+      }
     };
     Game.logCallback = (msg2, msgType) => {
       if (!msgType) {
