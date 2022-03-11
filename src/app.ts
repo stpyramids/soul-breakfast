@@ -141,6 +141,9 @@ const Attacks: { [id: string]: Attack } = {
           // TODO this is where you would get problems
           Game.player.essence = 0;
           msg.angry("No!");
+          msg.tutorial(
+            "Watch out! Taking damage at zero essence can free souls you have claimed."
+          );
         }
       }
     },
@@ -283,12 +286,16 @@ const Commands: { [key: string]: Function } = {
 
       if (soul.type === "none") {
         msg.angry("This vermin has no soul worthy of claiming.");
+        msg.tutorial("Vermin can be (d)evoured for essence.");
       } else {
         Game.player.energy -= 1.0;
         if (weakMonster(c.monster)) {
           msg.essence("You claim the soul of %the.", D(c));
           // todo
           Game.player.maxEssence += soul.essence;
+          msg.tutorial(
+            "Claiming souls increases your maximum essence and may grant new powers."
+          );
           //gainEssence(soul.essence);
           killMonsterAt(c, "drain");
         } else {
@@ -360,6 +367,7 @@ const Game = {
     energy: 1.0,
     glyph: "player" as GlyphID,
     knownMonsters: {} as { [id: ArchetypeID]: boolean },
+    seenTutorials: {} as { [msg: string]: boolean },
   },
   map: {
     danger: 5,
@@ -545,6 +553,9 @@ function damageMonsterAt(c: XYContents, damage: Roll) {
         killMonsterAt(c, "force"); // todo
       } else {
         msg.combat("You see %the collapse!", D(c));
+        msg.tutorial(
+          "Enter a dying creature's tile to (d)evour or (c)laim their soul."
+        );
         c.monster.dying = true;
       }
     }
@@ -613,12 +624,16 @@ function movePlayer(dx: number, dy: number) {
           let archetype = MonsterArchetypes[c.monster.archetype];
           if (archetype.danger === 1) {
             msg.angry("Petty vermin!");
+            msg.tutorial("Use 'd' to devour essence from weak creatures.");
+          } else {
+            msg.tutorial("Use 'c' to claim a weakened creature's soul.");
           }
         }
       }
     } else {
       if (c.monster) {
         msg.think("The essence of %the resists my passage.", D(c));
+        msg.tutorial("Fire spells using SPACE to weaken creatures.");
       } else {
         msg.think("There is no passing this way.");
       }
@@ -639,6 +654,13 @@ const msg: { [type: string]: Function } = {
   angry: mkSay("angry"),
   essence: mkSay("essence"),
   combat: mkSay("combat"),
+  help: mkSay("help"),
+  tutorial: (fmt: string, ...args: any[]) => {
+    if (!Game.player.seenTutorials[fmt]) {
+      msg.help(fmt, ...args);
+      Game.player.seenTutorials[fmt] = true;
+    }
+  },
 };
 
 /// Input handling
@@ -777,6 +799,9 @@ function runGame() {
   handleInput();
 
   newMap();
+  msg.help(
+    "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!"
+  );
   Game.uiCallback();
 }
 
