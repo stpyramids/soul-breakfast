@@ -3427,6 +3427,7 @@ void main() {
           if (Game.player.essence < 0) {
             Game.player.essence = 0;
             msg.angry("No!");
+            msg.tutorial("Watch out! Taking damage at zero essence can free souls you have claimed.");
           }
         }
       }
@@ -3530,11 +3531,13 @@ void main() {
         let soul = SoulFactories[arch.soul](arch);
         if (soul.type === "none") {
           msg.angry("This vermin has no soul worthy of claiming.");
+          msg.tutorial("Vermin can be (d)evoured for essence.");
         } else {
           Game.player.energy -= 1;
           if (weakMonster(c.monster)) {
             msg.essence("You claim the soul of %the.", D(c));
             Game.player.maxEssence += soul.essence;
+            msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
             killMonsterAt(c, "drain");
           } else {
             msg.angry("The wretched creature resists!");
@@ -3592,7 +3595,8 @@ void main() {
       speed: 1,
       energy: 1,
       glyph: "player",
-      knownMonsters: {}
+      knownMonsters: {},
+      seenTutorials: {}
     },
     map: {
       danger: 5,
@@ -3724,6 +3728,7 @@ void main() {
           killMonsterAt(c, "force");
         } else {
           msg.combat("You see %the collapse!", D(c));
+          msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
           c.monster.dying = true;
         }
       }
@@ -3782,12 +3787,16 @@ void main() {
             let archetype = MonsterArchetypes[c.monster.archetype];
             if (archetype.danger === 1) {
               msg.angry("Petty vermin!");
+              msg.tutorial("Use 'd' to devour essence from weak creatures.");
+            } else {
+              msg.tutorial("Use 'c' to claim a weakened creature's soul.");
             }
           }
         }
       } else {
         if (c.monster) {
           msg.think("The essence of %the resists my passage.", D(c));
+          msg.tutorial("Fire spells using SPACE to weaken creatures.");
         } else {
           msg.think("There is no passing this way.");
         }
@@ -3804,7 +3813,14 @@ void main() {
     think: mkSay("thought"),
     angry: mkSay("angry"),
     essence: mkSay("essence"),
-    combat: mkSay("combat")
+    combat: mkSay("combat"),
+    help: mkSay("help"),
+    tutorial: (fmt, ...args) => {
+      if (!Game.player.seenTutorials[fmt]) {
+        msg.help(fmt, ...args);
+        Game.player.seenTutorials[fmt] = true;
+      }
+    }
   };
   function handleInput() {
     document.addEventListener("keypress", (e) => {
@@ -3904,6 +3920,7 @@ void main() {
     };
     handleInput();
     newMap();
+    msg.help("Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!");
     Game.uiCallback();
   }
   window.onload = runGame;
