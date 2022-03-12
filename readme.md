@@ -19,12 +19,16 @@ My in-progress submission to the [challenge](https://itch.io/jam/7drl-challenge-
 - Additional levels
 - Other soul effects than +max essence
 - Quick movement
+- Stat bonus souls
+- Improved FOV performance
+- Ranged enemy attacks and more AI options
+- Monster colors and variants
+- An opening message
 
 ## To Do
 
 - Make better use of color
 - More content
-- A cleaner opening
 - An actual goal
 - More flavor:
   - Combat messages
