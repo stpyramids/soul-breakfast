@@ -67,7 +67,7 @@ const WandEffects: { [id: string]: WandEffect } = {
   weakMana: { type: "damage", damage: asRoll(1, 4, 0) },
 };
 
-type StatBonus = "sight";
+type StatBonus = "sight" | "speed";
 type StatBonusEffect = { type: "stat-bonus"; stat: StatBonus; power: number };
 
 type RingEffect = StatBonusEffect;
@@ -214,6 +214,9 @@ const AI: { [id: string]: (c: XYContents) => number } = {
     if (attack.canReachFrom(c)) {
       attack.attackFrom(c);
       return 1.0;
+    } else if (ROT.RNG.getUniformInt(0, arch.danger / 2) == 0) {
+      // Skip a turn to be nice to the player
+      return 1.0;
     } else {
       // TODO should be _monster_ vision
       if (playerCanSee(c.x, c.y)) {
@@ -242,12 +245,16 @@ function doDamage(dmg: number) {
   if (Game.player.essence < 0) {
     let extra = Math.abs(Game.player.essence);
     Game.player.essence = 0;
+    let soulChecked = false;
+    let soulBroken = false;
     for (let slotGroup of keysOf(Game.player.soulSlots)) {
       let slots = Game.player.soulSlots[slotGroup];
       for (let i = 0; i < slots.length; i++) {
         if (slots[i].type !== "none") {
+          soulChecked = true;
           let roll = asRoll(1, slots[i].essence, 1);
           if (doRoll(roll) < extra) {
+            soulBroken = true;
             msg.angry("No!");
             msg.essence("The %s soul breaks free!", slots[i].name);
             slots[i] = EmptySoul;
@@ -256,9 +263,19 @@ function doDamage(dmg: number) {
         }
       }
     }
-    msg.tutorial(
-      "Watch out! Taking damage at zero essence can free souls you have claimed."
-    );
+    if (!soulChecked) {
+      let blowback = doRoll(asRoll(1, extra, -3));
+      if (blowback > 0) {
+        msg.angry("I cannot hold together! I must flee!");
+        newMap({
+          danger: Game.map.danger - Math.floor(blowback / 2),
+        });
+      }
+    } else {
+      msg.tutorial(
+        "Watch out! Taking damage at zero essence can free souls you have claimed or blow you out of the level."
+      );
+    }
   }
 }
 
@@ -278,7 +295,7 @@ function meleeAttack(verb: string, damage: Roll): Attack {
       // TODO combat parameters
       if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
         // damage dice scale up with danger
-        let dmgRoll = { ...damage, n: (danger - 1) * damage.n };
+        let dmgRoll = { ...damage, n: (danger / 2) * damage.n };
         let dmg = doRoll(dmgRoll);
         doDamage(dmg);
       }
@@ -286,6 +303,24 @@ function meleeAttack(verb: string, damage: Roll): Attack {
   };
 }
 
+function rangedAttack(verb: string, damage: Roll): Attack {
+  return {
+    canReachFrom: (c) => playerCanSee(c.x, c.y),
+    attackFrom: (c) => {
+      msg.combat("%The %s you!", D(c), verb);
+      let m = c.monster;
+      let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+      // TODO combat parameters
+      if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
+        // damage dice scale up with danger
+        let dmgRoll = { ...damage, n: (danger / 2) * damage.n };
+        let dmg = doRoll(dmgRoll);
+        doDamage(dmg);
+        // TODO some kind of effect
+      }
+    },
+  };
+}
 const Attacks: { [id: string]: Attack } = {
   none: {
     canReachFrom: (c) => false,
@@ -293,21 +328,9 @@ const Attacks: { [id: string]: Attack } = {
   },
   bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
   touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
-  gaze: {
-    canReachFrom: (c) => playerCanSee(c.x, c.y),
-    attackFrom: (c) => {
-      msg.combat("%The gazes at you!", D(c));
-      let m = c.monster;
-      let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
-      // TODO combat parameters
-      if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
-        // damage dice scale up with danger
-        let dmg = doRoll(asRoll(danger - 1, 2, 0));
-        doDamage(dmg);
-        // TODO some kind of effect
-      }
-    },
-  },
+  slice: meleeAttack("slices at", asRoll(1, 8, 4)),
+  gaze: rangedAttack("gazes at", asRoll(1, 4, 0)),
+  abjure: rangedAttack("abjures", asRoll(1, 8, 4)),
 };
 
 type MonsterArchetype = {
@@ -329,7 +352,7 @@ const SoulFactories: { [id: string]: SoulFactory } = {
   vermin: (a) => ({
     glyph: a.glyph,
     type: "none",
-    essence: a.danger,
+    essence: Math.floor((a.danger + 1) / 2),
     name: a.name,
   }),
   bulk: (a) => ({
@@ -365,6 +388,19 @@ const SoulFactories: { [id: string]: SoulFactory } = {
       { type: "stat-bonus", stat: "sight", power: Math.floor(a.danger / 2) },
     ],
   }),
+  speed: (a) => ({
+    glyph: a.glyph,
+    type: "ring",
+    essence: a.danger,
+    name: a.name,
+    effects: [
+      {
+        type: "stat-bonus",
+        stat: "speed",
+        power: 0.05 * Math.floor(a.danger / 2), // todo fix rounding
+      },
+    ],
+  }),
 };
 
 function describeWandEffect(e: WandEffect): string {
@@ -383,7 +419,11 @@ function describeWandEffect(e: WandEffect): string {
 function describeRingEffect(e: RingEffect): string {
   switch (e.type) {
     case "stat-bonus":
-      return "+" + e.power + " " + e.stat;
+      if (e.stat === "speed") {
+        return "+" + Math.floor(e.power * 100) + "% " + e.stat;
+      } else {
+        return "+" + e.power + " " + e.stat;
+      }
   }
 }
 
@@ -409,22 +449,6 @@ function describeSoulEffect(s: Soul): string {
 type MonsterProto = {
   base: MonsterArchetype;
   variants: Array<Partial<MonsterArchetype>>;
-};
-
-let ratProto: MonsterProto = {
-  base: {
-    name: "rat",
-    danger: 2,
-    glyph: "rodent",
-    color: "danger0",
-    appearing: asRoll(1, 2, 1),
-    hp: asRoll(1, 4, 1),
-    speed: 0.5,
-    ai: "nipper",
-    attack: "bite",
-    soul: "bulk",
-  },
-  variants: [],
 };
 
 function expandProto(proto: MonsterProto): {
@@ -459,6 +483,24 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         appearing: asRoll(2, 4, 0),
         ai: "wander",
       },
+      {
+        name: "soul grubs",
+        danger: 5,
+        glyph: "worm",
+        color: "vermin",
+      },
+      {
+        name: "soul butterflies",
+        danger: 8,
+        glyph: "insect",
+        color: "vermin",
+      },
+      {
+        name: "torpid ghost",
+        danger: 10,
+        glyph: "ghost",
+        color: "vermin",
+      },
     ],
   }),
   ...expandProto({
@@ -492,7 +534,7 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       color: "danger0",
       appearing: asRoll(1, 2, 0),
       hp: asRoll(1, 2, 2),
-      speed: 1.0,
+      speed: 0.8,
       ai: "nipper",
       attack: "bite",
       soul: "extraDamage",
@@ -504,6 +546,14 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         color: "danger5",
         hp: asRoll(1, 4, 2),
         ai: "charge",
+      },
+      {
+        name: "ambush spider",
+        danger: 15,
+        color: "danger15",
+        ai: "charge",
+        speed: 0.9,
+        soul: "speed",
       },
     ],
   }),
@@ -528,6 +578,14 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         hp: asRoll(2, 8, 2),
         speed: 0.5,
       },
+      {
+        name: "howling ghost",
+        danger: 16,
+        color: "danger15",
+        hp: asRoll(2, 5, 2),
+        speed: 0.9,
+        soul: "speed",
+      },
     ],
   }),
   ...expandProto({
@@ -551,6 +609,67 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         appearing: asRoll(1, 1, 0),
         hp: asRoll(3, 4, 0),
         speed: 0.5,
+      },
+      {
+        name: "gimlet eye",
+        danger: 17,
+        color: "danger15",
+        // TODO esp
+      },
+    ],
+  }),
+  ...expandProto({
+    base: {
+      name: "soul sucker",
+      danger: 20,
+      glyph: "insect",
+      color: "danger20",
+      appearing: asRoll(2, 2, 2),
+      hp: asRoll(2, 2, 2),
+      speed: 0.5,
+      ai: "nipper",
+      attack: "bite",
+      soul: "bulk", // TODO essence drain
+    },
+    variants: [],
+  }),
+  ...expandProto({
+    base: {
+      name: "do-gooder",
+      danger: 10,
+      glyph: "player",
+      color: "danger10",
+      appearing: asRoll(1, 2, 0),
+      hp: asRoll(2, 6, 4),
+      speed: 0.7,
+      ai: "charge",
+      attack: "slice",
+      soul: "bulk",
+    },
+    variants: [
+      {
+        name: "acolyte",
+        danger: 15,
+        color: "danger15",
+        appearing: asRoll(1, 2, 0),
+        hp: asRoll(2, 4, 2),
+        attack: "abjure",
+        soul: "extraDamage",
+      },
+      {
+        name: "warrior",
+        danger: 20,
+        color: "danger20",
+        appearing: asRoll(2, 1, 0),
+        hp: asRoll(3, 6, 4),
+        soul: "speed",
+      },
+      {
+        name: "priest",
+        danger: 25,
+        color: "danger25",
+        hp: asRoll(3, 6, 4),
+        attack: "abjure",
       },
     ],
   }),
@@ -650,18 +769,26 @@ function getWand(): {
   };
 }
 
-function getPlayerVision(): number {
-  let base = 5;
+function getStatBonus(stat: StatBonus): number {
+  let base = 0;
   for (let soul of Game.player.soulSlots.generic) {
     if (soul.type === "ring") {
       for (let effect of soul.effects) {
-        if (effect.type == "stat-bonus" && effect.stat == "sight") {
+        if (effect.type == "stat-bonus" && effect.stat == stat) {
           base += effect.power;
         }
       }
     }
   }
   return base;
+}
+
+function getPlayerVision(): number {
+  return 5 + getStatBonus("sight");
+}
+
+function getPlayerSpeed(): number {
+  return 1.0 + getStatBonus("speed");
 }
 
 let seenXYs: Array<[number, number]> = [];
@@ -769,7 +896,6 @@ const Commands: { [key: string]: Function } = {
     let c = contentsAt(Game.player.x, Game.player.y);
     if (c.monster) {
       let soul = getSoul(c.monster);
-
       if (soul.type === "none") {
         msg.angry("This vermin has no soul worthy of claiming.");
         msg.tutorial("Vermin can be (d)evoured for essence.");
@@ -854,11 +980,28 @@ const Commands: { [key: string]: Function } = {
     Game.player.essence -= wand.cost;
     Game.player.energy -= 1.0;
   },
+  W: () => {
+    if (document.location.hash == "#wizard") {
+      offerChoice(
+        "WIZARD MODE",
+        new Map([["w", "Teleport to danger level 50"]]),
+        {
+          onChoose: (key) => {
+            switch (key) {
+              case "w":
+                newMap({ danger: 50 });
+            }
+          },
+        }
+      );
+    }
+  },
 };
 
 /// Game state
 
 const Game = {
+  turns: 0,
   viewport: {
     width: 30,
     height: 30,
@@ -955,14 +1098,18 @@ function newMap(opts?: NewMapOptions) {
     Game.map.danger + 1,
     Game.map.danger + 1,
     Game.map.danger + 1,
-    Game.map.danger + 1,
-    Game.map.danger + 1,
-    Game.map.danger + 1,
+    Game.map.danger + 2,
+    Game.map.danger + 2,
+    Game.map.danger + 2,
     Game.map.danger + 2,
     Game.map.danger + 2,
     Game.map.danger + 2,
     Game.map.danger + 3,
-    Game.map.danger * 2 + 1,
+    Game.map.danger + 3,
+    Game.map.danger + 3,
+    ROT.RNG.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
+    ROT.RNG.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
+    ROT.RNG.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
   ]);
   for (let room of rooms) {
     // todo This is a bad way to place exits but it should work
@@ -991,6 +1138,20 @@ function newMap(opts?: NewMapOptions) {
     corridor.create((x, y, v) => {
       Game.map.tiles[x + y * Game.map.w] = Tiles.floor;
     });
+  }
+
+  if (Game.map.danger >= 50) {
+    msg.tutorial(
+      "Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination."
+    );
+    msg.break();
+    msg.tutorial(
+      "You reached danger level %s in %s turns.",
+      Game.map.danger,
+      Game.turns
+    );
+    msg.break();
+    msg.tutorial("Thanks for playing!");
   }
 }
 
@@ -1124,6 +1285,7 @@ function tick() {
     let nextCommand = Game.commandQueue.shift();
     if (nextCommand) {
       Commands[nextCommand]();
+      Game.turns += 1;
       Game.uiCallback();
     } else {
       break;
@@ -1147,7 +1309,7 @@ function tick() {
   }
 
   if (Game.player.energy < 1.0) {
-    Game.player.energy += Game.player.speed;
+    Game.player.energy += getPlayerSpeed();
   }
 
   recomputeFOV();
@@ -1177,7 +1339,7 @@ function doMovePlayer(dx: number, dy: number): boolean {
         msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
         Game.player.knownMonsters[c.monster.archetype] = true;
         let archetype = MonsterArchetypes[c.monster.archetype];
-        if (archetype.danger === 1) {
+        if (archetype.soul === "vermin") {
           msg.angry("Petty vermin!");
           msg.tutorial("Use 'd' to devour essence from weak creatures.");
         } else {
