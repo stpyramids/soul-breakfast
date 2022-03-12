@@ -67,6 +67,11 @@ const WandEffects: { [id: string]: WandEffect } = {
   weakMana: { type: "damage", damage: asRoll(1, 4, 0) },
 };
 
+type StatBonus = "sight";
+type StatBonusEffect = { type: "stat-bonus"; stat: StatBonus; power: number };
+
+type RingEffect = StatBonusEffect;
+
 // TODO:
 // Eventually I want separate slots for wand, ring, and crown souls.
 // This is probably too complicated to implement in the short term.
@@ -78,7 +83,13 @@ type WandSoul = {
   name: string;
   effects: Array<WandEffect>;
 };
-type RingSoul = { type: "ring"; glyph: GlyphID; essence: number; name: string };
+type RingSoul = {
+  type: "ring";
+  glyph: GlyphID;
+  essence: number;
+  name: string;
+  effects: Array<RingEffect>;
+};
 type CrownSoul = {
   type: "crown";
   glyph: GlyphID;
@@ -115,6 +126,7 @@ const Glyphs = {
   rodent: "r",
   spider: "s",
   ghost: "g",
+  eyeball: "e",
 };
 
 type GlyphID = keyof typeof Glyphs;
@@ -124,7 +136,14 @@ const Colors = {
   target: "#139",
   dying: "#411",
   weak: "#211",
-  critter: "#111",
+  critterBG: "#111",
+  vermin: "#aaa",
+  danger0: "#7c5335",
+  danger5: "#9d893b",
+  danger10: "#439d3b",
+  danger15: "#3b9d8e",
+  danger20: "#9d3b43",
+  danger25: "#923b9d",
 };
 
 /// Map tiles
@@ -143,6 +162,16 @@ const Tiles: { [name: string]: Tile } = {
 
 /// Monster data
 
+function moveMonster(from: XYContents, to: XYContents): boolean {
+  if (!to.blocked) {
+    Game.map.monsters[from.x + from.y * Game.map.w] = null;
+    Game.map.monsters[to.x + to.y * Game.map.w] = from.monster;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 const AI: { [id: string]: (c: XYContents) => number } = {
   passive: (c) => {
     return 1.0;
@@ -151,10 +180,7 @@ const AI: { [id: string]: (c: XYContents) => number } = {
     let nx = c.x + ROT.RNG.getUniformInt(-1, 1);
     let ny = c.y + ROT.RNG.getUniformInt(-1, 1);
     let spot = contentsAt(nx, ny);
-    if (!spot.blocked) {
-      Game.map.monsters[c.x + c.y * Game.map.w] = null;
-      Game.map.monsters[nx + ny * Game.map.w] = c.monster;
-    }
+    moveMonster(c, spot);
     return 1.0;
   },
   nipper: (c) => {
@@ -167,6 +193,40 @@ const AI: { [id: string]: (c: XYContents) => number } = {
       return 1.0;
     } else {
       return AI.wander(c);
+    }
+  },
+  stationary: (c) => {
+    let m = c.monster!;
+    let arch = MonsterArchetypes[m.archetype];
+    let attack = Attacks[arch.attack];
+
+    if (attack.canReachFrom(c)) {
+      attack.attackFrom(c);
+    }
+    return 1.0;
+  },
+  charge: (c) => {
+    // TODO these all have similar structures
+    let m = c.monster!;
+    let arch = MonsterArchetypes[m.archetype];
+    let attack = Attacks[arch.attack];
+
+    if (attack.canReachFrom(c)) {
+      attack.attackFrom(c);
+      return 1.0;
+    } else {
+      // TODO should be _monster_ vision
+      if (playerCanSee(c.x, c.y)) {
+        let dx = Game.player.x - c.x;
+        dx = dx == 0 ? 0 : dx / Math.abs(dx);
+        let dy = Game.player.y - c.y;
+        dy = dy == 0 ? 0 : dy / Math.abs(dy);
+        moveMonster(c, contentsAt(c.x + dx, c.y + dy));
+        return 1.0;
+      } else {
+        // TODO should have pursuit vs. idle
+        return AI.wander(c);
+      }
     }
   },
 };
@@ -233,12 +293,28 @@ const Attacks: { [id: string]: Attack } = {
   },
   bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
   touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
+  gaze: {
+    canReachFrom: (c) => playerCanSee(c.x, c.y),
+    attackFrom: (c) => {
+      msg.combat("%The gazes at you!", D(c));
+      let m = c.monster;
+      let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+      // TODO combat parameters
+      if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
+        // damage dice scale up with danger
+        let dmg = doRoll(asRoll(danger - 1, 2, 0));
+        doDamage(dmg);
+        // TODO some kind of effect
+      }
+    },
+  },
 };
 
 type MonsterArchetype = {
   name: string;
   danger: number;
   glyph: GlyphID;
+  color: keyof typeof Colors;
   appearing: Roll;
   hp: Roll;
   speed: number;
@@ -267,14 +343,27 @@ const SoulFactories: { [id: string]: SoulFactory } = {
     type: "wand",
     essence: a.danger,
     name: a.name,
-    effects: [{ type: "damage", damage: asRoll(a.danger - 1, 4, 1) }],
+    effects: [
+      { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) },
+    ],
   }),
   slow: (a) => ({
     glyph: a.glyph,
     type: "wand",
     essence: a.danger,
     name: a.name,
-    effects: [{ type: "status", status: "slow", power: a.danger }],
+    effects: [
+      { type: "status", status: "slow", power: Math.floor(a.danger / 2) },
+    ],
+  }),
+  sight: (a) => ({
+    glyph: a.glyph,
+    type: "ring",
+    essence: a.danger,
+    name: a.name,
+    effects: [
+      { type: "stat-bonus", stat: "sight", power: Math.floor(a.danger / 2) },
+    ],
   }),
 };
 
@@ -291,6 +380,13 @@ function describeWandEffect(e: WandEffect): string {
   }
 }
 
+function describeRingEffect(e: RingEffect): string {
+  switch (e.type) {
+    case "stat-bonus":
+      return "+" + e.power + " " + e.stat;
+  }
+}
+
 function describeSoulEffect(s: Soul): string {
   switch (s.type) {
     case "none":
@@ -302,39 +398,25 @@ function describeSoulEffect(s: Soul): string {
     case "generic":
       return "+" + s.essence + " max essence";
     case "wand":
-      return describeWandEffect(s.effects[0]);
+      return describeWandEffect(s.effects[0]); // todo
+    case "ring":
+      return describeRingEffect(s.effects[0]); // todo
     default:
       return "???";
   }
 }
 
-const MonsterArchetypes = {
-  maggot: <MonsterArchetype>{
-    name: "maggot heap",
-    danger: 1,
-    glyph: "worm",
-    appearing: asRoll(1, 4, 3),
-    hp: verminHP,
-    speed: 0.2,
-    ai: "passive",
-    attack: "none",
-    soul: "vermin",
-  },
-  gnatSwarm: <MonsterArchetype>{
-    name: "gnat swarm",
-    danger: 1,
-    glyph: "insect",
-    appearing: asRoll(2, 4, 0),
-    hp: verminHP,
-    speed: 0.25,
-    ai: "wander",
-    attack: "none",
-    soul: "vermin",
-  },
-  giantRat: <MonsterArchetype>{
-    name: "dusty rat",
+type MonsterProto = {
+  base: MonsterArchetype;
+  variants: Array<Partial<MonsterArchetype>>;
+};
+
+let ratProto: MonsterProto = {
+  base: {
+    name: "rat",
     danger: 2,
     glyph: "rodent",
+    color: "danger0",
     appearing: asRoll(1, 2, 1),
     hp: asRoll(1, 4, 1),
     speed: 0.5,
@@ -342,31 +424,139 @@ const MonsterArchetypes = {
     attack: "bite",
     soul: "bulk",
   },
-  cryptSpider: <MonsterArchetype>{
-    name: "crypt spider",
-    danger: 3,
-    glyph: "spider",
-    appearing: asRoll(1, 2, 0),
-    hp: asRoll(1, 2, 1),
-    speed: 1.0,
-    ai: "nipper",
-    attack: "bite",
-    soul: "extraDamage",
-  },
-  littleGhost: <MonsterArchetype>{
-    name: "little ghost",
-    danger: 4,
-    glyph: "ghost",
-    appearing: asRoll(1, 1, 0),
-    hp: asRoll(2, 4, 0),
-    speed: 0.25,
-    ai: "nipper",
-    attack: "touch",
-    soul: "slow",
-  },
+  variants: [],
 };
 
-type ArchetypeID = keyof typeof MonsterArchetypes;
+function expandProto(proto: MonsterProto): {
+  [id: ArchetypeID]: MonsterArchetype;
+} {
+  let archs = { [proto.base.name]: proto.base };
+  for (let variant of proto.variants) {
+    // todo can we enforce having a name
+    archs[variant.name!] = { ...proto.base, ...variant };
+  }
+  return archs;
+}
+
+const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
+  ...expandProto({
+    base: {
+      name: "maggot heap",
+      danger: 1,
+      glyph: "worm",
+      color: "vermin",
+      appearing: asRoll(1, 4, 3),
+      hp: verminHP,
+      speed: 0.2,
+      ai: "passive",
+      attack: "none",
+      soul: "vermin",
+    },
+    variants: [
+      {
+        name: "gnat swarm",
+        glyph: "insect",
+        appearing: asRoll(2, 4, 0),
+        ai: "wander",
+      },
+    ],
+  }),
+  ...expandProto({
+    base: {
+      name: "dusty rat",
+      danger: 2,
+      glyph: "rodent",
+      color: "danger0",
+      appearing: asRoll(1, 2, 1),
+      hp: asRoll(1, 4, 1),
+      speed: 0.5,
+      ai: "nipper",
+      attack: "bite",
+      soul: "bulk",
+    },
+    variants: [
+      {
+        name: "hungry rat",
+        danger: 6,
+        color: "danger5",
+        hp: asRoll(2, 4, 1),
+        ai: "charge",
+      },
+    ],
+  }),
+  ...expandProto({
+    base: {
+      name: "crypt spider",
+      danger: 3,
+      glyph: "spider",
+      color: "danger0",
+      appearing: asRoll(1, 2, 0),
+      hp: asRoll(1, 2, 2),
+      speed: 1.0,
+      ai: "nipper",
+      attack: "bite",
+      soul: "extraDamage",
+    },
+    variants: [
+      {
+        name: "wolf spider",
+        danger: 7,
+        color: "danger5",
+        hp: asRoll(1, 4, 2),
+        ai: "charge",
+      },
+    ],
+  }),
+  ...expandProto({
+    base: {
+      name: "little ghost",
+      danger: 4,
+      glyph: "ghost",
+      color: "danger0",
+      appearing: asRoll(1, 1, 0),
+      hp: asRoll(2, 4, 0),
+      speed: 0.25,
+      ai: "charge",
+      attack: "touch",
+      soul: "slow",
+    },
+    variants: [
+      {
+        name: "weeping ghost",
+        danger: 9,
+        color: "danger5",
+        hp: asRoll(2, 8, 2),
+        speed: 0.5,
+      },
+    ],
+  }),
+  ...expandProto({
+    base: {
+      name: "bleary eye",
+      danger: 5,
+      glyph: "eyeball",
+      color: "danger5",
+      appearing: asRoll(1, 2, 1),
+      hp: asRoll(2, 4, 0),
+      speed: 0.25,
+      ai: "stationary",
+      attack: "gaze",
+      soul: "sight",
+    },
+    variants: [
+      {
+        name: "peering eye",
+        danger: 10,
+        color: "danger10",
+        appearing: asRoll(1, 1, 0),
+        hp: asRoll(3, 4, 0),
+        speed: 0.5,
+      },
+    ],
+  }),
+};
+
+type ArchetypeID = string;
 
 type Monster = {
   archetype: ArchetypeID;
@@ -460,30 +650,56 @@ function getWand(): {
   };
 }
 
+function getPlayerVision(): number {
+  let base = 5;
+  for (let soul of Game.player.soulSlots.generic) {
+    if (soul.type === "ring") {
+      for (let effect of soul.effects) {
+        if (effect.type == "stat-bonus" && effect.stat == "sight") {
+          base += effect.power;
+        }
+      }
+    }
+  }
+  return base;
+}
+
+let seenXYs: Array<[number, number]> = [];
+function recomputeFOV() {
+  seenXYs.length = 0;
+  Game.map.fov.compute(
+    Game.player.x,
+    Game.player.y,
+    getPlayerVision(),
+    (fx, fy, r, v) => {
+      seenXYs.push([fx, fy]);
+    }
+  );
+}
+
+function playerCanSee(x: number, y: number): boolean {
+  return !!seenXYs.find(([sx, sy]) => x == sx && y == sy);
+}
+
 function findTargets(): Array<XYContents> {
   let targets: Array<XYContents> = [];
   switch (getWand().targeting.targeting) {
     case "seeker":
       let closestDistance = 9999;
       let seekerTarget: XYContents | null = null;
-      Game.map.fov.compute(
-        Game.player.x,
-        Game.player.y,
-        Game.viewport.width / 2,
-        (x, y, r, v) => {
-          let c = contentsAt(x, y);
-          if (c.monster) {
-            let dist = Math.sqrt(
-              Math.pow(Math.abs(Game.player.x - x), 2) +
-                Math.pow(Math.abs(Game.player.y - y), 2)
-            );
-            if (dist < closestDistance) {
-              closestDistance = dist;
-              seekerTarget = c;
-            }
+      for (let [x, y] of seenXYs) {
+        let c = contentsAt(x, y);
+        if (c.monster) {
+          let dist = Math.sqrt(
+            Math.pow(Math.abs(Game.player.x - x), 2) +
+              Math.pow(Math.abs(Game.player.y - y), 2)
+          );
+          if (dist < closestDistance) {
+            closestDistance = dist;
+            seekerTarget = c;
           }
         }
-      );
+      }
       if (seekerTarget) {
         targets.push(seekerTarget);
       }
@@ -491,7 +707,38 @@ function findTargets(): Array<XYContents> {
   return targets;
 }
 
+function tryReleaseSoul(): boolean {
+  let slots = Game.player.soulSlots.generic;
+  let opts: Map<string, string> = new Map();
+  for (let i in slots) {
+    if (slots[i].type !== "none") {
+      opts.set((parseInt(i) + 1).toString(), slots[i].name);
+    }
+  }
+  if (opts.size === 0) {
+    msg.think("I have no souls to release.");
+  } else {
+    offerChoice("Release which soul?", opts, {
+      onChoose: (key) => {
+        if (opts.has(key)) {
+          let slot = parseInt(key) - 1;
+          msg.essence("The %s soul dissipates into aether.", slots[slot].name);
+          slots[slot] = EmptySoul;
+        } else {
+          msg.log("Release cancelled.");
+        }
+      },
+    });
+  }
+  return false;
+}
+
 const Commands: { [key: string]: Function } = {
+  // Wait
+  ".": () => {
+    Game.player.energy -= 1.0;
+  },
+  // Movement
   h: movePlayer(-1, 0),
   H: movePlayerUntil("H", -1, 0),
   l: movePlayer(1, 0),
@@ -530,17 +777,26 @@ const Commands: { [key: string]: Function } = {
         Game.player.energy -= 1.0;
         if (weakMonster(c.monster)) {
           let slots = Game.player.soulSlots.generic;
-          for (let i = 0; i < slots.length; i++) {
-            if (slots[i].type === "none") {
-              slots[i] = soul;
-              msg.essence("You claim the soul of %the.", D(c));
-              msg.tutorial(
-                "Claiming souls increases your maximum essence and may grant new powers."
-              );
-              break;
-            } else if (slots[i].name === soul.name) {
-              msg.essence("You already have claimed this soul.");
-              break;
+          let claimed = false;
+          while (!claimed) {
+            for (let i = 0; i < slots.length; i++) {
+              if (slots[i].type === "none") {
+                slots[i] = soul;
+                msg.essence("You claim the soul of %the.", D(c));
+                msg.tutorial(
+                  "Claiming souls increases your maximum essence and may grant new powers."
+                );
+                claimed = true;
+                break;
+              } else if (slots[i].name === soul.name) {
+                msg.essence("You already have claimed this soul.");
+                claimed = true;
+                break;
+              }
+            }
+            if (!claimed) {
+              msg.essence("You must release a soul before claiming another.");
+              msg.tutorial("Use 'r' to release a soul.");
             }
           }
           // todo: discard existing souls to progress
@@ -573,6 +829,10 @@ const Commands: { [key: string]: Function } = {
     } else {
       msg.think("There is no passage here.");
     }
+  },
+  // release soul
+  r: () => {
+    tryReleaseSoul();
   },
   // fire spell
   " ": () => {
@@ -688,7 +948,7 @@ function newMap(opts?: NewMapOptions) {
   // Place monsters and exits in other rooms
   const eligibleMonsters = keysOf(MonsterArchetypes).filter(
     (id) => MonsterArchetypes[id].danger <= Game.map.danger
-  );
+  ) as Array<ArchetypeID>;
   // todo this sucks
   let exits = ROT.RNG.shuffle([
     Math.floor(Game.map.danger / 2),
@@ -893,6 +1153,7 @@ function tick() {
     Game.player.energy += Game.player.speed;
   }
 
+  recomputeFOV();
   Game.uiCallback();
 
   if (Game.commandQueue.length > 0) {
@@ -915,8 +1176,8 @@ function doMovePlayer(dx: number, dy: number): boolean {
     p.y = ny;
     p.energy -= 1.0;
     if (c.monster) {
-      msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
       if (!Game.player.knownMonsters[c.monster.archetype]) {
+        msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
         Game.player.knownMonsters[c.monster.archetype] = true;
         let archetype = MonsterArchetypes[c.monster.archetype];
         if (archetype.danger === 1) {
@@ -960,7 +1221,10 @@ function movePlayer(dx: number, dy: number) {
 
 function movePlayerUntil(key: string, dx: number, dy: number) {
   return () => {
-    // TODO need to check for threats
+    if (findTargets().length > 0) {
+      msg.think("I detect prey!");
+      return;
+    }
     if (doMovePlayer(dx, dy)) {
       Game.commandQueue.push(key);
     }
@@ -1000,10 +1264,16 @@ const msg: { [type: string]: Function } = {
 
 function handleInput() {
   document.addEventListener("keydown", (e) => {
-    let command = Commands[e.key];
-    if (command) {
-      Game.commandQueue.push(e.key);
-      setTimeout(tick, 0);
+    if (activeChoice) {
+      activeChoice.callbacks.onChoose(e.key);
+      activeChoice = null;
+      Game.uiCallback();
+    } else {
+      let command = Commands[e.key];
+      if (command) {
+        Game.commandQueue.push(e.key);
+        setTimeout(tick, 0);
+      }
     }
   });
 }
@@ -1044,44 +1314,57 @@ function drawMap(display: ROT.Display) {
   }
   // Draw seen tiles
   let targets = findTargets();
-  Game.map.fov.compute(
-    Game.player.x,
-    Game.player.y,
-    Game.viewport.width / 2,
-    (x, y, r, v) => {
-      if (x < sx) {
-        return;
-      }
-      if (y < sy) {
-        return;
-      }
-      let c = contentsAt(x, y);
-      let isTarget = !!targets.find((c) => c.x === x && c.y === y);
-      let bg = isTarget ? Colors.target : Colors.void;
-      Game.map.memory[x + y * Game.map.w] = c.memory;
-      if (c.player) {
-        display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", bg);
-      } else if (c.monster) {
-        display.draw(
-          x - sx,
-          y - sy,
-          Glyphs[MonsterArchetypes[c.monster.archetype].glyph],
-          "#eee",
-          c.monster.dying
-            ? Colors.dying
-            : isTarget
-            ? Colors.target
-            : weakMonster(c.monster)
-            ? Colors.weak
-            : Colors.critter
-        );
-      } else if (c.tile) {
-        display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", bg);
-      } else {
-        display.draw(x - sx, y - sy, Glyphs.rock, "#000", bg);
-      }
+  for (let [x, y] of seenXYs) {
+    if (x < sx) {
+      return;
     }
-  );
+    if (y < sy) {
+      return;
+    }
+    let c = contentsAt(x, y);
+    let isTarget = !!targets.find((c) => c.x === x && c.y === y);
+    let bg = isTarget ? Colors.target : Colors.void;
+    Game.map.memory[x + y * Game.map.w] = c.memory;
+    if (c.player) {
+      display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", bg);
+    } else if (c.monster) {
+      let arch = MonsterArchetypes[c.monster.archetype];
+      display.draw(
+        x - sx,
+        y - sy,
+        Glyphs[arch.glyph],
+        Colors[arch.color],
+        c.monster.dying
+          ? Colors.dying
+          : isTarget
+          ? Colors.target
+          : weakMonster(c.monster)
+          ? Colors.weak
+          : Colors.critterBG
+      );
+    } else if (c.tile) {
+      display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", bg);
+    } else {
+      display.draw(x - sx, y - sy, Glyphs.rock, "#000", bg);
+    }
+  }
+}
+
+let activeChoice: {
+  prompt: string;
+  opts: Map<string, string>;
+  callbacks: { onChoose: (key: string) => void };
+} | null = null;
+
+function offerChoice(
+  prompt: string,
+  opts: Map<string, string>,
+  callbacks: { onChoose: (key: string) => void }
+) {
+  activeChoice = { prompt, opts, callbacks };
+  let choices = "";
+  opts.forEach((v, k) => (choices += " (" + k + ") " + v));
+  msg.log(prompt + choices);
 }
 
 // Initializes the game state and begins rendering to a ROT.js canvas.
@@ -1160,6 +1443,7 @@ function runGame() {
   msg.help(
     "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!"
   );
+  recomputeFOV();
   Game.uiCallback();
 }
 
