@@ -64,15 +64,15 @@
             grid-template-rows: 1fr;
         }
 
-        #target {
+        #souls {
             display: grid;
             padding: 0.3em;
-            grid-template-columns: min-content 1fr;
-            grid-template-rows: min-content min-content;
+            grid-template-columns: min-content 1fr 1fr;
+            grid-template-rows: repeat(min-content);
             align-items: center;
         }
 
-        #target-glyph {
+        .soul-glyph {
             font-size: 150%;
             width: 1.5em;
             height: 1.5em;
@@ -82,14 +82,22 @@
             color: #ccc;
         }
 
-        #target-name {
-            margin: 0.3em;
-            height: 100%;
+        .soul-name {
+            height: 1.5em;
+            margin-bottom: 0.3em;
             vertical-align: middle;
             background: #000;
             color: #fff;
         }
         
+        .soul-effect {
+            margin-bottom: 0.3em;
+            height: 1.5em;
+            vertical-align: middle;
+            background: #000;
+            color: #fff;
+        }
+
         .stat-label {
             text-align: right;
             padding: 0.em;
@@ -145,11 +153,13 @@
                 <div class="stat-value" id="essence">-</div>
                 <div class="stat-label">/</div>
                 <div class="stat-value" id="maxEssence">-</div>
+                <div class="stat-label">Danger</div>
+                <div class="stat-value" id="mapDanger">-</div>
             </div>
-            <div id="target">
-                <div id="target-glyph"></div>
-                <div id="target-name"></div>
-                <div id="target-danger"></div>
+            <div id="souls">
+                <div class="soul-glyph"></div>
+                <div class="soul-name"></div>
+                <div class="soul-effect"></div>
             </div>
             <div id="messages"></div>
         </div>
