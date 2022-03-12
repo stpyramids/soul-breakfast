@@ -24,12 +24,14 @@ My in-progress submission to the [challenge](https://itch.io/jam/7drl-challenge-
 - Ranged enemy attacks and more AI options
 - Monster colors and variants
 - An opening message
+- The game is winnable and you get a message for winning
 
 ## To Do
 
 - Make better use of color
 - More content
-- An actual goal
+- A better goal
+- Better balance
 - More flavor:
   - Combat messages
   - Level themes

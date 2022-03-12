@@ -3466,6 +3466,8 @@ void main() {
       if (attack.canReachFrom(c)) {
         attack.attackFrom(c);
         return 1;
+      } else if (rng_default.getUniformInt(0, arch.danger / 2) == 0) {
+        return 1;
       } else {
         if (playerCanSee(c.x, c.y)) {
           let dx = Game.player.x - c.x;
@@ -3486,12 +3488,16 @@ void main() {
     if (Game.player.essence < 0) {
       let extra = Math.abs(Game.player.essence);
       Game.player.essence = 0;
+      let soulChecked = false;
+      let soulBroken = false;
       for (let slotGroup of keysOf(Game.player.soulSlots)) {
         let slots = Game.player.soulSlots[slotGroup];
         for (let i = 0; i < slots.length; i++) {
           if (slots[i].type !== "none") {
+            soulChecked = true;
             let roll = asRoll(1, slots[i].essence, 1);
             if (doRoll(roll) < extra) {
+              soulBroken = true;
               msg.angry("No!");
               msg.essence("The %s soul breaks free!", slots[i].name);
               slots[i] = EmptySoul;
@@ -3500,7 +3506,17 @@ void main() {
           }
         }
       }
-      msg.tutorial("Watch out! Taking damage at zero essence can free souls you have claimed.");
+      if (!soulChecked) {
+        let blowback = doRoll(asRoll(1, extra, -3));
+        if (blowback > 0) {
+          msg.angry("I cannot hold together! I must flee!");
+          newMap({
+            danger: Game.map.danger - Math.floor(blowback / 2)
+          });
+        }
+      } else {
+        msg.tutorial("Watch out! Taking damage at zero essence can free souls you have claimed or blow you out of the level.");
+      }
     }
   }
   function meleeAttack(verb, damage) {
@@ -3511,7 +3527,22 @@ void main() {
         let m = c.monster;
         let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
         if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: (danger - 1) * damage.n });
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: danger / 2 * damage.n });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  function rangedAttack(verb, damage) {
+    return {
+      canReachFrom: (c) => playerCanSee(c.x, c.y),
+      attackFrom: (c) => {
+        msg.combat("%The %s you!", D(c), verb);
+        let m = c.monster;
+        let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+        if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: danger / 2 * damage.n });
           let dmg = doRoll(dmgRoll);
           doDamage(dmg);
         }
@@ -3526,24 +3557,15 @@ void main() {
     },
     bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
     touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
-    gaze: {
-      canReachFrom: (c) => playerCanSee(c.x, c.y),
-      attackFrom: (c) => {
-        msg.combat("%The gazes at you!", D(c));
-        let m = c.monster;
-        let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
-        if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
-          let dmg = doRoll(asRoll(danger - 1, 2, 0));
-          doDamage(dmg);
-        }
-      }
-    }
+    slice: meleeAttack("slices at", asRoll(1, 8, 4)),
+    gaze: rangedAttack("gazes at", asRoll(1, 4, 0)),
+    abjure: rangedAttack("abjures", asRoll(1, 8, 4))
   };
   var SoulFactories = {
     vermin: (a) => ({
       glyph: a.glyph,
       type: "none",
-      essence: a.danger,
+      essence: Math.floor((a.danger + 1) / 2),
       name: a.name
     }),
     bulk: (a) => ({
@@ -3578,6 +3600,19 @@ void main() {
       effects: [
         { type: "stat-bonus", stat: "sight", power: Math.floor(a.danger / 2) }
       ]
+    }),
+    speed: (a) => ({
+      glyph: a.glyph,
+      type: "ring",
+      essence: a.danger,
+      name: a.name,
+      effects: [
+        {
+          type: "stat-bonus",
+          stat: "speed",
+          power: 0.05 * Math.floor(a.danger / 2)
+        }
+      ]
     })
   };
   function describeWandEffect(e) {
@@ -3595,7 +3630,11 @@ void main() {
   function describeRingEffect(e) {
     switch (e.type) {
       case "stat-bonus":
-        return "+" + e.power + " " + e.stat;
+        if (e.stat === "speed") {
+          return "+" + Math.floor(e.power * 100) + "% " + e.stat;
+        } else {
+          return "+" + e.power + " " + e.stat;
+        }
     }
   }
   function describeSoulEffect(s) {
@@ -3616,21 +3655,6 @@ void main() {
         return "???";
     }
   }
-  var ratProto = {
-    base: {
-      name: "rat",
-      danger: 2,
-      glyph: "rodent",
-      color: "danger0",
-      appearing: asRoll(1, 2, 1),
-      hp: asRoll(1, 4, 1),
-      speed: 0.5,
-      ai: "nipper",
-      attack: "bite",
-      soul: "bulk"
-    },
-    variants: []
-  };
   function expandProto(proto) {
     let archs = { [proto.base.name]: proto.base };
     for (let variant of proto.variants) {
@@ -3638,7 +3662,7 @@ void main() {
     }
     return archs;
   }
-  var MonsterArchetypes = __spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, expandProto({
+  var MonsterArchetypes = __spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, expandProto({
     base: {
       name: "maggot heap",
       danger: 1,
@@ -3657,6 +3681,24 @@ void main() {
         glyph: "insect",
         appearing: asRoll(2, 4, 0),
         ai: "wander"
+      },
+      {
+        name: "soul grubs",
+        danger: 5,
+        glyph: "worm",
+        color: "vermin"
+      },
+      {
+        name: "soul butterflies",
+        danger: 8,
+        glyph: "insect",
+        color: "vermin"
+      },
+      {
+        name: "torpid ghost",
+        danger: 10,
+        glyph: "ghost",
+        color: "vermin"
       }
     ]
   })), expandProto({
@@ -3689,7 +3731,7 @@ void main() {
       color: "danger0",
       appearing: asRoll(1, 2, 0),
       hp: asRoll(1, 2, 2),
-      speed: 1,
+      speed: 0.8,
       ai: "nipper",
       attack: "bite",
       soul: "extraDamage"
@@ -3701,6 +3743,14 @@ void main() {
         color: "danger5",
         hp: asRoll(1, 4, 2),
         ai: "charge"
+      },
+      {
+        name: "ambush spider",
+        danger: 15,
+        color: "danger15",
+        ai: "charge",
+        speed: 0.9,
+        soul: "speed"
       }
     ]
   })), expandProto({
@@ -3723,6 +3773,14 @@ void main() {
         color: "danger5",
         hp: asRoll(2, 8, 2),
         speed: 0.5
+      },
+      {
+        name: "howling ghost",
+        danger: 16,
+        color: "danger15",
+        hp: asRoll(2, 5, 2),
+        speed: 0.9,
+        soul: "speed"
       }
     ]
   })), expandProto({
@@ -3746,6 +3804,64 @@ void main() {
         appearing: asRoll(1, 1, 0),
         hp: asRoll(3, 4, 0),
         speed: 0.5
+      },
+      {
+        name: "gimlet eye",
+        danger: 17,
+        color: "danger15"
+      }
+    ]
+  })), expandProto({
+    base: {
+      name: "soul sucker",
+      danger: 20,
+      glyph: "insect",
+      color: "danger20",
+      appearing: asRoll(2, 2, 2),
+      hp: asRoll(2, 2, 2),
+      speed: 0.5,
+      ai: "nipper",
+      attack: "bite",
+      soul: "bulk"
+    },
+    variants: []
+  })), expandProto({
+    base: {
+      name: "do-gooder",
+      danger: 10,
+      glyph: "player",
+      color: "danger10",
+      appearing: asRoll(1, 2, 0),
+      hp: asRoll(2, 6, 4),
+      speed: 0.7,
+      ai: "charge",
+      attack: "slice",
+      soul: "bulk"
+    },
+    variants: [
+      {
+        name: "acolyte",
+        danger: 15,
+        color: "danger15",
+        appearing: asRoll(1, 2, 0),
+        hp: asRoll(2, 4, 2),
+        attack: "abjure",
+        soul: "extraDamage"
+      },
+      {
+        name: "warrior",
+        danger: 20,
+        color: "danger20",
+        appearing: asRoll(2, 1, 0),
+        hp: asRoll(3, 6, 4),
+        soul: "speed"
+      },
+      {
+        name: "priest",
+        danger: 25,
+        color: "danger25",
+        hp: asRoll(3, 6, 4),
+        attack: "abjure"
       }
     ]
   }));
@@ -3812,18 +3928,24 @@ void main() {
       cost
     };
   }
-  function getPlayerVision() {
-    let base = 5;
+  function getStatBonus(stat) {
+    let base = 0;
     for (let soul of Game.player.soulSlots.generic) {
       if (soul.type === "ring") {
         for (let effect of soul.effects) {
-          if (effect.type == "stat-bonus" && effect.stat == "sight") {
+          if (effect.type == "stat-bonus" && effect.stat == stat) {
             base += effect.power;
           }
         }
       }
     }
     return base;
+  }
+  function getPlayerVision() {
+    return 5 + getStatBonus("sight");
+  }
+  function getPlayerSpeed() {
+    return 1 + getStatBonus("speed");
   }
   var seenXYs = [];
   function recomputeFOV() {
@@ -3988,9 +4110,22 @@ void main() {
       }
       Game.player.essence -= wand.cost;
       Game.player.energy -= 1;
+    },
+    W: () => {
+      if (document.location.hash == "#wizard") {
+        offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([["w", "Teleport to danger level 50"]]), {
+          onChoose: (key) => {
+            switch (key) {
+              case "w":
+                newMap({ danger: 50 });
+            }
+          }
+        });
+      }
     }
   };
   var Game = {
+    turns: 0,
     viewport: {
       width: 30,
       height: 30
@@ -4060,14 +4195,18 @@ void main() {
       Game.map.danger + 1,
       Game.map.danger + 1,
       Game.map.danger + 1,
-      Game.map.danger + 1,
-      Game.map.danger + 1,
-      Game.map.danger + 1,
+      Game.map.danger + 2,
+      Game.map.danger + 2,
+      Game.map.danger + 2,
       Game.map.danger + 2,
       Game.map.danger + 2,
       Game.map.danger + 2,
       Game.map.danger + 3,
-      Game.map.danger * 2 + 1
+      Game.map.danger + 3,
+      Game.map.danger + 3,
+      rng_default.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
+      rng_default.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
+      rng_default.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1
     ]);
     for (let room of rooms) {
       if (exits.length > 0 && rng_default.getUniformInt(1, exits.length / 4) === 1) {
@@ -4093,6 +4232,13 @@ void main() {
       corridor.create((x, y, v) => {
         Game.map.tiles[x + y * Game.map.w] = Tiles.floor;
       });
+    }
+    if (Game.map.danger >= 50) {
+      msg.tutorial("Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination.");
+      msg.break();
+      msg.tutorial("You reached danger level %s in %s turns.", Game.map.danger, Game.turns);
+      msg.break();
+      msg.tutorial("Thanks for playing!");
     }
   }
   function tileAt(x, y) {
@@ -4189,6 +4335,7 @@ void main() {
       let nextCommand = Game.commandQueue.shift();
       if (nextCommand) {
         Commands[nextCommand]();
+        Game.turns += 1;
         Game.uiCallback();
       } else {
         break;
@@ -4209,7 +4356,7 @@ void main() {
       }
     }
     if (Game.player.energy < 1) {
-      Game.player.energy += Game.player.speed;
+      Game.player.energy += getPlayerSpeed();
     }
     recomputeFOV();
     Game.uiCallback();
@@ -4235,7 +4382,7 @@ void main() {
           msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
           Game.player.knownMonsters[c.monster.archetype] = true;
           let archetype = MonsterArchetypes[c.monster.archetype];
-          if (archetype.danger === 1) {
+          if (archetype.soul === "vermin") {
             msg.angry("Petty vermin!");
             msg.tutorial("Use 'd' to devour essence from weak creatures.");
           } else {
