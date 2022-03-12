@@ -493,9 +493,13 @@ function findTargets(): Array<XYContents> {
 
 const Commands: { [key: string]: Function } = {
   h: movePlayer(-1, 0),
+  H: movePlayerUntil("H", -1, 0),
   l: movePlayer(1, 0),
+  L: movePlayerUntil("L", 1, 0),
   j: movePlayer(0, 1),
+  J: movePlayerUntil("J", 0, 1),
   k: movePlayer(0, -1),
+  K: movePlayerUntil("K", 0, -1),
   // (d)evour soul
   d: () => {
     let c = contentsAt(Game.player.x, Game.player.y);
@@ -687,7 +691,7 @@ function newMap(opts?: NewMapOptions) {
   );
   // todo this sucks
   let exits = ROT.RNG.shuffle([
-    Game.map.danger / 2,
+    Math.floor(Game.map.danger / 2),
     Game.map.danger,
     Game.map.danger,
     Game.map.danger + 1,
@@ -890,51 +894,75 @@ function tick() {
   }
 
   Game.uiCallback();
+
+  if (Game.commandQueue.length > 0) {
+    tick();
+  }
+}
+
+function doMovePlayer(dx: number, dy: number): boolean {
+  const p = Game.player;
+  const nx = p.x + dx;
+  const ny = p.y + dy;
+  const c = contentsAt(nx, ny);
+  let blocked = c.blocked;
+  // The player can phase through weak or dying monsters.
+  if (blocked && c.monster && weakMonster(c.monster)) {
+    blocked = false;
+  }
+  if (!blocked) {
+    p.x = nx;
+    p.y = ny;
+    p.energy -= 1.0;
+    if (c.monster) {
+      msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
+      if (!Game.player.knownMonsters[c.monster.archetype]) {
+        Game.player.knownMonsters[c.monster.archetype] = true;
+        let archetype = MonsterArchetypes[c.monster.archetype];
+        if (archetype.danger === 1) {
+          msg.angry("Petty vermin!");
+          msg.tutorial("Use 'd' to devour essence from weak creatures.");
+        } else {
+          msg.tutorial("Use 'c' to claim a weakened creature's soul.");
+        }
+      }
+    }
+    if (c.exitDanger) {
+      msg.log(
+        "There is a passage to another area here. [Danger: %s]",
+        c.exitDanger
+      ); // todo: cooler descriptions
+      // todo: danger descriptions
+      msg.tutorial("Spend essence to pass into newer, more difficult areas.");
+    }
+    return true;
+  } else {
+    return false;
+  }
 }
 
 function movePlayer(dx: number, dy: number) {
   return () => {
-    const p = Game.player;
-    const nx = p.x + dx;
-    const ny = p.y + dy;
-    const c = contentsAt(nx, ny);
-    let blocked = c.blocked;
-    // The player can phase through weak or dying monsters.
-    if (blocked && c.monster && weakMonster(c.monster)) {
-      blocked = false;
-    }
-    if (!blocked) {
-      p.x = nx;
-      p.y = ny;
-      p.energy -= 1.0;
-      if (c.monster) {
-        msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
-        if (!Game.player.knownMonsters[c.monster.archetype]) {
-          Game.player.knownMonsters[c.monster.archetype] = true;
-          let archetype = MonsterArchetypes[c.monster.archetype];
-          if (archetype.danger === 1) {
-            msg.angry("Petty vermin!");
-            msg.tutorial("Use 'd' to devour essence from weak creatures.");
-          } else {
-            msg.tutorial("Use 'c' to claim a weakened creature's soul.");
-          }
-        }
-      }
-      if (c.exitDanger) {
-        msg.log(
-          "There is a passage to another area here. [Danger: %s]",
-          c.exitDanger
-        ); // todo: cooler descriptions
-        // todo: danger descriptions
-        msg.tutorial("Spend essence to pass into newer, more difficult areas.");
-      }
-    } else {
+    if (!doMovePlayer(dx, dy)) {
+      const p = Game.player;
+      const nx = p.x + dx;
+      const ny = p.y + dy;
+      const c = contentsAt(nx, ny);
       if (c.monster) {
         msg.think("The essence of %the resists my passage.", D(c));
         msg.tutorial("Fire spells using SPACE to weaken creatures.");
       } else {
         msg.think("There is no passing this way.");
       }
+    }
+  };
+}
+
+function movePlayerUntil(key: string, dx: number, dy: number) {
+  return () => {
+    // TODO need to check for threats
+    if (doMovePlayer(dx, dy)) {
+      Game.commandQueue.push(key);
     }
   };
 }
@@ -971,7 +999,7 @@ const msg: { [type: string]: Function } = {
 /// Input handling
 
 function handleInput() {
-  document.addEventListener("keypress", (e) => {
+  document.addEventListener("keydown", (e) => {
     let command = Commands[e.key];
     if (command) {
       Game.commandQueue.push(e.key);
