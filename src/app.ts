@@ -778,30 +778,28 @@ const Commands: { [key: string]: Function } = {
         if (weakMonster(c.monster)) {
           let slots = Game.player.soulSlots.generic;
           let claimed = false;
-          while (!claimed) {
-            for (let i = 0; i < slots.length; i++) {
-              if (slots[i].type === "none") {
-                slots[i] = soul;
-                msg.essence("You claim the soul of %the.", D(c));
-                msg.tutorial(
-                  "Claiming souls increases your maximum essence and may grant new powers."
-                );
-                claimed = true;
-                break;
-              } else if (slots[i].name === soul.name) {
-                msg.essence("You already have claimed this soul.");
-                claimed = true;
-                break;
-              }
-            }
-            if (!claimed) {
-              msg.essence("You must release a soul before claiming another.");
-              msg.tutorial("Use 'r' to release a soul.");
+          for (let i = 0; i < slots.length; i++) {
+            if (slots[i].type === "none") {
+              slots[i] = soul;
+              msg.essence("You claim the soul of %the.", D(c));
+              msg.tutorial(
+                "Claiming souls increases your maximum essence and may grant new powers."
+              );
+              claimed = true;
+              break;
+            } else if (slots[i].name === soul.name) {
+              msg.essence("You already have claimed this soul.");
+              claimed = true;
+              break;
             }
           }
-          // todo: discard existing souls to progress
-          gainEssence(soul.essence);
-          killMonsterAt(c, "drain");
+          if (!claimed) {
+            msg.essence("You must release a soul before claiming another.");
+            msg.tutorial("Use 'r' to release a soul.");
+          } else {
+            gainEssence(soul.essence);
+            killMonsterAt(c, "drain");
+          }
         } else {
           msg.angry("The wretched creature resists!");
         }
@@ -1089,7 +1087,6 @@ function damageMonsterAt(
 ) {
   let m = c.monster;
   if (m) {
-    let arch = MonsterArchetypes[m.archetype];
     let wasDying = weakMonster(m);
     m.hp -= doRoll(damage.damage);
     if (m.hp > 1) {
@@ -1245,7 +1242,7 @@ function mkSay(type: string): Function {
   };
 }
 
-const msg: { [type: string]: Function } = {
+const msg = {
   log: mkSay("normal"),
   think: mkSay("thought"),
   angry: mkSay("angry"),
@@ -1257,6 +1254,9 @@ const msg: { [type: string]: Function } = {
       msg.help(fmt, ...args);
       Game.player.seenTutorials[fmt] = true;
     }
+  },
+  break: () => {
+    Game.logCallback("", "break");
   },
 };
 
@@ -1440,10 +1440,20 @@ function runGame() {
   handleInput();
 
   newMap();
+  recomputeFOV();
+  msg.think("The world thought me forever sleeping, yet I arise.");
+  msg.think(
+    "But my essence is still weak. I can barely sustain these remnants of what I once was."
+  );
+  msg.think("I hunger... I must recover my essence and rebuild my power.");
+  msg.break();
+  msg.angry("And then they will all pay!");
+  msg.break();
   msg.help(
     "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!"
   );
-  recomputeFOV();
+  msg.break();
+  msg.help("Reach danger level 50 to win. (TODO)");
   Game.uiCallback();
 }
 
