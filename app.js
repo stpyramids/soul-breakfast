@@ -1674,7 +1674,7 @@ void main() {
   var fov_default = { DiscreteShadowcasting, PreciseShadowcasting, RecursiveShadowcasting };
 
   // node_modules/rot-js/lib/map/map.js
-  var Map = class {
+  var Map2 = class {
     constructor(width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
       this._width = width;
       this._height = height;
@@ -1692,7 +1692,7 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/arena.js
-  var Arena = class extends Map {
+  var Arena = class extends Map2 {
     create(callback) {
       let w = this._width - 1;
       let h = this._height - 1;
@@ -1707,7 +1707,7 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/dungeon.js
-  var Dungeon = class extends Map {
+  var Dungeon = class extends Map2 {
     constructor(width, height) {
       super(width, height);
       this._rooms = [];
@@ -2295,7 +2295,7 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/cellular.js
-  var Cellular = class extends Map {
+  var Cellular = class extends Map2 {
     constructor(width, height, options = {}) {
       super(width, height);
       this._options = {
@@ -2776,7 +2776,7 @@ void main() {
     R[i] = i;
     L[i] = i;
   }
-  var EllerMaze = class extends Map {
+  var EllerMaze = class extends Map2 {
     create(callback) {
       let map = this._fillMap(1);
       let w = Math.ceil((this._width - 2) / 2);
@@ -2825,7 +2825,7 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/dividedmaze.js
-  var DividedMaze = class extends Map {
+  var DividedMaze = class extends Map2 {
     constructor() {
       super(...arguments);
       this._stack = [];
@@ -2929,7 +2929,7 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/iceymaze.js
-  var IceyMaze = class extends Map {
+  var IceyMaze = class extends Map2 {
     constructor(width, height, regularity = 0) {
       super(width, height);
       this._regularity = regularity;
@@ -3031,7 +3031,7 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/rogue.js
-  var Rogue = class extends Map {
+  var Rogue = class extends Map2 {
     constructor(width, height, options) {
       super(width, height);
       this.map = [];
@@ -3396,14 +3396,22 @@ void main() {
     worm: "w",
     rodent: "r",
     spider: "s",
-    ghost: "g"
+    ghost: "g",
+    eyeball: "e"
   };
   var Colors = {
     void: "#000",
     target: "#139",
     dying: "#411",
     weak: "#211",
-    critter: "#111"
+    critterBG: "#111",
+    vermin: "#aaa",
+    danger0: "#7c5335",
+    danger5: "#9d893b",
+    danger10: "#439d3b",
+    danger15: "#3b9d8e",
+    danger20: "#9d3b43",
+    danger25: "#923b9d"
   };
   var Tiles = {
     rock: { glyph: "rock", blocks: true },
@@ -3411,6 +3419,15 @@ void main() {
     floor: { glyph: "floor", blocks: false },
     exit: { glyph: "exit", blocks: false }
   };
+  function moveMonster(from, to) {
+    if (!to.blocked) {
+      Game.map.monsters[from.x + from.y * Game.map.w] = null;
+      Game.map.monsters[to.x + to.y * Game.map.w] = from.monster;
+      return true;
+    } else {
+      return false;
+    }
+  }
   var AI = {
     passive: (c) => {
       return 1;
@@ -3419,10 +3436,7 @@ void main() {
       let nx = c.x + rng_default.getUniformInt(-1, 1);
       let ny = c.y + rng_default.getUniformInt(-1, 1);
       let spot = contentsAt(nx, ny);
-      if (!spot.blocked) {
-        Game.map.monsters[c.x + c.y * Game.map.w] = null;
-        Game.map.monsters[nx + ny * Game.map.w] = c.monster;
-      }
+      moveMonster(c, spot);
       return 1;
     },
     nipper: (c) => {
@@ -3434,6 +3448,35 @@ void main() {
         return 1;
       } else {
         return AI.wander(c);
+      }
+    },
+    stationary: (c) => {
+      let m = c.monster;
+      let arch = MonsterArchetypes[m.archetype];
+      let attack = Attacks[arch.attack];
+      if (attack.canReachFrom(c)) {
+        attack.attackFrom(c);
+      }
+      return 1;
+    },
+    charge: (c) => {
+      let m = c.monster;
+      let arch = MonsterArchetypes[m.archetype];
+      let attack = Attacks[arch.attack];
+      if (attack.canReachFrom(c)) {
+        attack.attackFrom(c);
+        return 1;
+      } else {
+        if (playerCanSee(c.x, c.y)) {
+          let dx = Game.player.x - c.x;
+          dx = dx == 0 ? 0 : dx / Math.abs(dx);
+          let dy = Game.player.y - c.y;
+          dy = dy == 0 ? 0 : dy / Math.abs(dy);
+          moveMonster(c, contentsAt(c.x + dx, c.y + dy));
+          return 1;
+        } else {
+          return AI.wander(c);
+        }
       }
     }
   };
@@ -3482,7 +3525,19 @@ void main() {
       }
     },
     bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
-    touch: meleeAttack("reaches into", asRoll(1, 4, 2))
+    touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
+    gaze: {
+      canReachFrom: (c) => playerCanSee(c.x, c.y),
+      attackFrom: (c) => {
+        msg.combat("%The gazes at you!", D(c));
+        let m = c.monster;
+        let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+        if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
+          let dmg = doRoll(asRoll(danger - 1, 2, 0));
+          doDamage(dmg);
+        }
+      }
+    }
   };
   var SoulFactories = {
     vermin: (a) => ({
@@ -3502,14 +3557,27 @@ void main() {
       type: "wand",
       essence: a.danger,
       name: a.name,
-      effects: [{ type: "damage", damage: asRoll(a.danger - 1, 4, 1) }]
+      effects: [
+        { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) }
+      ]
     }),
     slow: (a) => ({
       glyph: a.glyph,
       type: "wand",
       essence: a.danger,
       name: a.name,
-      effects: [{ type: "status", status: "slow", power: a.danger }]
+      effects: [
+        { type: "status", status: "slow", power: Math.floor(a.danger / 2) }
+      ]
+    }),
+    sight: (a) => ({
+      glyph: a.glyph,
+      type: "ring",
+      essence: a.danger,
+      name: a.name,
+      effects: [
+        { type: "stat-bonus", stat: "sight", power: Math.floor(a.danger / 2) }
+      ]
     })
   };
   function describeWandEffect(e) {
@@ -3524,6 +3592,12 @@ void main() {
         return e.targeting;
     }
   }
+  function describeRingEffect(e) {
+    switch (e.type) {
+      case "stat-bonus":
+        return "+" + e.power + " " + e.stat;
+    }
+  }
   function describeSoulEffect(s) {
     switch (s.type) {
       case "none":
@@ -3536,37 +3610,18 @@ void main() {
         return "+" + s.essence + " max essence";
       case "wand":
         return describeWandEffect(s.effects[0]);
+      case "ring":
+        return describeRingEffect(s.effects[0]);
       default:
         return "???";
     }
   }
-  var MonsterArchetypes = {
-    maggot: {
-      name: "maggot heap",
-      danger: 1,
-      glyph: "worm",
-      appearing: asRoll(1, 4, 3),
-      hp: verminHP,
-      speed: 0.2,
-      ai: "passive",
-      attack: "none",
-      soul: "vermin"
-    },
-    gnatSwarm: {
-      name: "gnat swarm",
-      danger: 1,
-      glyph: "insect",
-      appearing: asRoll(2, 4, 0),
-      hp: verminHP,
-      speed: 0.25,
-      ai: "wander",
-      attack: "none",
-      soul: "vermin"
-    },
-    giantRat: {
-      name: "dusty rat",
+  var ratProto = {
+    base: {
+      name: "rat",
       danger: 2,
       glyph: "rodent",
+      color: "danger0",
       appearing: asRoll(1, 2, 1),
       hp: asRoll(1, 4, 1),
       speed: 0.5,
@@ -3574,29 +3629,126 @@ void main() {
       attack: "bite",
       soul: "bulk"
     },
-    cryptSpider: {
+    variants: []
+  };
+  function expandProto(proto) {
+    let archs = { [proto.base.name]: proto.base };
+    for (let variant of proto.variants) {
+      archs[variant.name] = __spreadValues(__spreadValues({}, proto.base), variant);
+    }
+    return archs;
+  }
+  var MonsterArchetypes = __spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, expandProto({
+    base: {
+      name: "maggot heap",
+      danger: 1,
+      glyph: "worm",
+      color: "vermin",
+      appearing: asRoll(1, 4, 3),
+      hp: verminHP,
+      speed: 0.2,
+      ai: "passive",
+      attack: "none",
+      soul: "vermin"
+    },
+    variants: [
+      {
+        name: "gnat swarm",
+        glyph: "insect",
+        appearing: asRoll(2, 4, 0),
+        ai: "wander"
+      }
+    ]
+  })), expandProto({
+    base: {
+      name: "dusty rat",
+      danger: 2,
+      glyph: "rodent",
+      color: "danger0",
+      appearing: asRoll(1, 2, 1),
+      hp: asRoll(1, 4, 1),
+      speed: 0.5,
+      ai: "nipper",
+      attack: "bite",
+      soul: "bulk"
+    },
+    variants: [
+      {
+        name: "hungry rat",
+        danger: 6,
+        color: "danger5",
+        hp: asRoll(2, 4, 1),
+        ai: "charge"
+      }
+    ]
+  })), expandProto({
+    base: {
       name: "crypt spider",
       danger: 3,
       glyph: "spider",
+      color: "danger0",
       appearing: asRoll(1, 2, 0),
-      hp: asRoll(1, 2, 1),
+      hp: asRoll(1, 2, 2),
       speed: 1,
       ai: "nipper",
       attack: "bite",
       soul: "extraDamage"
     },
-    littleGhost: {
+    variants: [
+      {
+        name: "wolf spider",
+        danger: 7,
+        color: "danger5",
+        hp: asRoll(1, 4, 2),
+        ai: "charge"
+      }
+    ]
+  })), expandProto({
+    base: {
       name: "little ghost",
       danger: 4,
       glyph: "ghost",
+      color: "danger0",
       appearing: asRoll(1, 1, 0),
       hp: asRoll(2, 4, 0),
       speed: 0.25,
-      ai: "nipper",
+      ai: "charge",
       attack: "touch",
       soul: "slow"
-    }
-  };
+    },
+    variants: [
+      {
+        name: "weeping ghost",
+        danger: 9,
+        color: "danger5",
+        hp: asRoll(2, 8, 2),
+        speed: 0.5
+      }
+    ]
+  })), expandProto({
+    base: {
+      name: "bleary eye",
+      danger: 5,
+      glyph: "eyeball",
+      color: "danger5",
+      appearing: asRoll(1, 2, 1),
+      hp: asRoll(2, 4, 0),
+      speed: 0.25,
+      ai: "stationary",
+      attack: "gaze",
+      soul: "sight"
+    },
+    variants: [
+      {
+        name: "peering eye",
+        danger: 10,
+        color: "danger10",
+        appearing: asRoll(1, 1, 0),
+        hp: asRoll(3, 4, 0),
+        speed: 0.5
+      }
+    ]
+  }));
   function spawnMonster(archetype) {
     return {
       archetype,
@@ -3660,13 +3812,36 @@ void main() {
       cost
     };
   }
+  function getPlayerVision() {
+    let base = 5;
+    for (let soul of Game.player.soulSlots.generic) {
+      if (soul.type === "ring") {
+        for (let effect of soul.effects) {
+          if (effect.type == "stat-bonus" && effect.stat == "sight") {
+            base += effect.power;
+          }
+        }
+      }
+    }
+    return base;
+  }
+  var seenXYs = [];
+  function recomputeFOV() {
+    seenXYs.length = 0;
+    Game.map.fov.compute(Game.player.x, Game.player.y, getPlayerVision(), (fx, fy, r, v) => {
+      seenXYs.push([fx, fy]);
+    });
+  }
+  function playerCanSee(x, y) {
+    return !!seenXYs.find(([sx, sy]) => x == sx && y == sy);
+  }
   function findTargets() {
     let targets = [];
     switch (getWand().targeting.targeting) {
       case "seeker":
         let closestDistance = 9999;
         let seekerTarget = null;
-        Game.map.fov.compute(Game.player.x, Game.player.y, Game.viewport.width / 2, (x, y, r, v) => {
+        for (let [x, y] of seenXYs) {
           let c = contentsAt(x, y);
           if (c.monster) {
             let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x), 2) + Math.pow(Math.abs(Game.player.y - y), 2));
@@ -3675,14 +3850,42 @@ void main() {
               seekerTarget = c;
             }
           }
-        });
+        }
         if (seekerTarget) {
           targets.push(seekerTarget);
         }
     }
     return targets;
   }
+  function tryReleaseSoul() {
+    let slots = Game.player.soulSlots.generic;
+    let opts = /* @__PURE__ */ new Map();
+    for (let i in slots) {
+      if (slots[i].type !== "none") {
+        opts.set((parseInt(i) + 1).toString(), slots[i].name);
+      }
+    }
+    if (opts.size === 0) {
+      msg.think("I have no souls to release.");
+    } else {
+      offerChoice("Release which soul?", opts, {
+        onChoose: (key) => {
+          if (opts.has(key)) {
+            let slot = parseInt(key) - 1;
+            msg.essence("The %s soul dissipates into aether.", slots[slot].name);
+            slots[slot] = EmptySoul;
+          } else {
+            msg.log("Release cancelled.");
+          }
+        }
+      });
+    }
+    return false;
+  }
   var Commands = {
+    ".": () => {
+      Game.player.energy -= 1;
+    },
     h: movePlayer(-1, 0),
     H: movePlayerUntil("H", -1, 0),
     l: movePlayer(1, 0),
@@ -3718,15 +3921,24 @@ void main() {
           Game.player.energy -= 1;
           if (weakMonster(c.monster)) {
             let slots = Game.player.soulSlots.generic;
-            for (let i = 0; i < slots.length; i++) {
-              if (slots[i].type === "none") {
-                slots[i] = soul;
-                msg.essence("You claim the soul of %the.", D(c));
-                msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
-                break;
-              } else if (slots[i].name === soul.name) {
-                msg.essence("You already have claimed this soul.");
-                break;
+            let claimed = false;
+            while (!claimed) {
+              for (let i = 0; i < slots.length; i++) {
+                if (slots[i].type === "none") {
+                  slots[i] = soul;
+                  msg.essence("You claim the soul of %the.", D(c));
+                  msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
+                  claimed = true;
+                  break;
+                } else if (slots[i].name === soul.name) {
+                  msg.essence("You already have claimed this soul.");
+                  claimed = true;
+                  break;
+                }
+              }
+              if (!claimed) {
+                msg.essence("You must release a soul before claiming another.");
+                msg.tutorial("Use 'r' to release a soul.");
               }
             }
             gainEssence(soul.essence);
@@ -3755,6 +3967,9 @@ void main() {
       } else {
         msg.think("There is no passage here.");
       }
+    },
+    r: () => {
+      tryReleaseSoul();
     },
     " ": () => {
       let wand = getWand();
@@ -3998,6 +4213,7 @@ void main() {
     if (Game.player.energy < 1) {
       Game.player.energy += Game.player.speed;
     }
+    recomputeFOV();
     Game.uiCallback();
     if (Game.commandQueue.length > 0) {
       tick();
@@ -4017,8 +4233,8 @@ void main() {
       p.y = ny;
       p.energy -= 1;
       if (c.monster) {
-        msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
         if (!Game.player.knownMonsters[c.monster.archetype]) {
+          msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
           Game.player.knownMonsters[c.monster.archetype] = true;
           let archetype = MonsterArchetypes[c.monster.archetype];
           if (archetype.danger === 1) {
@@ -4056,6 +4272,10 @@ void main() {
   }
   function movePlayerUntil(key, dx, dy) {
     return () => {
+      if (findTargets().length > 0) {
+        msg.think("I detect prey!");
+        return;
+      }
       if (doMovePlayer(dx, dy)) {
         Game.commandQueue.push(key);
       }
@@ -4085,10 +4305,16 @@ void main() {
   };
   function handleInput() {
     document.addEventListener("keydown", (e) => {
-      let command = Commands[e.key];
-      if (command) {
-        Game.commandQueue.push(e.key);
-        setTimeout(tick, 0);
+      if (activeChoice) {
+        activeChoice.callbacks.onChoose(e.key);
+        activeChoice = null;
+        Game.uiCallback();
+      } else {
+        let command = Commands[e.key];
+        if (command) {
+          Game.commandQueue.push(e.key);
+          setTimeout(tick, 0);
+        }
       }
     });
   }
@@ -4116,7 +4342,7 @@ void main() {
       }
     }
     let targets = findTargets();
-    Game.map.fov.compute(Game.player.x, Game.player.y, Game.viewport.width / 2, (x, y, r, v) => {
+    for (let [x, y] of seenXYs) {
       if (x < sx) {
         return;
       }
@@ -4130,13 +4356,21 @@ void main() {
       if (c.player) {
         display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", bg);
       } else if (c.monster) {
-        display.draw(x - sx, y - sy, Glyphs[MonsterArchetypes[c.monster.archetype].glyph], "#eee", c.monster.dying ? Colors.dying : isTarget ? Colors.target : weakMonster(c.monster) ? Colors.weak : Colors.critter);
+        let arch = MonsterArchetypes[c.monster.archetype];
+        display.draw(x - sx, y - sy, Glyphs[arch.glyph], Colors[arch.color], c.monster.dying ? Colors.dying : isTarget ? Colors.target : weakMonster(c.monster) ? Colors.weak : Colors.critterBG);
       } else if (c.tile) {
         display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", bg);
       } else {
         display.draw(x - sx, y - sy, Glyphs.rock, "#000", bg);
       }
-    });
+    }
+  }
+  var activeChoice = null;
+  function offerChoice(prompt, opts, callbacks) {
+    activeChoice = { prompt, opts, callbacks };
+    let choices = "";
+    opts.forEach((v, k) => choices += " (" + k + ") " + v);
+    msg.log(prompt + choices);
   }
   function runGame() {
     Util.format.map.the = "the";
@@ -4201,6 +4435,7 @@ void main() {
     handleInput();
     newMap();
     msg.help("Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!");
+    recomputeFOV();
     Game.uiCallback();
   }
   window.onload = runGame;
