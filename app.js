@@ -18,9 +18,9 @@
     return a;
   };
   var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-  var __export = (target2, all) => {
+  var __export = (target, all) => {
     for (var name in all)
-      __defProp(target2, name, { get: all[name], enumerable: true });
+      __defProp(target, name, { get: all[name], enumerable: true });
   };
 
   // node_modules/rot-js/lib/rng.js
@@ -3398,6 +3398,13 @@ void main() {
     spider: "s",
     ghost: "g"
   };
+  var Colors = {
+    void: "#000",
+    target: "#139",
+    dying: "#411",
+    weak: "#211",
+    critter: "#111"
+  };
   var Tiles = {
     rock: { glyph: "rock", blocks: true },
     wall: { glyph: "wall", blocks: true },
@@ -3619,6 +3626,62 @@ void main() {
   function loseEssence(amt) {
     Game.player.essence -= amt;
   }
+  function getWand() {
+    let targeting = WandEffects.seeker;
+    let projectile = WandEffects.bolt;
+    let damage = WandEffects.weakMana;
+    let status = null;
+    let cost = 2;
+    for (let soul of Game.player.soulSlots.generic) {
+      if (soul.type === "wand") {
+        for (let effect of soul.effects) {
+          switch (effect.type) {
+            case "targeting":
+              targeting = effect;
+              break;
+            case "projectile":
+              projectile = effect;
+              break;
+            case "damage":
+              damage = effect;
+              break;
+            case "status":
+              status = effect;
+              break;
+          }
+        }
+      }
+    }
+    return {
+      targeting,
+      projectile,
+      damage,
+      status,
+      cost
+    };
+  }
+  function findTargets() {
+    let targets = [];
+    switch (getWand().targeting.targeting) {
+      case "seeker":
+        let closestDistance = 9999;
+        let seekerTarget = null;
+        Game.map.fov.compute(Game.player.x, Game.player.y, Game.viewport.width / 2, (x, y, r, v) => {
+          let c = contentsAt(x, y);
+          if (c.monster) {
+            let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x), 2) + Math.pow(Math.abs(Game.player.y - y), 2));
+            if (dist < closestDistance) {
+              closestDistance = dist;
+              seekerTarget = c;
+            }
+          }
+        });
+        if (seekerTarget) {
+          targets.push(seekerTarget);
+        }
+    }
+    return targets;
+  }
   var Commands = {
     h: movePlayer(-1, 0),
     l: movePlayer(1, 0),
@@ -3690,58 +3753,22 @@ void main() {
       }
     },
     " ": () => {
-      let targeting = WandEffects.seeker;
-      let projectile = WandEffects.bolt;
-      let damage = WandEffects.weakMana;
-      let status = null;
-      let cost = 2;
-      for (let soul of Game.player.soulSlots.generic) {
-        if (soul.type === "wand") {
-          for (let effect of soul.effects) {
-            switch (effect.type) {
-              case "targeting":
-                targeting = effect;
-                break;
-              case "projectile":
-                projectile = effect;
-                break;
-              case "damage":
-                damage = effect;
-                break;
-              case "status":
-                status = effect;
-                break;
-            }
-          }
-        }
-      }
-      if (cost > Game.player.essence) {
+      let wand = getWand();
+      if (wand.cost > Game.player.essence) {
         msg.angry("I must have more essence!");
         return;
       }
-      let target2 = null;
-      switch (targeting.targeting) {
-        case "seeker":
-          let closestDistance = 9999;
-          Game.map.fov.compute(Game.player.x, Game.player.y, Game.viewport.width / 2, (x, y, r, v) => {
-            let c = contentsAt(x, y);
-            if (c.monster) {
-              let dist = Math.abs(Game.player.x - x) * Math.abs(Game.player.y - y);
-              if (dist < closestDistance) {
-                closestDistance = dist;
-                target2 = c;
-              }
-            }
-          });
-      }
-      if (target2) {
-        msg.combat("The bolt hits %the!", D(target2));
-        damageMonsterAt(target2, damage, status);
+      let targets = findTargets();
+      if (targets.length) {
+        for (let target of targets) {
+          msg.combat("The bolt hits %the!", D(target));
+          damageMonsterAt(target, wand.damage, wand.status);
+        }
       } else {
         msg.think("I see none here to destroy.");
         return;
       }
-      Game.player.essence -= cost;
+      Game.player.essence -= wand.cost;
       Game.player.energy -= 1;
     }
   };
@@ -3809,7 +3836,7 @@ void main() {
     Game.player.y = py;
     const eligibleMonsters = keysOf(MonsterArchetypes).filter((id) => MonsterArchetypes[id].danger <= Game.map.danger);
     let exits = rng_default.shuffle([
-      Game.map.danger - 1 || 1,
+      Game.map.danger / 2,
       Game.map.danger,
       Game.map.danger,
       Game.map.danger + 1,
@@ -3887,7 +3914,7 @@ void main() {
       exitDanger
     };
   }
-  function target() {
+  function getVictim() {
     return contentsAt(Game.player.x, Game.player.y);
   }
   function D(c) {
@@ -4064,6 +4091,7 @@ void main() {
         }
       }
     }
+    let targets = findTargets();
     Game.map.fov.compute(Game.player.x, Game.player.y, Game.viewport.width / 2, (x, y, r, v) => {
       if (x < sx) {
         return;
@@ -4072,15 +4100,17 @@ void main() {
         return;
       }
       let c = contentsAt(x, y);
+      let isTarget = !!targets.find((c2) => c2.x === x && c2.y === y);
+      let bg = isTarget ? Colors.target : Colors.void;
       Game.map.memory[x + y * Game.map.w] = c.memory;
       if (c.player) {
-        display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", "#111");
+        display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", bg);
       } else if (c.monster) {
-        display.draw(x - sx, y - sy, Glyphs[MonsterArchetypes[c.monster.archetype].glyph], "#eee", c.monster.dying ? "#411" : weakMonster(c.monster) ? "#211" : "#111");
+        display.draw(x - sx, y - sy, Glyphs[MonsterArchetypes[c.monster.archetype].glyph], "#eee", c.monster.dying ? Colors.dying : isTarget ? Colors.target : weakMonster(c.monster) ? Colors.weak : Colors.critter);
       } else if (c.tile) {
-        display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", "#111");
+        display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", bg);
       } else {
-        display.draw(x - sx, y - sy, Glyphs.rock, "#000", "#000");
+        display.draw(x - sx, y - sy, Glyphs.rock, "#000", bg);
       }
     });
   }
@@ -4113,7 +4143,7 @@ void main() {
       document.getElementById("mapDanger").innerText = Game.map.danger.toString();
       let soulEl = document.getElementById("souls");
       let souls = [];
-      let m = target().monster;
+      let m = getVictim().monster;
       if (m) {
         souls.push(getSoul(m));
       } else {
