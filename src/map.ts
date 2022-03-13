@@ -72,10 +72,10 @@ export function canSeeThreat(): boolean {
 
 export function findTargets(): Array<XYContents> {
   let targets: Array<XYContents> = [];
-  switch (getWand().targeting.targeting) {
-    case "seeker":
-      let closestDistance = 9999;
-      let seekerTarget: XYContents | null = null;
+  let targetEffect = getWand().targeting;
+  switch (targetEffect.targeting) {
+    case "seek-closest":
+      let monstersByDistance: Array<[number, XYContents]> = [];
       for (let [x, y] of seenXYs) {
         if (x == Game.player.x && y == Game.player.y) {
           continue;
@@ -86,14 +86,16 @@ export function findTargets(): Array<XYContents> {
             Math.pow(Math.abs(Game.player.x - x), 2) +
               Math.pow(Math.abs(Game.player.y - y), 2)
           );
-          if (dist < closestDistance) {
-            closestDistance = dist;
-            seekerTarget = c;
-          }
+          monstersByDistance.push([dist, c]);
         }
       }
-      if (seekerTarget) {
-        targets.push(seekerTarget);
+      monstersByDistance.sort(([a, _v], [b, _v2]) => a - b);
+      for (
+        let i = 0;
+        i < targetEffect.count && i < monstersByDistance.length;
+        i++
+      ) {
+        targets.push(monstersByDistance[i][1]);
       }
   }
   return targets;

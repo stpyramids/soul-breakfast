@@ -3,8 +3,12 @@ import { Roll, asRoll } from "./utils";
 
 export type Status = "slow";
 
-export type Targeting = "seeker";
-export type TargetingEffect = { type: "targeting"; targeting: Targeting };
+export type Targeting = "seek-closest" | "seek-strong";
+export type TargetingEffect = {
+  type: "targeting";
+  targeting: Targeting;
+  count: number;
+};
 export const isTargeting = (t: WandEffect): t is TargetingEffect =>
   t.type === "targeting";
 
@@ -28,7 +32,7 @@ export type WandEffect =
   | StatusEffect;
 
 export const WandEffects: { [id: string]: WandEffect } = {
-  seeker: { type: "targeting", targeting: "seeker" },
+  seek_closest: { type: "targeting", targeting: "seek-closest", count: 1 },
   bolt: { type: "projectile", projectile: "bolt" },
   weakMana: { type: "damage", damage: asRoll(1, 4, 0) },
 };

@@ -54,7 +54,7 @@ export function getWand(): {
   status: StatusEffect | null;
   cost: number;
 } {
-  let targeting = WandEffects.seeker as TargetingEffect;
+  let targeting = WandEffects.seek_closest as TargetingEffect;
   let projectile = WandEffects.bolt as ProjectileEffect;
   let damage = WandEffects.weakMana as DamageEffect;
   let status = null as StatusEffect | null;
