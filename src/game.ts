@@ -4,7 +4,7 @@ import { Tile, contentsAt, RememberedCell } from "./map";
 import { Monster } from "./monster";
 import type { Soul } from "./souls";
 import { EmptySoul } from "./souls";
-import { Commands } from "./command";
+import { Commands } from "./commands";
 
 export const Game = {
   turns: 0,
@@ -40,6 +40,7 @@ export const Game = {
       return !(!c.tile || c.tile.blocks);
     }),
   },
+  monsterSouls: new Map<string, Soul>(),
   commandQueue: [] as Array<keyof typeof Commands>,
   uiCallback: () => {},
   logCallback: (msg: string, msgType: string | undefined) => {},

@@ -548,8 +548,15 @@ export function weakMonster(m: Monster): boolean {
 }
 
 export function getSoul(m: Monster): Soul {
-  let arch = MonsterArchetypes[m.archetype];
-  return SoulFactories[arch.soul](arch);
+  let soul = Game.monsterSouls.get(m.archetype);
+  if (soul) {
+    return soul;
+  } else {
+    let arch = MonsterArchetypes[m.archetype];
+    soul = SoulFactories[arch.soul](arch);
+    Game.monsterSouls.set(m.archetype, soul);
+    return soul;
+  }
 }
 
 export const DeathMessages: { [type: string]: string } = {

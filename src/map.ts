@@ -70,6 +70,9 @@ export function findTargets(): Array<XYContents> {
       let closestDistance = 9999;
       let seekerTarget: XYContents | null = null;
       for (let [x, y] of seenXYs) {
+        if (x == Game.player.x && y == Game.player.y) {
+          continue;
+        }
         let c = contentsAt(x, y);
         if (c.monster) {
           let dist = Math.sqrt(

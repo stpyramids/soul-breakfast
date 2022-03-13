@@ -334,12 +334,19 @@ export const Commands: { [key: string]: Function } = {
     if (document.location.hash == "#wizard") {
       offerChoice(
         "WIZARD MODE",
-        new Map([["w", "Teleport to danger level 50"]]),
+        new Map([
+          ["w", "Teleport to danger level 50"],
+          ["d", "Dump game state to console"],
+        ]),
         {
           onChoose: (key) => {
             switch (key) {
               case "w":
                 newMap({ danger: 50 });
+                break;
+              case "d":
+                console.log(Game);
+                break;
             }
           },
         }
