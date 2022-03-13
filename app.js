@@ -3392,7 +3392,7 @@ void main() {
 
   // src/souls.ts
   var WandEffects = {
-    seeker: { type: "targeting", targeting: "seeker" },
+    seek_closest: { type: "targeting", targeting: "seek-closest", count: 1 },
     bolt: { type: "projectile", projectile: "bolt" },
     weakMana: { type: "damage", damage: asRoll(1, 4, 0) }
   };
@@ -3992,10 +3992,10 @@ void main() {
   }
   function findTargets() {
     let targets = [];
-    switch (getWand().targeting.targeting) {
-      case "seeker":
-        let closestDistance = 9999;
-        let seekerTarget = null;
+    let targetEffect = getWand().targeting;
+    switch (targetEffect.targeting) {
+      case "seek-closest":
+        let monstersByDistance = [];
         for (let [x, y] of seenXYs) {
           if (x == Game.player.x && y == Game.player.y) {
             continue;
@@ -4003,14 +4003,12 @@ void main() {
           let c = contentsAt(x, y);
           if (c.monster) {
             let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x), 2) + Math.pow(Math.abs(Game.player.y - y), 2));
-            if (dist < closestDistance) {
-              closestDistance = dist;
-              seekerTarget = c;
-            }
+            monstersByDistance.push([dist, c]);
           }
         }
-        if (seekerTarget) {
-          targets.push(seekerTarget);
+        monstersByDistance.sort(([a, _v], [b, _v2]) => a - b);
+        for (let i = 0; i < targetEffect.count && i < monstersByDistance.length; i++) {
+          targets.push(monstersByDistance[i][1]);
         }
     }
     return targets;
@@ -4154,7 +4152,7 @@ void main() {
     Game.player.essence -= amt;
   }
   function getWand() {
-    let targeting = WandEffects.seeker;
+    let targeting = WandEffects.seek_closest;
     let projectile = WandEffects.bolt;
     let damage = WandEffects.weakMana;
     let status = null;
