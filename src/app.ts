@@ -214,7 +214,7 @@ const AI: { [id: string]: (c: XYContents) => number } = {
     if (attack.canReachFrom(c)) {
       attack.attackFrom(c);
       return 1.0;
-    } else if (ROT.RNG.getUniformInt(0, arch.danger / 2) == 0) {
+    } else if (ROT.RNG.getUniformInt(0, 3) == 0) {
       // Skip a turn to be nice to the player
       return 1.0;
     } else {
@@ -641,7 +641,7 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       color: "danger10",
       appearing: asRoll(1, 2, 0),
       hp: asRoll(2, 6, 4),
-      speed: 0.7,
+      speed: 0.5,
       ai: "charge",
       attack: "slice",
       soul: "bulk",
@@ -654,6 +654,7 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         appearing: asRoll(1, 2, 0),
         hp: asRoll(2, 4, 2),
         attack: "abjure",
+        speed: 0.2,
         soul: "extraDamage",
       },
       {
@@ -669,6 +670,7 @@ const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         danger: 25,
         color: "danger25",
         hp: asRoll(3, 6, 4),
+        speed: 0.2,
         attack: "abjure",
       },
     ],
@@ -1615,7 +1617,7 @@ function runGame() {
     "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!"
   );
   msg.break();
-  msg.help("Reach danger level 50 to win. (TODO)");
+  msg.help("Reach danger level 50 to win.");
   Game.uiCallback();
 }
 
