@@ -30,10 +30,7 @@ import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
 
 export function maxEssence(): number {
-  return Game.player.soulSlots.generic.reduce(
-    (c, s) => c + s.essence,
-    Game.player.maxEssence
-  );
+  return Game.player.maxEssence + getStatBonus("max-essence");
 }
 
 function gainEssence(amt: number) {
