@@ -13,7 +13,14 @@ import {
   newMap,
 } from "./map";
 import { msg } from "./msg";
-import { EmptySoul, Soul, WandEffect, RingEffect } from "./souls";
+import {
+  EmptySoul,
+  Soul,
+  WandEffect,
+  RingEffect,
+  GenericEffect,
+  isEmptySoul,
+} from "./souls";
 import { keysOf, asRoll, doRoll, Roll, describeRoll } from "./utils";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
@@ -102,7 +109,7 @@ export function doDamage(dmg: number) {
     for (let slotGroup of keysOf(Game.player.soulSlots)) {
       let slots = Game.player.soulSlots[slotGroup];
       for (let i = 0; i < slots.length; i++) {
-        if (slots[i].type !== "none") {
+        if (!isEmptySoul(slots[i])) {
           soulChecked = true;
           let roll = asRoll(1, slots[i].essence, 1);
           if (doRoll(roll) < extra) {
@@ -204,40 +211,40 @@ export type SoulFactory = (arch: MonsterArchetype) => Soul;
 export const SoulFactories: { [id: string]: SoulFactory } = {
   vermin: (a) => ({
     glyph: a.glyph,
-    type: "none",
     essence: Math.floor((a.danger + 1) / 2),
     name: a.name,
+    effects: [],
   }),
   bulk: (a) => ({
     glyph: a.glyph,
-    type: "generic",
     essence: a.danger,
     name: a.name,
+    effects: [{ type: "stat-bonus", stat: "max-essence", power: a.danger }],
   }),
   extraDamage: (a) => ({
     glyph: a.glyph,
-    type: "wand",
     essence: a.danger,
     name: a.name,
     effects: [
+      { type: "stat-bonus", stat: "max-essence", power: a.danger },
       { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) },
     ],
   }),
   slow: (a) => ({
     glyph: a.glyph,
-    type: "wand",
     essence: a.danger,
     name: a.name,
     effects: [
+      { type: "stat-bonus", stat: "max-essence", power: a.danger },
       { type: "status", status: "slow", power: Math.floor(a.danger / 2) },
     ],
   }),
   sight: (a) => ({
     glyph: a.glyph,
-    type: "ring",
     essence: a.danger,
     name: a.name,
     effects: [
+      { type: "stat-bonus", stat: "max-essence", power: a.danger },
       { type: "stat-bonus", stat: "sight", power: Math.floor(a.danger / 2) },
     ],
   }),
@@ -247,6 +254,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     essence: a.danger,
     name: a.name,
     effects: [
+      { type: "stat-bonus", stat: "max-essence", power: a.danger },
       {
         type: "stat-bonus",
         stat: "speed",
@@ -260,6 +268,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     essence: a.danger,
     name: a.name,
     effects: [
+      { type: "stat-bonus", stat: "max-essence", power: a.danger },
       {
         type: "soak-damage",
         power: Math.floor(a.danger / 5),
@@ -267,51 +276,6 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     ],
   }),
 };
-
-function describeWandEffect(e: WandEffect): string {
-  switch (e.type) {
-    case "damage":
-      return "damage " + describeRoll(e.damage);
-    case "status":
-      return e.status + " " + e.power;
-    case "projectile":
-      return e.projectile;
-    case "targeting":
-      return e.targeting;
-  }
-}
-
-function describeRingEffect(e: RingEffect): string {
-  switch (e.type) {
-    case "stat-bonus":
-      if (e.stat === "speed") {
-        return "+" + Math.floor(e.power * 100) + "% " + e.stat;
-      } else {
-        return "+" + e.power + " " + e.stat;
-      }
-    case "soak-damage":
-      return "soak " + e.power + "damage";
-  }
-}
-
-export function describeSoulEffect(s: Soul): string {
-  switch (s.type) {
-    case "none":
-      if (s.essence === 0) {
-        return " ";
-      } else {
-        return "+" + s.essence + " essence";
-      }
-    case "generic":
-      return "+" + s.essence + " max essence";
-    case "wand":
-      return describeWandEffect(s.effects[0]); // todo
-    case "ring":
-      return describeRingEffect(s.effects[0]); // todo
-    default:
-      return "???";
-  }
-}
 
 type MonsterProto = {
   base: MonsterArchetype;

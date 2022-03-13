@@ -1,5 +1,5 @@
 import { GlyphID } from "./glyphs";
-import { Roll, asRoll } from "./utils";
+import { Roll, asRoll, describeRoll } from "./utils";
 
 export type Status = "slow";
 
@@ -37,61 +37,75 @@ export const WandEffects: { [id: string]: WandEffect } = {
   weakMana: { type: "damage", damage: asRoll(1, 4, 0) },
 };
 
-export type StatBonus = "sight" | "speed";
+export type StatBonus = "sight" | "speed" | "max-essence";
 export type StatBonusEffect = {
   type: "stat-bonus";
   stat: StatBonus;
   power: number;
 };
-
 export type SoakDamageEffect = {
   type: "soak-damage";
   power: number;
 };
 
-export type RingEffect = StatBonusEffect | SoakDamageEffect;
+export type RingEffect = SoakDamageEffect;
+export type GenericEffect = StatBonusEffect;
+export type SoulEffect = RingEffect | WandEffect | GenericEffect;
 
 // TODO:
 // Eventually I want separate slots for wand, ring, and crown souls.
 // This is probably too complicated to implement in the short term.
 // Instead, there's just a fixed set of generic slots.
-export type WandSoul = {
-  type: "wand";
+// TODO: instead of separate soul types, a single soul can have effects
+// of various types
+export type Soul = {
   glyph: GlyphID;
-  essence: number;
   name: string;
-  effects: Array<WandEffect>;
-};
-export type RingSoul = {
-  type: "ring";
-  glyph: GlyphID;
   essence: number;
-  name: string;
-  effects: Array<RingEffect>;
+  effects: Array<SoulEffect>;
 };
-export type CrownSoul = {
-  type: "crown";
-  glyph: GlyphID;
-  essence: number;
-  name: string;
-};
-export type GenericSoul = {
-  type: "generic";
-  glyph: GlyphID;
-  essence: number;
-  name: string;
-};
-export type NoSoul = {
-  type: "none";
-  glyph: GlyphID;
-  essence: number;
-  name: string;
-};
-export type Soul = WandSoul | RingSoul | CrownSoul | GenericSoul | NoSoul;
 
-export const EmptySoul: NoSoul = {
-  type: "none",
+export const EmptySoul: Soul = {
   glyph: "none",
-  essence: 0,
   name: "-",
+  essence: 0,
+  effects: [],
 };
+export function isEmptySoul(soul: Soul): boolean {
+  return soul.essence === 0;
+}
+
+function describeSoulEffect(e: SoulEffect) {
+  switch (e.type) {
+    case "soak-damage":
+      return "soak " + e.power + "damage";
+    case "stat-bonus":
+      if (e.stat === "speed") {
+        return "+" + Math.floor(e.power * 100) + "% " + e.stat;
+      } else {
+        return "+" + e.power + " " + e.stat;
+      }
+    case "damage":
+      return "damage " + describeRoll(e.damage);
+    case "status":
+      return e.status + " " + e.power;
+    case "projectile":
+      return e.projectile;
+    case "targeting":
+      return e.targeting;
+  }
+}
+
+export function describeSoulEffects(s: Soul): string {
+  if (isEmptySoul(s)) {
+    return " ";
+  } else if (s.effects.length === 0) {
+    return "+" + s.essence + " essence";
+  } else {
+    let d = [];
+    for (let effect of s.effects) {
+      d.push(describeSoulEffect(effect));
+    }
+    return d.join(", ");
+  }
+}

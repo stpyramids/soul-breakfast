@@ -24,6 +24,7 @@ import {
   WandEffects,
   StatBonus,
   EmptySoul,
+  isEmptySoul,
 } from "./souls";
 import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
@@ -61,23 +62,20 @@ export function getWand(): {
   let cost = 2;
 
   for (let soul of Game.player.soulSlots.generic) {
-    if (soul.type === "wand") {
-      // TODO this logic is bad
-      for (let effect of soul.effects) {
-        switch (effect.type) {
-          case "targeting":
-            targeting = effect;
-            break;
-          case "projectile":
-            projectile = effect;
-            break;
-          case "damage":
-            damage = effect;
-            break;
-          case "status":
-            status = effect;
-            break;
-        }
+    for (let effect of soul.effects) {
+      switch (effect.type) {
+        case "targeting":
+          targeting = effect;
+          break;
+        case "projectile":
+          projectile = effect;
+          break;
+        case "damage":
+          damage = effect;
+          break;
+        case "status":
+          status = effect;
+          break;
       }
     }
   }
@@ -94,11 +92,9 @@ export function getWand(): {
 function getStatBonus(stat: StatBonus): number {
   let base = 0;
   for (let soul of Game.player.soulSlots.generic) {
-    if (soul.type === "ring") {
-      for (let effect of soul.effects) {
-        if (effect.type == "stat-bonus" && effect.stat == stat) {
-          base += effect.power;
-        }
+    for (let effect of soul.effects) {
+      if (effect.type == "stat-bonus" && effect.stat == stat) {
+        base += effect.power;
       }
     }
   }
@@ -116,11 +112,9 @@ export function getPlayerSpeed(): number {
 export function applySoak(dmg: number): number {
   let soak = 0;
   for (let soul of Game.player.soulSlots.generic) {
-    if (soul.type === "ring") {
-      for (let effect of soul.effects) {
-        if (effect.type == "soak-damage") {
-          soak += effect.power;
-        }
+    for (let effect of soul.effects) {
+      if (effect.type == "soak-damage") {
+        soak += effect.power;
       }
     }
   }
@@ -131,7 +125,7 @@ function tryReleaseSoul(): boolean {
   let slots = Game.player.soulSlots.generic;
   let opts: Map<string, string> = new Map();
   for (let i in slots) {
-    if (slots[i].type !== "none") {
+    if (!isEmptySoul(slots[i])) {
       opts.set((parseInt(i) + 1).toString(), slots[i].name);
     }
   }
@@ -261,7 +255,7 @@ export const Commands: { [key: string]: Function } = {
     let c = contentsAt(Game.player.x, Game.player.y);
     if (c.monster) {
       let soul = getSoul(c.monster);
-      if (soul.type === "none") {
+      if (soul.effects.length === 0) {
         msg.angry("This vermin has no soul worthy of claiming.");
         msg.tutorial("Vermin can be (d)evoured for essence.");
       } else {
@@ -270,7 +264,7 @@ export const Commands: { [key: string]: Function } = {
           let slots = Game.player.soulSlots.generic;
           let claimed = false;
           for (let i = 0; i < slots.length; i++) {
-            if (slots[i].type === "none") {
+            if (isEmptySoul(slots[i])) {
               slots[i] = soul;
               msg.essence("You claim the soul of %the.", D(c));
               msg.tutorial(

@@ -12,15 +12,9 @@ import {
   getVictim,
   newMap,
 } from "./map";
-import {
-  MonsterArchetypes,
-  AI,
-  weakMonster,
-  describeSoulEffect,
-  getSoul,
-} from "./monster";
+import { MonsterArchetypes, AI, weakMonster, getSoul } from "./monster";
 import { msg } from "./msg";
-import { Soul, EmptySoul } from "./souls";
+import { Soul, EmptySoul, describeSoulEffects } from "./souls";
 
 export const UI = {
   commandQueue: [] as Array<keyof typeof Commands>,
@@ -239,7 +233,7 @@ export function runGame() {
       soulEl.appendChild(el);
       el = document.createElement("div");
       el.className = "soul-effect";
-      el.innerHTML = describeSoulEffect(soul);
+      el.innerHTML = describeSoulEffects(soul);
       soulEl.appendChild(el);
     }
   };
