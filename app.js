@@ -3355,50 +3355,7 @@ void main() {
   // node_modules/rot-js/lib/index.js
   var Util = util_exports;
 
-  // src/app.ts
-  function keysOf(obj) {
-    return Object.keys(obj);
-  }
-  var verminHP = { n: 1, sides: 1, mod: 0 };
-  function asRoll(n, sides, mod2) {
-    return { n, sides, mod: mod2 };
-  }
-  function doRoll(roll) {
-    let n = 0;
-    for (let i = 0; i < roll.n; i += 1) {
-      n += rng_default.getUniformInt(1, roll.sides);
-    }
-    let v = n + roll.mod;
-    return v;
-  }
-  function describeRoll(roll) {
-    return roll.n + "d" + roll.sides + "+" + roll.mod;
-  }
-  var WandEffects = {
-    seeker: { type: "targeting", targeting: "seeker" },
-    bolt: { type: "projectile", projectile: "bolt" },
-    weakMana: { type: "damage", damage: asRoll(1, 4, 0) }
-  };
-  var EmptySoul = {
-    type: "none",
-    glyph: "none",
-    essence: 0,
-    name: "-"
-  };
-  var Glyphs = {
-    none: " ",
-    player: "@",
-    exit: ">",
-    wall: "#",
-    floor: ".",
-    rock: ".",
-    insect: "i",
-    worm: "w",
-    rodent: "r",
-    spider: "s",
-    ghost: "g",
-    eyeball: "e"
-  };
+  // src/colors.ts
   var Colors = {
     void: "#000",
     target: "#139",
@@ -3413,21 +3370,102 @@ void main() {
     danger20: "#9d3b43",
     danger25: "#923b9d"
   };
-  var Tiles = {
-    rock: { glyph: "rock", blocks: true },
-    wall: { glyph: "wall", blocks: true },
-    floor: { glyph: "floor", blocks: false },
-    exit: { glyph: "exit", blocks: false }
-  };
-  function moveMonster(from, to) {
-    if (!to.blocked) {
-      Game.map.monsters[from.x + from.y * Game.map.w] = null;
-      Game.map.monsters[to.x + to.y * Game.map.w] = from.monster;
-      return true;
-    } else {
-      return false;
-    }
+
+  // src/utils.ts
+  function keysOf(obj) {
+    return Object.keys(obj);
   }
+  function asRoll(n, sides, mod2) {
+    return { n, sides, mod: mod2 };
+  }
+  function doRoll(roll) {
+    let n = 0;
+    for (let i = 0; i < roll.n; i += 1) {
+      n += rng_default.getUniformInt(1, roll.sides);
+    }
+    let v = n + roll.mod;
+    return v;
+  }
+  function describeRoll(roll) {
+    return roll.n + "d" + roll.sides + "+" + roll.mod;
+  }
+
+  // src/souls.ts
+  var WandEffects = {
+    seeker: { type: "targeting", targeting: "seeker" },
+    bolt: { type: "projectile", projectile: "bolt" },
+    weakMana: { type: "damage", damage: asRoll(1, 4, 0) }
+  };
+  var EmptySoul = {
+    type: "none",
+    glyph: "none",
+    essence: 0,
+    name: "-"
+  };
+
+  // src/game.ts
+  var Game = {
+    turns: 0,
+    viewport: {
+      width: 30,
+      height: 30
+    },
+    player: {
+      x: 10,
+      y: 10,
+      essence: 0,
+      maxEssence: 10,
+      speed: 1,
+      energy: 1,
+      glyph: "player",
+      knownMonsters: {},
+      seenTutorials: {},
+      soulSlots: {
+        generic: [EmptySoul, EmptySoul, EmptySoul]
+      }
+    },
+    map: {
+      danger: 2,
+      w: 80,
+      h: 80,
+      tiles: [],
+      monsters: [],
+      memory: [],
+      exits: []
+    },
+    monsterSouls: {}
+  };
+  var freshGame = JSON.parse(JSON.stringify(Game));
+  function resetGame() {
+    Game = freshGame;
+  }
+
+  // src/msg.ts
+  function mkSay(type) {
+    return (fmt, ...args) => {
+      UI.logCallback(Util.format(fmt, ...args), type);
+    };
+  }
+  var msg = {
+    log: mkSay("normal"),
+    think: mkSay("thought"),
+    angry: mkSay("angry"),
+    essence: mkSay("essence"),
+    combat: mkSay("combat"),
+    help: mkSay("help"),
+    tutorial: (fmt, ...args) => {
+      if (!Game.player.seenTutorials[fmt]) {
+        msg.help(fmt, ...args);
+        Game.player.seenTutorials[fmt] = true;
+      }
+    },
+    break: () => {
+      UI.logCallback("", "break");
+    }
+  };
+
+  // src/monster.ts
+  var verminHP = { n: 1, sides: 1, mod: 0 };
   var AI = {
     passive: (c) => {
       return 1;
@@ -3483,6 +3521,11 @@ void main() {
     }
   };
   function doDamage(dmg) {
+    dmg -= applySoak(dmg);
+    if (dmg <= 0) {
+      msg.combat("You absorb the attack!");
+      return;
+    }
     msg.combat("Your essence wavers!");
     Game.player.essence -= dmg;
     if (Game.player.essence < 0) {
@@ -3559,7 +3602,7 @@ void main() {
     touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
     slice: meleeAttack("slices at", asRoll(1, 8, 4)),
     gaze: rangedAttack("gazes at", asRoll(1, 4, 0)),
-    abjure: rangedAttack("abjures", asRoll(1, 8, 4))
+    abjure: rangedAttack("abjures", asRoll(1, 4, 2))
   };
   var SoulFactories = {
     vermin: (a) => ({
@@ -3613,6 +3656,18 @@ void main() {
           power: 0.05 * Math.floor(a.danger / 2)
         }
       ]
+    }),
+    soak: (a) => ({
+      glyph: a.glyph,
+      type: "ring",
+      essence: a.danger,
+      name: a.name,
+      effects: [
+        {
+          type: "soak-damage",
+          power: Math.floor(a.danger / 5)
+        }
+      ]
     })
   };
   function describeWandEffect(e) {
@@ -3635,6 +3690,8 @@ void main() {
         } else {
           return "+" + e.power + " " + e.stat;
         }
+      case "soak-damage":
+        return "soak " + e.power + "damage";
     }
   }
   function describeSoulEffect(s) {
@@ -3836,7 +3893,7 @@ void main() {
       speed: 0.5,
       ai: "charge",
       attack: "slice",
-      soul: "bulk"
+      soul: "soak"
     },
     variants: [
       {
@@ -3846,7 +3903,7 @@ void main() {
         appearing: asRoll(1, 2, 0),
         hp: asRoll(2, 4, 2),
         attack: "abjure",
-        speed: 0.2,
+        speed: 0.5,
         soul: "extraDamage"
       },
       {
@@ -3855,14 +3912,14 @@ void main() {
         color: "danger20",
         appearing: asRoll(2, 1, 0),
         hp: asRoll(3, 6, 4),
-        soul: "speed"
+        soul: "soak"
       },
       {
         name: "priest",
         danger: 25,
         color: "danger25",
         hp: asRoll(3, 6, 4),
-        speed: 0.2,
+        speed: 0.5,
         attack: "abjure"
       }
     ]
@@ -3879,85 +3936,59 @@ void main() {
     return m.hp <= 1 || m.dying;
   }
   function getSoul(m) {
-    let arch = MonsterArchetypes[m.archetype];
-    return SoulFactories[arch.soul](arch);
+    let soul = Game.monsterSouls[m.archetype];
+    if (soul) {
+      return soul;
+    } else {
+      let arch = MonsterArchetypes[m.archetype];
+      soul = SoulFactories[arch.soul](arch);
+      Game.monsterSouls[m.archetype] = soul;
+      return soul;
+    }
   }
   var DeathMessages = {
     drain: "%The crumbles into dust.",
     force: "%The is blown to pieces."
   };
-  function gainEssence(amt) {
-    Game.player.essence += amt;
-    if (Game.player.essence > maxEssence()) {
-      Game.player.essence = maxEssence();
-      msg.essence("Some essence escapes you and dissipates.");
+
+  // src/map.ts
+  var Tiles = {
+    rock: { glyph: "rock", blocks: true },
+    wall: { glyph: "wall", blocks: true },
+    floor: { glyph: "floor", blocks: false },
+    exit: { glyph: "exit", blocks: false }
+  };
+  function moveMonster(from, to) {
+    if (!to.blocked) {
+      Game.map.monsters[from.x + from.y * Game.map.w] = null;
+      Game.map.monsters[to.x + to.y * Game.map.w] = from.monster;
+      return true;
+    } else {
+      return false;
     }
-  }
-  function loseEssence(amt) {
-    Game.player.essence -= amt;
-  }
-  function getWand() {
-    let targeting = WandEffects.seeker;
-    let projectile = WandEffects.bolt;
-    let damage = WandEffects.weakMana;
-    let status = null;
-    let cost = 2;
-    for (let soul of Game.player.soulSlots.generic) {
-      if (soul.type === "wand") {
-        for (let effect of soul.effects) {
-          switch (effect.type) {
-            case "targeting":
-              targeting = effect;
-              break;
-            case "projectile":
-              projectile = effect;
-              break;
-            case "damage":
-              damage = effect;
-              break;
-            case "status":
-              status = effect;
-              break;
-          }
-        }
-      }
-    }
-    return {
-      targeting,
-      projectile,
-      damage,
-      status,
-      cost
-    };
-  }
-  function getStatBonus(stat) {
-    let base = 0;
-    for (let soul of Game.player.soulSlots.generic) {
-      if (soul.type === "ring") {
-        for (let effect of soul.effects) {
-          if (effect.type == "stat-bonus" && effect.stat == stat) {
-            base += effect.power;
-          }
-        }
-      }
-    }
-    return base;
-  }
-  function getPlayerVision() {
-    return 5 + getStatBonus("sight");
-  }
-  function getPlayerSpeed() {
-    return 1 + getStatBonus("speed");
   }
   var seenXYs = [];
+  var FOV2 = new fov_default.PreciseShadowcasting((x, y) => {
+    let c = contentsAt(x, y);
+    return !(!c.tile || c.tile.blocks);
+  });
   function recomputeFOV() {
     seenXYs.length = 0;
-    Game.map.fov.compute(Game.player.x, Game.player.y, getPlayerVision(), (fx, fy, r, v) => {
+    FOV2.compute(Game.player.x, Game.player.y, getPlayerVision(), (fx, fy, r, v) => {
       seenXYs.push([fx, fy]);
     });
   }
   function playerCanSee(x, y) {
     return !!seenXYs.find(([sx, sy]) => x == sx && y == sy);
+  }
+  function canSeeThreat() {
+    for (let [x, y] of seenXYs) {
+      let c = contentsAt(x, y);
+      if (c.monster && !weakMonster(c.monster)) {
+        return true;
+      }
+    }
+    return false;
   }
   function findTargets() {
     let targets = [];
@@ -3966,6 +3997,9 @@ void main() {
         let closestDistance = 9999;
         let seekerTarget = null;
         for (let [x, y] of seenXYs) {
+          if (x == Game.player.x && y == Game.player.y) {
+            continue;
+          }
           let c = contentsAt(x, y);
           if (c.monster) {
             let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x), 2) + Math.pow(Math.abs(Game.player.y - y), 2));
@@ -3981,190 +4015,6 @@ void main() {
     }
     return targets;
   }
-  function tryReleaseSoul() {
-    let slots = Game.player.soulSlots.generic;
-    let opts = /* @__PURE__ */ new Map();
-    for (let i in slots) {
-      if (slots[i].type !== "none") {
-        opts.set((parseInt(i) + 1).toString(), slots[i].name);
-      }
-    }
-    if (opts.size === 0) {
-      msg.think("I have no souls to release.");
-    } else {
-      offerChoice("Release which soul?", opts, {
-        onChoose: (key) => {
-          if (opts.has(key)) {
-            let slot = parseInt(key) - 1;
-            msg.essence("The %s soul dissipates into aether.", slots[slot].name);
-            slots[slot] = EmptySoul;
-          } else {
-            msg.log("Release cancelled.");
-          }
-        }
-      });
-    }
-    return false;
-  }
-  var Commands = {
-    ".": () => {
-      Game.player.energy -= 1;
-    },
-    h: movePlayer(-1, 0),
-    H: movePlayerUntil("H", -1, 0),
-    l: movePlayer(1, 0),
-    L: movePlayerUntil("L", 1, 0),
-    j: movePlayer(0, 1),
-    J: movePlayerUntil("J", 0, 1),
-    k: movePlayer(0, -1),
-    K: movePlayerUntil("K", 0, -1),
-    d: () => {
-      let c = contentsAt(Game.player.x, Game.player.y);
-      if (c.monster) {
-        Game.player.energy -= 0.5;
-        if (weakMonster(c.monster)) {
-          let soul = getSoul(c.monster);
-          msg.essence("You devour the essence of %the.", D(c));
-          gainEssence(soul.essence);
-          killMonsterAt(c, "drain");
-        } else {
-          msg.angry("The wretched creature resists!");
-        }
-      } else {
-        msg.think("Nothing is here to drain of essence.");
-      }
-    },
-    c: () => {
-      let c = contentsAt(Game.player.x, Game.player.y);
-      if (c.monster) {
-        let soul = getSoul(c.monster);
-        if (soul.type === "none") {
-          msg.angry("This vermin has no soul worthy of claiming.");
-          msg.tutorial("Vermin can be (d)evoured for essence.");
-        } else {
-          Game.player.energy -= 1;
-          if (weakMonster(c.monster)) {
-            let slots = Game.player.soulSlots.generic;
-            let claimed = false;
-            for (let i = 0; i < slots.length; i++) {
-              if (slots[i].type === "none") {
-                slots[i] = soul;
-                msg.essence("You claim the soul of %the.", D(c));
-                msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
-                claimed = true;
-                break;
-              } else if (slots[i].name === soul.name) {
-                msg.essence("You already have claimed this soul.");
-                claimed = true;
-                break;
-              }
-            }
-            if (!claimed) {
-              msg.essence("You must release a soul before claiming another.");
-              msg.tutorial("Use 'r' to release a soul.");
-            } else {
-              gainEssence(soul.essence);
-              killMonsterAt(c, "drain");
-            }
-          } else {
-            msg.angry("The wretched creature resists!");
-          }
-        }
-      } else {
-        msg.think("No soul is here to claim.");
-      }
-    },
-    ">": () => {
-      let c = contentsAt(Game.player.x, Game.player.y);
-      if (c.exitDanger) {
-        let exitCost = c.exitDanger;
-        if (Game.player.essence >= exitCost) {
-          Game.player.energy -= 1;
-          msg.essence("You pour essence into the passage and force it open.");
-          loseEssence(exitCost);
-          newMap({ danger: c.exitDanger });
-        } else {
-          msg.angry("I need more essence to pass!");
-          msg.tutorial("Passages to more dangerous areas require spending more essence to enter.");
-        }
-      } else {
-        msg.think("There is no passage here.");
-      }
-    },
-    r: () => {
-      tryReleaseSoul();
-    },
-    " ": () => {
-      let wand = getWand();
-      if (wand.cost > Game.player.essence) {
-        msg.angry("I must have more essence!");
-        return;
-      }
-      let targets = findTargets();
-      if (targets.length) {
-        for (let target of targets) {
-          msg.combat("The bolt hits %the!", D(target));
-          damageMonsterAt(target, wand.damage, wand.status);
-        }
-      } else {
-        msg.think("I see none here to destroy.");
-        return;
-      }
-      Game.player.essence -= wand.cost;
-      Game.player.energy -= 1;
-    },
-    W: () => {
-      if (document.location.hash == "#wizard") {
-        offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([["w", "Teleport to danger level 50"]]), {
-          onChoose: (key) => {
-            switch (key) {
-              case "w":
-                newMap({ danger: 50 });
-            }
-          }
-        });
-      }
-    }
-  };
-  var Game = {
-    turns: 0,
-    viewport: {
-      width: 30,
-      height: 30
-    },
-    player: {
-      x: 10,
-      y: 10,
-      essence: 0,
-      maxEssence: 10,
-      speed: 1,
-      energy: 1,
-      glyph: "player",
-      knownMonsters: {},
-      seenTutorials: {},
-      soulSlots: {
-        generic: [EmptySoul, EmptySoul, EmptySoul]
-      }
-    },
-    map: {
-      danger: 2,
-      w: 80,
-      h: 80,
-      tiles: [],
-      monsters: [],
-      memory: [],
-      exits: [],
-      fov: new fov_default.PreciseShadowcasting((x, y) => {
-        let c = contentsAt(x, y);
-        return !(!c.tile || c.tile.blocks);
-      })
-    },
-    commandQueue: [],
-    uiCallback: () => {
-    },
-    logCallback: (msg2, msgType) => {
-    }
-  };
   function newMap(opts) {
     Game.map.tiles = [];
     Game.map.monsters = [];
@@ -4189,7 +4039,12 @@ void main() {
     const [px, py] = startRoom.getCenter();
     Game.player.x = px;
     Game.player.y = py;
-    const eligibleMonsters = keysOf(MonsterArchetypes).filter((id) => MonsterArchetypes[id].danger <= Game.map.danger);
+    const eligibleMonsters = {};
+    for (let key in MonsterArchetypes) {
+      if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
+        eligibleMonsters[key] = Game.map.danger - Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+      }
+    }
     let exits = rng_default.shuffle([
       Math.floor(Game.map.danger / 2),
       Game.map.danger,
@@ -4218,7 +4073,7 @@ void main() {
         Game.map.exits.push([ex, ey, exit]);
         Game.map.tiles[ex + ey * Game.map.w] = Tiles.exit;
       }
-      const mArch = rng_default.getItem(eligibleMonsters);
+      const mArch = rng_default.getWeightedValue(eligibleMonsters);
       let appearing = doRoll(MonsterArchetypes[mArch].appearing);
       while (appearing > 0) {
         let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
@@ -4283,88 +4138,113 @@ void main() {
   function getVictim() {
     return contentsAt(Game.player.x, Game.player.y);
   }
-  function D(c) {
-    if (c.monster) {
-      let monster = c.monster;
-      return {
-        toString: () => MonsterArchetypes[monster.archetype].name,
-        the: () => "the " + MonsterArchetypes[monster.archetype].name
-      };
+
+  // src/commands.ts
+  function maxEssence() {
+    return Game.player.soulSlots.generic.reduce((c, s) => c + s.essence, Game.player.maxEssence);
+  }
+  function gainEssence(amt) {
+    Game.player.essence += amt;
+    if (Game.player.essence > maxEssence()) {
+      Game.player.essence = maxEssence();
+      msg.essence("Some essence escapes you and dissipates.");
+    }
+  }
+  function loseEssence(amt) {
+    Game.player.essence -= amt;
+  }
+  function getWand() {
+    let targeting = WandEffects.seeker;
+    let projectile = WandEffects.bolt;
+    let damage = WandEffects.weakMana;
+    let status = null;
+    let cost = 2;
+    for (let soul of Game.player.soulSlots.generic) {
+      if (soul.type === "wand") {
+        for (let effect of soul.effects) {
+          switch (effect.type) {
+            case "targeting":
+              targeting = effect;
+              break;
+            case "projectile":
+              projectile = effect;
+              break;
+            case "damage":
+              damage = effect;
+              break;
+            case "status":
+              status = effect;
+              break;
+          }
+        }
+      }
+    }
+    return {
+      targeting,
+      projectile,
+      damage,
+      status,
+      cost
+    };
+  }
+  function getStatBonus(stat) {
+    let base = 0;
+    for (let soul of Game.player.soulSlots.generic) {
+      if (soul.type === "ring") {
+        for (let effect of soul.effects) {
+          if (effect.type == "stat-bonus" && effect.stat == stat) {
+            base += effect.power;
+          }
+        }
+      }
+    }
+    return base;
+  }
+  function getPlayerVision() {
+    return 5 + getStatBonus("sight");
+  }
+  function getPlayerSpeed() {
+    return 1 + getStatBonus("speed");
+  }
+  function applySoak(dmg) {
+    let soak = 0;
+    for (let soul of Game.player.soulSlots.generic) {
+      if (soul.type === "ring") {
+        for (let effect of soul.effects) {
+          if (effect.type == "soak-damage") {
+            soak += effect.power;
+          }
+        }
+      }
+    }
+    return dmg - soak;
+  }
+  function tryReleaseSoul() {
+    let slots = Game.player.soulSlots.generic;
+    let opts = /* @__PURE__ */ new Map();
+    for (let i in slots) {
+      if (slots[i].type !== "none") {
+        opts.set((parseInt(i) + 1).toString(), slots[i].name);
+      }
+    }
+    if (opts.size === 0) {
+      msg.think("I have no souls to release.");
     } else {
-      return {
-        toString: () => "something",
-        the: () => "something"
-      };
-    }
-  }
-  function killMonsterAt(c, death) {
-    if (c.monster) {
-      c.monster.hp = 0;
-      msg.combat(DeathMessages[death], D(c));
-      Game.map.monsters[c.x + c.y * Game.map.w] = null;
-    }
-  }
-  function damageMonsterAt(c, damage, status) {
-    let m = c.monster;
-    if (m) {
-      let wasDying = weakMonster(m);
-      m.hp -= doRoll(damage.damage);
-      if (m.hp > 1) {
-        msg.combat("You see %the %s!", D(c), m.hp == 1 ? "stagger" : "shudder");
-        if (status) {
-          switch (status.status) {
-            case "slow":
-              msg.combat("%The slows down!", D(c));
-              m.energy = -status.power;
+      offerChoice("Release which soul?", opts, {
+        onChoose: (key) => {
+          if (opts.has(key)) {
+            let slot = parseInt(key) - 1;
+            msg.essence("The %s soul dissipates into aether.", slots[slot].name);
+            let gain = slots[slot].essence;
+            slots[slot] = EmptySoul;
+            gainEssence(gain);
+          } else {
+            msg.log("Release cancelled.");
           }
         }
-      } else {
-        if (wasDying) {
-          killMonsterAt(c, "force");
-        } else {
-          msg.combat("You see %the collapse!", D(c));
-          msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
-          m.dying = true;
-        }
-      }
+      });
     }
-  }
-  function tick() {
-    if (Game.commandQueue.length == 0) {
-      return;
-    }
-    while (Game.player.energy >= 1) {
-      let nextCommand = Game.commandQueue.shift();
-      if (nextCommand) {
-        Commands[nextCommand]();
-        Game.turns += 1;
-        Game.uiCallback();
-      } else {
-        break;
-      }
-    }
-    for (let i = 0; i < Game.map.w * Game.map.h; i++) {
-      if (Game.map.monsters[i]) {
-        const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
-        const m = c.monster;
-        if (!m.dying) {
-          const arch = MonsterArchetypes[m.archetype];
-          const ai = AI[arch.ai];
-          m.energy += arch.speed;
-          while (m.energy >= 1) {
-            m.energy -= ai(c);
-          }
-        }
-      }
-    }
-    if (Game.player.energy < 1) {
-      Game.player.energy += getPlayerSpeed();
-    }
-    recomputeFOV();
-    Game.uiCallback();
-    if (Game.commandQueue.length > 0) {
-      tick();
-    }
+    return false;
   }
   function doMovePlayer(dx, dy) {
     const p = Game.player;
@@ -4419,50 +4299,271 @@ void main() {
   }
   function movePlayerUntil(key, dx, dy) {
     return () => {
-      if (findTargets().length > 0) {
-        msg.think("I detect prey!");
+      if (canSeeThreat()) {
+        msg.think("Danger threatens!");
         return;
       }
       if (doMovePlayer(dx, dy)) {
-        Game.commandQueue.push(key);
+        UI.commandQueue.push(key);
       }
     };
   }
-  function maxEssence() {
-    return Game.player.soulSlots.generic.reduce((c, s) => c + s.essence, Game.player.maxEssence);
-  }
-  function mkSay(type) {
-    return (fmt, ...args) => {
-      Game.logCallback(Util.format(fmt, ...args), type);
-    };
-  }
-  var msg = {
-    log: mkSay("normal"),
-    think: mkSay("thought"),
-    angry: mkSay("angry"),
-    essence: mkSay("essence"),
-    combat: mkSay("combat"),
-    help: mkSay("help"),
-    tutorial: (fmt, ...args) => {
-      if (!Game.player.seenTutorials[fmt]) {
-        msg.help(fmt, ...args);
-        Game.player.seenTutorials[fmt] = true;
+  var Commands = {
+    ".": () => {
+      Game.player.energy -= 1;
+    },
+    h: movePlayer(-1, 0),
+    H: movePlayerUntil("H", -1, 0),
+    l: movePlayer(1, 0),
+    L: movePlayerUntil("L", 1, 0),
+    j: movePlayer(0, 1),
+    J: movePlayerUntil("J", 0, 1),
+    k: movePlayer(0, -1),
+    K: movePlayerUntil("K", 0, -1),
+    d: () => {
+      let c = contentsAt(Game.player.x, Game.player.y);
+      if (c.monster) {
+        Game.player.energy -= 0.5;
+        if (weakMonster(c.monster)) {
+          let soul = getSoul(c.monster);
+          msg.essence("You devour the essence of %the.", D(c));
+          gainEssence(soul.essence);
+          killMonsterAt(c, "drain");
+        } else {
+          msg.angry("The wretched creature resists!");
+        }
+      } else {
+        msg.think("Nothing is here to drain of essence.");
       }
     },
-    break: () => {
-      Game.logCallback("", "break");
+    c: () => {
+      let c = contentsAt(Game.player.x, Game.player.y);
+      if (c.monster) {
+        let soul = getSoul(c.monster);
+        if (soul.type === "none") {
+          msg.angry("This vermin has no soul worthy of claiming.");
+          msg.tutorial("Vermin can be (d)evoured for essence.");
+        } else {
+          Game.player.energy -= 1;
+          if (weakMonster(c.monster)) {
+            let slots = Game.player.soulSlots.generic;
+            let claimed = false;
+            for (let i = 0; i < slots.length; i++) {
+              if (slots[i].type === "none") {
+                slots[i] = soul;
+                msg.essence("You claim the soul of %the.", D(c));
+                msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
+                claimed = true;
+                break;
+              } else if (slots[i].name === soul.name) {
+                msg.essence("You already have claimed this soul.");
+                claimed = true;
+                break;
+              }
+            }
+            if (!claimed) {
+              msg.essence("You must release a soul before claiming another.");
+              msg.tutorial("Use 'r' to release a soul.");
+            } else {
+              killMonsterAt(c, "drain");
+            }
+          } else {
+            msg.angry("The wretched creature resists!");
+          }
+        }
+      } else {
+        msg.think("No soul is here to claim.");
+      }
+    },
+    ">": () => {
+      let c = contentsAt(Game.player.x, Game.player.y);
+      if (c.exitDanger) {
+        let exitCost = c.exitDanger;
+        if (Game.player.essence >= exitCost) {
+          Game.player.energy -= 1;
+          msg.essence("You pour essence into the passage and force it open.");
+          loseEssence(exitCost);
+          newMap({ danger: c.exitDanger });
+        } else {
+          msg.angry("I need more essence to pass!");
+          msg.tutorial("Passages to more dangerous areas require spending more essence to enter.");
+        }
+      } else {
+        msg.think("There is no passage here.");
+      }
+    },
+    r: () => {
+      tryReleaseSoul();
+    },
+    " ": () => {
+      let wand = getWand();
+      if (wand.cost > Game.player.essence) {
+        msg.angry("I must have more essence!");
+        return;
+      }
+      let targets = findTargets();
+      if (targets.length) {
+        for (let target of targets) {
+          msg.combat("The bolt hits %the!", D(target));
+          damageMonsterAt(target, wand.damage, wand.status);
+        }
+      } else {
+        msg.think("I see none here to destroy.");
+        return;
+      }
+      Game.player.essence -= wand.cost;
+      Game.player.energy -= 1;
+    },
+    Q: () => {
+      offerChoice("Die and restart game?", /* @__PURE__ */ new Map([
+        ["y", "Yes"],
+        ["n", "No"]
+      ]), {
+        onChoose: (key) => {
+          if (key == "y") {
+            startNewGame();
+          }
+        }
+      });
+    },
+    W: () => {
+      if (document.location.hash == "#wizard") {
+        offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
+          ["w", "Teleport to danger level 50"],
+          ["d", "Dump game state to console"]
+        ]), {
+          onChoose: (key) => {
+            switch (key) {
+              case "w":
+                newMap({ danger: 50 });
+                break;
+              case "d":
+                console.log(Game);
+                break;
+            }
+          }
+        });
+      }
     }
   };
+  function D(c) {
+    if (c.monster) {
+      let monster = c.monster;
+      return {
+        toString: () => MonsterArchetypes[monster.archetype].name,
+        the: () => "the " + MonsterArchetypes[monster.archetype].name
+      };
+    } else {
+      return {
+        toString: () => "something",
+        the: () => "something"
+      };
+    }
+  }
+  function killMonsterAt(c, death) {
+    if (c.monster) {
+      c.monster.hp = 0;
+      msg.combat(DeathMessages[death], D(c));
+      Game.map.monsters[c.x + c.y * Game.map.w] = null;
+    }
+  }
+  function damageMonsterAt(c, damage, status) {
+    let m = c.monster;
+    if (m) {
+      let wasDying = weakMonster(m);
+      m.hp -= doRoll(damage.damage);
+      if (m.hp > 1) {
+        msg.combat("You see %the %s!", D(c), m.hp == 1 ? "stagger" : "shudder");
+        if (status) {
+          switch (status.status) {
+            case "slow":
+              msg.combat("%The slows down!", D(c));
+              m.energy = -status.power;
+          }
+        }
+      } else {
+        if (wasDying) {
+          killMonsterAt(c, "force");
+        } else {
+          msg.combat("You see %the collapse!", D(c));
+          msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
+          m.dying = true;
+        }
+      }
+    }
+  }
+
+  // src/glyphs.ts
+  var Glyphs = {
+    none: " ",
+    player: "@",
+    exit: ">",
+    wall: "#",
+    floor: ".",
+    rock: ".",
+    insect: "i",
+    worm: "w",
+    rodent: "r",
+    spider: "s",
+    ghost: "g",
+    eyeball: "e"
+  };
+
+  // src/ui.ts
+  var UI = {
+    commandQueue: [],
+    uiCallback: () => {
+    },
+    logCallback: (msg2, msgType) => {
+    }
+  };
+  function tick() {
+    if (UI.commandQueue.length == 0) {
+      return;
+    }
+    while (Game.player.energy >= 1) {
+      let nextCommand = UI.commandQueue.shift();
+      if (nextCommand) {
+        Commands[nextCommand]();
+        Game.turns += 1;
+        UI.uiCallback();
+      } else {
+        break;
+      }
+    }
+    for (let i = 0; i < Game.map.w * Game.map.h; i++) {
+      if (Game.map.monsters[i]) {
+        const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
+        const m = c.monster;
+        if (!m.dying) {
+          const arch = MonsterArchetypes[m.archetype];
+          const ai = AI[arch.ai];
+          m.energy += arch.speed;
+          while (m.energy >= 1) {
+            m.energy -= ai(c);
+          }
+        }
+      }
+    }
+    if (Game.player.energy < 1) {
+      Game.player.energy += getPlayerSpeed();
+    }
+    recomputeFOV();
+    UI.uiCallback();
+    if (UI.commandQueue.length > 0) {
+      tick();
+    }
+  }
   function handleInput() {
     document.addEventListener("keydown", (e) => {
       if (activeChoice) {
         activeChoice.callbacks.onChoose(e.key);
         activeChoice = null;
-        Game.uiCallback();
+        UI.uiCallback();
       } else {
         let command = Commands[e.key];
         if (command) {
-          Game.commandQueue.push(e.key);
+          UI.commandQueue.push(e.key);
           setTimeout(tick, 0);
         }
       }
@@ -4533,7 +4634,7 @@ void main() {
     logEl.className = "messageLog";
     messages.appendChild(logEl);
     let logMessages = [];
-    Game.uiCallback = () => {
+    UI.uiCallback = () => {
       drawMap(display);
       if (logMessages.length > 0) {
         let logLine = document.createElement("li");
@@ -4576,13 +4677,17 @@ void main() {
         soulEl.appendChild(el);
       }
     };
-    Game.logCallback = (msg2, msgType) => {
+    UI.logCallback = (msg2, msgType) => {
       if (!msgType) {
         msgType = "info";
       }
       logMessages.push([msg2, msgType]);
     };
     handleInput();
+    startNewGame();
+  }
+  function startNewGame() {
+    resetGame();
     newMap();
     recomputeFOV();
     msg.think("The world thought me forever sleeping, yet I arise.");
@@ -4594,8 +4699,10 @@ void main() {
     msg.help("Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!");
     msg.break();
     msg.help("Reach danger level 50 to win.");
-    Game.uiCallback();
+    UI.uiCallback();
   }
+
+  // src/app.ts
   window.onload = runGame;
 })();
 //# sourceMappingURL=app.js.map
