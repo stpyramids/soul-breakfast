@@ -3466,7 +3466,7 @@ void main() {
       if (attack.canReachFrom(c)) {
         attack.attackFrom(c);
         return 1;
-      } else if (rng_default.getUniformInt(0, arch.danger / 2) == 0) {
+      } else if (rng_default.getUniformInt(0, 3) == 0) {
         return 1;
       } else {
         if (playerCanSee(c.x, c.y)) {
@@ -3833,7 +3833,7 @@ void main() {
       color: "danger10",
       appearing: asRoll(1, 2, 0),
       hp: asRoll(2, 6, 4),
-      speed: 0.7,
+      speed: 0.5,
       ai: "charge",
       attack: "slice",
       soul: "bulk"
@@ -3846,6 +3846,7 @@ void main() {
         appearing: asRoll(1, 2, 0),
         hp: asRoll(2, 4, 2),
         attack: "abjure",
+        speed: 0.2,
         soul: "extraDamage"
       },
       {
@@ -3861,6 +3862,7 @@ void main() {
         danger: 25,
         color: "danger25",
         hp: asRoll(3, 6, 4),
+        speed: 0.2,
         attack: "abjure"
       }
     ]
@@ -4591,7 +4593,7 @@ void main() {
     msg.break();
     msg.help("Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!");
     msg.break();
-    msg.help("Reach danger level 50 to win. (TODO)");
+    msg.help("Reach danger level 50 to win.");
     Game.uiCallback();
   }
   window.onload = runGame;
