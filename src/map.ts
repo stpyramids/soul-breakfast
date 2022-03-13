@@ -7,6 +7,7 @@ import {
   ArchetypeID,
   spawnMonster,
   Monster,
+  weakMonster,
 } from "./monster";
 import { msg } from "./msg";
 import { keysOf, doRoll } from "./utils";
@@ -50,6 +51,16 @@ export function recomputeFOV() {
 
 export function playerCanSee(x: number, y: number): boolean {
   return !!seenXYs.find(([sx, sy]) => x == sx && y == sy);
+}
+
+export function canSeeThreat(): boolean {
+  for (let [x, y] of seenXYs) {
+    let c = contentsAt(x, y);
+    if (c.monster && !weakMonster(c.monster)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function findTargets(): Array<XYContents> {

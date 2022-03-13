@@ -1,7 +1,13 @@
 /// Game commands
 
 import { Game } from "./game";
-import { contentsAt, findTargets, newMap, XYContents } from "./map";
+import {
+  canSeeThreat,
+  contentsAt,
+  findTargets,
+  newMap,
+  XYContents,
+} from "./map";
 import {
   MonsterArchetypes,
   DeathType,
@@ -123,7 +129,9 @@ function tryReleaseSoul(): boolean {
         if (opts.has(key)) {
           let slot = parseInt(key) - 1;
           msg.essence("The %s soul dissipates into aether.", slots[slot].name);
+          let gain = slots[slot].essence;
           slots[slot] = EmptySoul;
+          gainEssence(gain);
         } else {
           msg.log("Release cancelled.");
         }
@@ -193,8 +201,8 @@ function movePlayer(dx: number, dy: number) {
 
 function movePlayerUntil(key: string, dx: number, dy: number) {
   return () => {
-    if (findTargets().length > 0) {
-      msg.think("I detect prey!");
+    if (canSeeThreat()) {
+      msg.think("Danger threatens!");
       return;
     }
     if (doMovePlayer(dx, dy)) {
@@ -266,7 +274,6 @@ export const Commands: { [key: string]: Function } = {
             msg.essence("You must release a soul before claiming another.");
             msg.tutorial("Use 'r' to release a soul.");
           } else {
-            gainEssence(soul.essence);
             killMonsterAt(c, "drain");
           }
         } else {
