@@ -2,7 +2,7 @@ import * as ROT from "rot-js";
 
 import { Colors } from "./colors";
 import { Commands, getPlayerSpeed, maxEssence } from "./commands";
-import { Game } from "./game";
+import { Game, resetGame } from "./game";
 import { Glyphs } from "./glyphs";
 import {
   contentsAt,
@@ -22,17 +22,23 @@ import {
 import { msg } from "./msg";
 import { Soul, EmptySoul } from "./souls";
 
+export const UI = {
+  commandQueue: [] as Array<keyof typeof Commands>,
+  uiCallback: () => {},
+  logCallback: (msg: string, msgType: string | undefined) => {},
+};
+
 function tick() {
-  if (Game.commandQueue.length == 0) {
+  if (UI.commandQueue.length == 0) {
     return;
   }
 
   while (Game.player.energy >= 1.0) {
-    let nextCommand = Game.commandQueue.shift();
+    let nextCommand = UI.commandQueue.shift();
     if (nextCommand) {
       Commands[nextCommand]();
       Game.turns += 1;
-      Game.uiCallback();
+      UI.uiCallback();
     } else {
       break;
     }
@@ -59,9 +65,9 @@ function tick() {
   }
 
   recomputeFOV();
-  Game.uiCallback();
+  UI.uiCallback();
 
-  if (Game.commandQueue.length > 0) {
+  if (UI.commandQueue.length > 0) {
     tick();
   }
 }
@@ -73,11 +79,11 @@ function handleInput() {
     if (activeChoice) {
       activeChoice.callbacks.onChoose(e.key);
       activeChoice = null;
-      Game.uiCallback();
+      UI.uiCallback();
     } else {
       let command = Commands[e.key];
       if (command) {
-        Game.commandQueue.push(e.key);
+        UI.commandQueue.push(e.key);
         setTimeout(tick, 0);
       }
     }
@@ -187,7 +193,7 @@ export function runGame() {
   logEl.className = "messageLog";
   messages.appendChild(logEl);
   let logMessages: Array<[string, string]> = [];
-  Game.uiCallback = () => {
+  UI.uiCallback = () => {
     // Draw the map
     drawMap(display);
     // Update message log
@@ -237,14 +243,18 @@ export function runGame() {
       soulEl.appendChild(el);
     }
   };
-  Game.logCallback = (msg: string, msgType: string | undefined) => {
+  UI.logCallback = (msg: string, msgType: string | undefined) => {
     if (!msgType) {
       msgType = "info";
     }
     logMessages.push([msg, msgType]);
   };
   handleInput();
+  startNewGame();
+}
 
+export function startNewGame() {
+  resetGame();
   newMap();
   recomputeFOV();
   msg.think("The world thought me forever sleeping, yet I arise.");
@@ -260,5 +270,5 @@ export function runGame() {
   );
   msg.break();
   msg.help("Reach danger level 50 to win.");
-  Game.uiCallback();
+  UI.uiCallback();
 }

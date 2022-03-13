@@ -8,6 +8,7 @@ import {
   spawnMonster,
   Monster,
   weakMonster,
+  MonsterArchetype,
 } from "./monster";
 import { msg } from "./msg";
 import { keysOf, doRoll } from "./utils";
@@ -37,9 +38,15 @@ export function moveMonster(from: XYContents, to: XYContents): boolean {
 }
 
 export let seenXYs: Array<[number, number]> = [];
+const FOV = new ROT.FOV.PreciseShadowcasting((x, y) => {
+  let c = contentsAt(x, y);
+  // Nothing but tiles block FOV (for now)
+  return !(!c.tile || c.tile.blocks);
+});
+
 export function recomputeFOV() {
   seenXYs.length = 0;
-  Game.map.fov.compute(
+  FOV.compute(
     Game.player.x,
     Game.player.y,
     getPlayerVision(),
@@ -140,9 +147,15 @@ export function newMap(opts?: NewMapOptions) {
   Game.player.y = py;
 
   // Place monsters and exits in other rooms
-  const eligibleMonsters = keysOf(MonsterArchetypes).filter(
-    (id) => MonsterArchetypes[id].danger <= Game.map.danger
-  ) as Array<ArchetypeID>;
+  const eligibleMonsters: { [key: ArchetypeID]: number } = {};
+  for (let key in MonsterArchetypes) {
+    if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
+      eligibleMonsters[key] =
+        Game.map.danger -
+        Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+    }
+  }
+
   // todo this sucks
   let exits = ROT.RNG.shuffle([
     Math.floor(Game.map.danger / 2),
@@ -173,7 +186,7 @@ export function newMap(opts?: NewMapOptions) {
       Game.map.exits.push([ex, ey, exit]);
       Game.map.tiles[ex + ey * Game.map.w] = Tiles.exit;
     }
-    const mArch = ROT.RNG.getItem(eligibleMonsters)!;
+    const mArch = ROT.RNG.getWeightedValue(eligibleMonsters)!;
     let appearing = doRoll(MonsterArchetypes[mArch].appearing);
     while (appearing > 0) {
       let mx = ROT.RNG.getUniformInt(room.getLeft(), room.getRight());

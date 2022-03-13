@@ -183,7 +183,7 @@ export const Attacks: { [id: string]: Attack } = {
   touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
   slice: meleeAttack("slices at", asRoll(1, 8, 4)),
   gaze: rangedAttack("gazes at", asRoll(1, 4, 0)),
-  abjure: rangedAttack("abjures", asRoll(1, 8, 4)),
+  abjure: rangedAttack("abjures", asRoll(1, 4, 2)),
 };
 
 export type MonsterArchetype = {
@@ -521,7 +521,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         appearing: asRoll(1, 2, 0),
         hp: asRoll(2, 4, 2),
         attack: "abjure",
-        speed: 0.2,
+        speed: 0.5,
         soul: "extraDamage",
       },
       {
@@ -537,7 +537,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         danger: 25,
         color: "danger25",
         hp: asRoll(3, 6, 4),
-        speed: 0.2,
+        speed: 0.5,
         attack: "abjure",
       },
     ],
@@ -567,13 +567,13 @@ export function weakMonster(m: Monster): boolean {
 }
 
 export function getSoul(m: Monster): Soul {
-  let soul = Game.monsterSouls.get(m.archetype);
+  let soul = Game.monsterSouls[m.archetype];
   if (soul) {
     return soul;
   } else {
     let arch = MonsterArchetypes[m.archetype];
     soul = SoulFactories[arch.soul](arch);
-    Game.monsterSouls.set(m.archetype, soul);
+    Game.monsterSouls[m.archetype] = soul;
     return soul;
   }
 }

@@ -25,7 +25,7 @@ import {
   StatBonus,
   EmptySoul,
 } from "./souls";
-import { offerChoice } from "./ui";
+import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
 
 export function maxEssence(): number {
@@ -170,9 +170,9 @@ function doMovePlayer(dx: number, dy: number): boolean {
     p.y = ny;
     p.energy -= 1.0;
     if (c.monster) {
-      if (!Game.player.knownMonsters.get(c.monster.archetype)) {
+      if (!Game.player.knownMonsters[c.monster.archetype]) {
         msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
-        Game.player.knownMonsters.set(c.monster.archetype, true);
+        Game.player.knownMonsters[c.monster.archetype] = true;
         let archetype = MonsterArchetypes[c.monster.archetype];
         if (archetype.soul === "vermin") {
           msg.angry("Petty vermin!");
@@ -220,7 +220,7 @@ function movePlayerUntil(key: string, dx: number, dy: number) {
       return;
     }
     if (doMovePlayer(dx, dy)) {
-      Game.commandQueue.push(key);
+      UI.commandQueue.push(key);
     }
   };
 }
@@ -344,6 +344,24 @@ export const Commands: { [key: string]: Function } = {
     Game.player.essence -= wand.cost;
     Game.player.energy -= 1.0;
   },
+  // Quit and reset
+  Q: () => {
+    offerChoice(
+      "Die and restart game?",
+      new Map([
+        ["y", "Yes"],
+        ["n", "No"],
+      ]),
+      {
+        onChoose: (key) => {
+          if (key == "y") {
+            startNewGame();
+          }
+        },
+      }
+    );
+  },
+  // Wizard commands
   W: () => {
     if (document.location.hash == "#wizard") {
       offerChoice(

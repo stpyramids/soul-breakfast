@@ -1,12 +1,10 @@
-import * as ROT from "rot-js";
-import { Glyphs, GlyphID } from "./glyphs";
-import { Tile, contentsAt, RememberedCell } from "./map";
+import { GlyphID } from "./glyphs";
+import { Tile, RememberedCell } from "./map";
 import { Monster } from "./monster";
 import type { Soul } from "./souls";
 import { EmptySoul } from "./souls";
-import { Commands } from "./commands";
 
-export const Game = {
+export let Game = {
   turns: 0,
   viewport: {
     width: 30,
@@ -20,8 +18,8 @@ export const Game = {
     speed: 1.0,
     energy: 1.0,
     glyph: "player" as GlyphID,
-    knownMonsters: new Map<string, boolean>(),
-    seenTutorials: new Map<string, boolean>(),
+    knownMonsters: {} as { [id: string]: boolean },
+    seenTutorials: {} as { [id: string]: boolean },
     soulSlots: {
       generic: [EmptySoul, EmptySoul, EmptySoul] as Array<Soul>,
     },
@@ -34,14 +32,12 @@ export const Game = {
     monsters: [] as Array<Monster | null>,
     memory: [] as Array<RememberedCell>,
     exits: [] as Array<[number, number, number]>,
-    fov: new ROT.FOV.PreciseShadowcasting((x, y) => {
-      let c = contentsAt(x, y);
-      // Nothing but tiles block FOV (for now)
-      return !(!c.tile || c.tile.blocks);
-    }),
   },
-  monsterSouls: new Map<string, Soul>(),
-  commandQueue: [] as Array<keyof typeof Commands>,
-  uiCallback: () => {},
-  logCallback: (msg: string, msgType: string | undefined) => {},
+  monsterSouls: {} as { [id: string]: Soul },
 };
+
+let freshGame = JSON.parse(JSON.stringify(Game)) as typeof Game;
+
+export function resetGame() {
+  Game = freshGame;
+}
