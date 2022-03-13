@@ -40,7 +40,12 @@ export type StatBonusEffect = {
   power: number;
 };
 
-export type RingEffect = StatBonusEffect;
+export type SoakDamageEffect = {
+  type: "soak-damage";
+  power: number;
+};
+
+export type RingEffect = StatBonusEffect | SoakDamageEffect;
 
 // TODO:
 // Eventually I want separate slots for wand, ring, and crown souls.

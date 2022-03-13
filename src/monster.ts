@@ -2,7 +2,7 @@
 
 import * as ROT from "rot-js";
 import { Colors } from "./colors";
-import { D } from "./commands";
+import { applySoak, D } from "./commands";
 import { Game } from "./game";
 import { GlyphID } from "./glyphs";
 import {
@@ -87,6 +87,11 @@ export type Attack = {
 };
 
 export function doDamage(dmg: number) {
+  dmg -= applySoak(dmg);
+  if (dmg <= 0) {
+    msg.combat("You absorb the attack!");
+    return;
+  }
   msg.combat("Your essence wavers!");
   Game.player.essence -= dmg;
   if (Game.player.essence < 0) {
@@ -249,6 +254,18 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
       },
     ],
   }),
+  soak: (a) => ({
+    glyph: a.glyph,
+    type: "ring",
+    essence: a.danger,
+    name: a.name,
+    effects: [
+      {
+        type: "soak-damage",
+        power: Math.floor(a.danger / 5),
+      },
+    ],
+  }),
 };
 
 function describeWandEffect(e: WandEffect): string {
@@ -272,6 +289,8 @@ function describeRingEffect(e: RingEffect): string {
       } else {
         return "+" + e.power + " " + e.stat;
       }
+    case "soak-damage":
+      return "soak " + e.power + "damage";
   }
 }
 
@@ -492,7 +511,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       speed: 0.5,
       ai: "charge",
       attack: "slice",
-      soul: "bulk",
+      soul: "soak",
     },
     variants: [
       {
@@ -511,7 +530,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         color: "danger20",
         appearing: asRoll(2, 1, 0),
         hp: asRoll(3, 6, 4),
-        soul: "speed",
+        soul: "soak",
       },
       {
         name: "priest",

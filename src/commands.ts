@@ -113,6 +113,20 @@ export function getPlayerSpeed(): number {
   return 1.0 + getStatBonus("speed");
 }
 
+export function applySoak(dmg: number): number {
+  let soak = 0;
+  for (let soul of Game.player.soulSlots.generic) {
+    if (soul.type === "ring") {
+      for (let effect of soul.effects) {
+        if (effect.type == "soak-damage") {
+          soak += effect.power;
+        }
+      }
+    }
+  }
+  return dmg - soak;
+}
+
 function tryReleaseSoul(): boolean {
   let slots = Game.player.soulSlots.generic;
   let opts: Map<string, string> = new Map();
