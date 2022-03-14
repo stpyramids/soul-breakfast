@@ -11,6 +11,7 @@ import {
   seenXYs,
   getVictim,
   newMap,
+  getMapDescription,
 } from "./map";
 import { MonsterArchetypes, AI, weakMonster, getSoul } from "./monster";
 import { msg } from "./msg";
@@ -207,22 +208,30 @@ export function runGame() {
       Game.player.essence.toString();
     document.getElementById("maxEssence")!.innerText = maxEssence().toString();
     document.getElementById("mapDanger")!.innerText =
-      Game.map.danger.toString();
+      getMapDescription() + " [Danger: " + Game.map.danger + "]";
 
     // Update soul view
     let soulEl = document.getElementById("souls")!;
     let souls: Array<Soul> = [];
-    let m = getVictim().monster;
-    if (m) {
-      souls.push(getSoul(m));
-    } else {
-      souls.push(EmptySoul);
-    }
-    for (let soul of Game.player.soulSlots.generic) {
-      souls.push(soul);
+    let c = getVictim();
+    if (c.monster) {
+      let soul = getSoul(c.monster);
+      document.getElementById("hereGlyph")!.innerHTML = Glyphs[soul.glyph];
+      document.getElementById("hereWhat")!.innerHTML = soul.name;
+      document.getElementById("hereDescription")!.innerHTML =
+        describeSoulEffects(soul);
+    } else if (c.tile) {
+      document.getElementById("hereGlyph")!.innerHTML = Glyphs[c.tile.glyph];
+      document.getElementById("hereWhat")!.innerHTML = c.tile.glyph;
+      if (c.exitDanger) {
+        document.getElementById("hereDescription")!.innerHTML =
+          "Danger: " + c.exitDanger;
+      } else {
+        document.getElementById("hereDescription")!.innerHTML = "";
+      }
     }
     soulEl.innerHTML = "";
-    for (let soul of souls) {
+    for (let soul of Game.player.soulSlots.generic) {
       let el = document.createElement("div");
       el.className = "soul-glyph";
       el.innerHTML = Glyphs[soul.glyph]; // TODO

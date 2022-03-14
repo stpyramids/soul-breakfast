@@ -25,7 +25,7 @@ export let Game = {
     },
   },
   map: {
-    danger: 2,
+    danger: 1,
     w: 80,
     h: 80,
     tiles: [] as Array<Tile>,

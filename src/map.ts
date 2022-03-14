@@ -27,6 +27,24 @@ export const Tiles: { [name: string]: Tile } = {
   exit: { glyph: "exit", blocks: false },
 };
 
+const DangerDescriptions = [
+  [1, "cobwebbed catacomb"],
+  [5, "ruined crypt"],
+  [10, "murky tomb"],
+  [15, "silent mausoleum"],
+  [20, "tranquil sepulcher"],
+  [25, "teeming necropolis"],
+];
+
+export function getMapDescription() {
+  for (let i = DangerDescriptions.length - 1; i >= 0; i--) {
+    if (DangerDescriptions[i][0] < Game.map.danger) {
+      return DangerDescriptions[i][1];
+    }
+  }
+  return DangerDescriptions[0][1];
+}
+
 export function moveMonster(from: XYContents, to: XYContents): boolean {
   if (!to.blocked) {
     Game.map.monsters[from.x + from.y * Game.map.w] = null;
