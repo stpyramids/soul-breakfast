@@ -17,7 +17,7 @@
         .wrapper {
             display: grid;
             grid-template-columns: 5fr 3fr;
-            grid-template-rows: 100%;
+            grid-template-rows: min-content 6fr 2fr;
             align-items: stretch;
             justify-items: stretch;
             height: 100vh;
@@ -26,6 +26,8 @@
 
         #playarea {
             display: grid;
+            grid-row: 2;
+            grid-column: 1;
             align-items: center;
             justify-items: center;
         }
@@ -33,17 +35,33 @@
         #sidebar {
             display: grid;
             height: 100%;
-            grid-template-rows: min-content min-content min-content 1fr;
+            grid-row: 1/span 2;
+            grid-column: 2;
+            grid-template-rows: min-content min-content min-content min-content 1fr;
             border-left: solid #666 3px;
+        }
+
+        #mapDanger {
+            grid-row: 1;
+            grid-column: 1;
+            width: 100%;
+            text-align: center;
+            font-size: 18px;
+            text-transform: uppercase;
+            color: #999;
+            padding: 0.5em;
+            font-style: italic;
         }
         
         #messages {
             display: grid;
+            grid-row: 3;
+            grid-column: 1/span 2;
             overflow-y: auto;
             background: #000;
             color: #ccc;
             padding: 0.3em;
-            size: 10pt;
+            size: 12pt;
             border-top: solid #666 3px;
         }
 
@@ -72,6 +90,7 @@
         .stat-label {
             text-align: right;
             font-size: 150%;
+            text-transform: uppercase;
         }
 
         .stat-value {
@@ -81,10 +100,19 @@
             text-align: center;
         }
 
+        #whatsHere {
+            display: grid;
+            padding: 0.3em;
+            grid-template-columns: min-content 1fr 2fr;
+            grid-template-rows: repeat(min-content);
+            align-items: center;
+            border-top: solid #666 3px;
+        }
+
         #souls {
             display: grid;
             padding: 0.3em;
-            grid-template-columns: min-content 1fr 1fr;
+            grid-template-columns: min-content 1fr 2fr;
             grid-template-rows: repeat(min-content);
             align-items: center;
             border-top: solid #666 3px;
@@ -120,14 +148,32 @@
             color: #666;
             font-style: italic;
         }
+
+        .msg-thought::before {
+            content: "💀" ;
+            font-style: normal;
+            margin-right: 0.3em;
+        }
         
         .msg-angry {
             font-style: italic;
             color: #a33;
         }
+
+        .msg-angry::before {
+            content: "💀" ;
+            font-style: normal;
+            margin-right: 0.3em;
+        }
         
         .msg-help {
             color: #f99;
+        }
+        
+        .msg-help::before {
+            content: "❔" ;
+            font-style: normal;
+            margin-right: 0.3em;
         }
 
         .msg-combat {
@@ -167,18 +213,20 @@
                     <div class="stat-label">/</div>
                     <div class="stat-value" id="maxEssence">-</div>
                 </div>
-                <div class="stat">
-                    <div class="stat-label">Danger</div>
-                    <div class="stat-value" id="mapDanger">-</div>
-                </div>
+            </div>
+            <div id="whatsHere">
+                <div class="soul-glyph" id="hereGlyph"></div>
+                <div class="soul-name" id="hereWhat"></div>
+                <div class="soul-effect" id="hereDescription"></div>
             </div>
             <div id="souls">
                 <div class="soul-glyph"></div>
                 <div class="soul-name"></div>
                 <div class="soul-effect"></div>
             </div>
-            <div id="messages"></div>
         </div>
+        <div id="mapDanger"></div>
+        <div id="messages"></div>
     </div>
 </body>
 
