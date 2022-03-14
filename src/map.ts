@@ -178,7 +178,7 @@ export function newMap(opts?: NewMapOptions) {
 
   // todo this sucks
   let exits = ROT.RNG.shuffle([
-    Math.floor(Game.map.danger / 2),
+    Game.map.danger > 1 ? Math.floor(Game.map.danger / 2) : 1,
     Game.map.danger,
     Game.map.danger,
     Game.map.danger + 1,

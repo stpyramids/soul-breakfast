@@ -38,6 +38,19 @@ Some of these are documented in game. Online
 - Positioning is key.
 - Not all effects stack.
 
+## UI changes
+
+- Use some kind of JS framework or templating library
+- Make the "ground" section clear
+- Add a "target" section
+- Add a spell summary
+
+## Balance Thoughts
+
+- Spell should cost 1 essence at first
+- Spell upgrades should cause (gradual) cost increases
+- Early enemies should be slightly more difficult
+
 ## To Do
 
 - Clean up the codebase
