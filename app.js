@@ -3397,11 +3397,47 @@ void main() {
     weakMana: { type: "damage", damage: asRoll(1, 4, 0) }
   };
   var EmptySoul = {
-    type: "none",
     glyph: "none",
+    name: "-",
     essence: 0,
-    name: "-"
+    effects: []
   };
+  function isEmptySoul(soul) {
+    return soul.essence === 0;
+  }
+  function describeSoulEffect(e) {
+    switch (e.type) {
+      case "soak-damage":
+        return "soak " + e.power + "damage";
+      case "stat-bonus":
+        if (e.stat === "speed") {
+          return "+" + Math.floor(e.power * 100) + "% " + e.stat;
+        } else {
+          return "+" + e.power + " " + e.stat;
+        }
+      case "damage":
+        return "damage " + describeRoll(e.damage);
+      case "status":
+        return e.status + " " + e.power;
+      case "projectile":
+        return e.projectile;
+      case "targeting":
+        return e.targeting;
+    }
+  }
+  function describeSoulEffects(s) {
+    if (isEmptySoul(s)) {
+      return " ";
+    } else if (s.effects.length === 0) {
+      return "+" + s.essence + " essence";
+    } else {
+      let d = [];
+      for (let effect of s.effects) {
+        d.push(describeSoulEffect(effect));
+      }
+      return d.join(", ");
+    }
+  }
 
   // src/game.ts
   var Game = {
@@ -3425,7 +3461,7 @@ void main() {
       }
     },
     map: {
-      danger: 2,
+      danger: 1,
       w: 80,
       h: 80,
       tiles: [],
@@ -3536,7 +3572,7 @@ void main() {
       for (let slotGroup of keysOf(Game.player.soulSlots)) {
         let slots = Game.player.soulSlots[slotGroup];
         for (let i = 0; i < slots.length; i++) {
-          if (slots[i].type !== "none") {
+          if (!isEmptySoul(slots[i])) {
             soulChecked = true;
             let roll = asRoll(1, slots[i].essence, 1);
             if (doRoll(roll) < extra) {
@@ -3607,41 +3643,53 @@ void main() {
   var SoulFactories = {
     vermin: (a) => ({
       glyph: a.glyph,
-      type: "none",
       essence: Math.floor((a.danger + 1) / 2),
-      name: a.name
+      name: a.name,
+      effects: []
     }),
-    bulk: (a) => ({
+    maxEssence: (a) => ({
       glyph: a.glyph,
-      type: "generic",
       essence: a.danger,
-      name: a.name
+      name: a.name,
+      effects: [{ type: "stat-bonus", stat: "max-essence", power: a.danger }]
     }),
     extraDamage: (a) => ({
       glyph: a.glyph,
-      type: "wand",
       essence: a.danger,
       name: a.name,
       effects: [
+        {
+          type: "stat-bonus",
+          stat: "max-essence",
+          power: Math.floor(a.danger / 2) + 1
+        },
         { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) }
       ]
     }),
     slow: (a) => ({
       glyph: a.glyph,
-      type: "wand",
       essence: a.danger,
       name: a.name,
       effects: [
-        { type: "status", status: "slow", power: Math.floor(a.danger / 2) }
+        {
+          type: "stat-bonus",
+          stat: "max-essence",
+          power: Math.floor(a.danger / 2) + 1
+        },
+        { type: "status", status: "slow", power: Math.floor(a.danger / 2) + 1 }
       ]
     }),
     sight: (a) => ({
       glyph: a.glyph,
-      type: "ring",
       essence: a.danger,
       name: a.name,
       effects: [
-        { type: "stat-bonus", stat: "sight", power: Math.floor(a.danger / 2) }
+        { type: "stat-bonus", stat: "max-essence", power: a.danger },
+        {
+          type: "stat-bonus",
+          stat: "sight",
+          power: Math.floor(a.danger / 2) + 1
+        }
       ]
     }),
     speed: (a) => ({
@@ -3650,6 +3698,11 @@ void main() {
       essence: a.danger,
       name: a.name,
       effects: [
+        {
+          type: "stat-bonus",
+          stat: "max-essence",
+          power: Math.floor(a.danger * 0.8)
+        },
         {
           type: "stat-bonus",
           stat: "speed",
@@ -3664,54 +3717,17 @@ void main() {
       name: a.name,
       effects: [
         {
+          type: "stat-bonus",
+          stat: "max-essence",
+          power: Math.floor(a.danger / 2) + 1
+        },
+        {
           type: "soak-damage",
           power: Math.floor(a.danger / 5)
         }
       ]
     })
   };
-  function describeWandEffect(e) {
-    switch (e.type) {
-      case "damage":
-        return "damage " + describeRoll(e.damage);
-      case "status":
-        return e.status + " " + e.power;
-      case "projectile":
-        return e.projectile;
-      case "targeting":
-        return e.targeting;
-    }
-  }
-  function describeRingEffect(e) {
-    switch (e.type) {
-      case "stat-bonus":
-        if (e.stat === "speed") {
-          return "+" + Math.floor(e.power * 100) + "% " + e.stat;
-        } else {
-          return "+" + e.power + " " + e.stat;
-        }
-      case "soak-damage":
-        return "soak " + e.power + "damage";
-    }
-  }
-  function describeSoulEffect(s) {
-    switch (s.type) {
-      case "none":
-        if (s.essence === 0) {
-          return " ";
-        } else {
-          return "+" + s.essence + " essence";
-        }
-      case "generic":
-        return "+" + s.essence + " max essence";
-      case "wand":
-        return describeWandEffect(s.effects[0]);
-      case "ring":
-        return describeRingEffect(s.effects[0]);
-      default:
-        return "???";
-    }
-  }
   function expandProto(proto) {
     let archs = { [proto.base.name]: proto.base };
     for (let variant of proto.variants) {
@@ -3722,6 +3738,7 @@ void main() {
   var MonsterArchetypes = __spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, expandProto({
     base: {
       name: "maggot heap",
+      description: "A writhing mass of sickly pale grubs, clinging to a few scraps of moldering flesh for sustenance... and now they sustain me.",
       danger: 1,
       glyph: "worm",
       color: "vermin",
@@ -3735,32 +3752,41 @@ void main() {
     variants: [
       {
         name: "gnat swarm",
+        description: "Harmless pests, birthed from some forgotten corpse. They would have irritated me in life. Now they are my bread.",
         glyph: "insect",
         appearing: asRoll(2, 4, 0),
         ai: "wander"
       },
       {
-        name: "soul grubs",
+        name: "luminous grub",
+        description: "A fat worm with a glowing aura. It must have learned to feed on ambient essence, which is now mine for the taking.",
         danger: 5,
         glyph: "worm",
         color: "vermin"
       },
       {
-        name: "soul butterflies",
+        name: "soul butterfly",
+        description: "This strange insect leaves trails of essence behind its wings. A beautiful aberration, but also delicious.",
         danger: 8,
         glyph: "insect",
-        color: "vermin"
+        color: "vermin",
+        speed: 0.4,
+        ai: "wander"
       },
       {
         name: "torpid ghost",
+        description: "A pathetic lost soul that has been ensnared here and reduced to a nearly sessile state.",
         danger: 10,
         glyph: "ghost",
-        color: "vermin"
+        color: "vermin",
+        speed: 0.1,
+        ai: "wander"
       }
     ]
   })), expandProto({
     base: {
       name: "dusty rat",
+      description: "A skinny, worn creature, barely alive, but with just enough of a soul remaining to remove intact.",
       danger: 2,
       glyph: "rodent",
       color: "danger0",
@@ -3769,11 +3795,12 @@ void main() {
       speed: 0.5,
       ai: "nipper",
       attack: "bite",
-      soul: "bulk"
+      soul: "maxEssence"
     },
     variants: [
       {
         name: "hungry rat",
+        description: "A brown-hided rat that gnaws old bones for food. It seems to think my skull is its next meal.",
         danger: 6,
         color: "danger5",
         hp: asRoll(2, 4, 1),
@@ -3783,6 +3810,7 @@ void main() {
   })), expandProto({
     base: {
       name: "crypt spider",
+      description: "A cobwebbed arachnid that feeds on gnats and maggots, and in turn is fed upon by me.",
       danger: 3,
       glyph: "spider",
       color: "danger0",
@@ -3796,6 +3824,7 @@ void main() {
     variants: [
       {
         name: "wolf spider",
+        description: "This furry gray arachnid is the size of my skull and intent on defending its hunting grounds. But they are my hunting grounds, now.",
         danger: 7,
         color: "danger5",
         hp: asRoll(1, 4, 2),
@@ -3803,6 +3832,7 @@ void main() {
       },
       {
         name: "ambush spider",
+        description: "An obnoxious creature that springs out to attack!",
         danger: 15,
         color: "danger15",
         ai: "charge",
@@ -3813,6 +3843,7 @@ void main() {
   })), expandProto({
     base: {
       name: "little ghost",
+      description: "A weak spirit, barely clinging to the mortal world. I wandered for decades in a state like this.",
       danger: 4,
       glyph: "ghost",
       color: "danger0",
@@ -3826,6 +3857,7 @@ void main() {
     variants: [
       {
         name: "weeping ghost",
+        description: "This decrepit spirit moans and mewls in a manner that would turn my stomach, if I still had one. Its suffering shall soon be over.",
         danger: 9,
         color: "danger5",
         hp: asRoll(2, 8, 2),
@@ -3833,8 +3865,9 @@ void main() {
       },
       {
         name: "howling ghost",
-        danger: 16,
-        color: "danger15",
+        description: "A vigorous spirit, for once! Its yawping does grate, but I have a cure for that.",
+        danger: 12,
+        color: "danger10",
         hp: asRoll(2, 5, 2),
         speed: 0.9,
         soul: "speed"
@@ -3843,6 +3876,7 @@ void main() {
   })), expandProto({
     base: {
       name: "bleary eye",
+      description: "The gummy, sluglike body of this repulsive creature clings fast to surfaces and moves exceedingly slowly, but its gaze pierces the veil and disrupts my essence.",
       danger: 5,
       glyph: "eyeball",
       color: "danger5",
@@ -3856,6 +3890,7 @@ void main() {
     variants: [
       {
         name: "peering eye",
+        description: "This disgusting creature will pay for its insolent gaze!",
         danger: 10,
         color: "danger10",
         appearing: asRoll(1, 1, 0),
@@ -3864,6 +3899,7 @@ void main() {
       },
       {
         name: "gimlet eye",
+        description: "These remind me of the steely, courageous gaze of someone I once knew. Just like then, I'm going to tear its soul to shreds.",
         danger: 17,
         color: "danger15"
       }
@@ -3871,26 +3907,28 @@ void main() {
   })), expandProto({
     base: {
       name: "soul sucker",
-      danger: 20,
+      description: "A giant, bloated mosquito, glowing with essence. Another result of the luminous grubs? When I am restored, I should build a laboratory to study this phenomenon.",
+      danger: 15,
       glyph: "insect",
-      color: "danger20",
+      color: "danger15",
       appearing: asRoll(2, 2, 2),
       hp: asRoll(2, 2, 2),
-      speed: 0.5,
+      speed: 1,
       ai: "nipper",
       attack: "bite",
-      soul: "bulk"
+      soul: "maxEssence"
     },
     variants: []
   })), expandProto({
     base: {
       name: "do-gooder",
-      danger: 10,
+      description: "Ha! If my captors are reduced to such a feeble state, armed with weapons little better than a child's toy, my restoration will be swift indeed.",
+      danger: 7,
       glyph: "player",
-      color: "danger10",
+      color: "danger5",
       appearing: asRoll(1, 2, 0),
       hp: asRoll(2, 6, 4),
-      speed: 0.5,
+      speed: 0.6,
       ai: "charge",
       attack: "slice",
       soul: "soak"
@@ -3898,8 +3936,9 @@ void main() {
     variants: [
       {
         name: "acolyte",
-        danger: 15,
-        color: "danger15",
+        description: "This child has read a book or two and learned enough to be dangerous, but I am a much harsher tutor than any they have ever known.",
+        danger: 12,
+        color: "danger10",
         appearing: asRoll(1, 2, 0),
         hp: asRoll(2, 4, 2),
         attack: "abjure",
@@ -3908,16 +3947,18 @@ void main() {
       },
       {
         name: "warrior",
-        danger: 20,
-        color: "danger20",
+        description: "A muscular oaf, but able enough to swing a sword. This merits caution.",
+        danger: 16,
+        color: "danger15",
         appearing: asRoll(2, 1, 0),
         hp: asRoll(3, 6, 4),
         soul: "soak"
       },
       {
         name: "priest",
-        danger: 25,
-        color: "danger25",
+        description: "Ah, a god-speaker. No doubt sent here to soothe the restless dead. I have a better solution.",
+        danger: 20,
+        color: "danger20",
         hp: asRoll(3, 6, 4),
         speed: 0.5,
         attack: "abjure"
@@ -3958,6 +3999,22 @@ void main() {
     floor: { glyph: "floor", blocks: false },
     exit: { glyph: "exit", blocks: false }
   };
+  var DangerDescriptions = [
+    [1, "cobwebbed catacomb"],
+    [5, "ruined crypt"],
+    [10, "murky tomb"],
+    [15, "silent mausoleum"],
+    [20, "tranquil sepulcher"],
+    [25, "teeming necropolis"]
+  ];
+  function getMapDescription() {
+    for (let i = DangerDescriptions.length - 1; i >= 0; i--) {
+      if (DangerDescriptions[i][0] < Game.map.danger) {
+        return DangerDescriptions[i][1];
+      }
+    }
+    return DangerDescriptions[0][1];
+  }
   function moveMonster(from, to) {
     if (!to.blocked) {
       Game.map.monsters[from.x + from.y * Game.map.w] = null;
@@ -4139,7 +4196,7 @@ void main() {
 
   // src/commands.ts
   function maxEssence() {
-    return Game.player.soulSlots.generic.reduce((c, s) => c + s.essence, Game.player.maxEssence);
+    return Game.player.maxEssence + getStatBonus("max-essence");
   }
   function gainEssence(amt) {
     Game.player.essence += amt;
@@ -4158,22 +4215,20 @@ void main() {
     let status = null;
     let cost = 2;
     for (let soul of Game.player.soulSlots.generic) {
-      if (soul.type === "wand") {
-        for (let effect of soul.effects) {
-          switch (effect.type) {
-            case "targeting":
-              targeting = effect;
-              break;
-            case "projectile":
-              projectile = effect;
-              break;
-            case "damage":
-              damage = effect;
-              break;
-            case "status":
-              status = effect;
-              break;
-          }
+      for (let effect of soul.effects) {
+        switch (effect.type) {
+          case "targeting":
+            targeting = effect;
+            break;
+          case "projectile":
+            projectile = effect;
+            break;
+          case "damage":
+            damage = effect;
+            break;
+          case "status":
+            status = effect;
+            break;
         }
       }
     }
@@ -4188,11 +4243,9 @@ void main() {
   function getStatBonus(stat) {
     let base = 0;
     for (let soul of Game.player.soulSlots.generic) {
-      if (soul.type === "ring") {
-        for (let effect of soul.effects) {
-          if (effect.type == "stat-bonus" && effect.stat == stat) {
-            base += effect.power;
-          }
+      for (let effect of soul.effects) {
+        if (effect.type == "stat-bonus" && effect.stat == stat) {
+          base += effect.power;
         }
       }
     }
@@ -4207,11 +4260,9 @@ void main() {
   function applySoak(dmg) {
     let soak = 0;
     for (let soul of Game.player.soulSlots.generic) {
-      if (soul.type === "ring") {
-        for (let effect of soul.effects) {
-          if (effect.type == "soak-damage") {
-            soak += effect.power;
-          }
+      for (let effect of soul.effects) {
+        if (effect.type == "soak-damage") {
+          soak += effect.power;
         }
       }
     }
@@ -4221,7 +4272,7 @@ void main() {
     let slots = Game.player.soulSlots.generic;
     let opts = /* @__PURE__ */ new Map();
     for (let i in slots) {
-      if (slots[i].type !== "none") {
+      if (!isEmptySoul(slots[i])) {
         opts.set((parseInt(i) + 1).toString(), slots[i].name);
       }
     }
@@ -4338,7 +4389,7 @@ void main() {
       let c = contentsAt(Game.player.x, Game.player.y);
       if (c.monster) {
         let soul = getSoul(c.monster);
-        if (soul.type === "none") {
+        if (soul.effects.length === 0) {
           msg.angry("This vermin has no soul worthy of claiming.");
           msg.tutorial("Vermin can be (d)evoured for essence.");
         } else {
@@ -4347,7 +4398,7 @@ void main() {
             let slots = Game.player.soulSlots.generic;
             let claimed = false;
             for (let i = 0; i < slots.length; i++) {
-              if (slots[i].type === "none") {
+              if (isEmptySoul(slots[i])) {
                 slots[i] = soul;
                 msg.essence("You claim the soul of %the.", D(c));
                 msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
@@ -4647,20 +4698,26 @@ void main() {
       }
       document.getElementById("essence").innerText = Game.player.essence.toString();
       document.getElementById("maxEssence").innerText = maxEssence().toString();
-      document.getElementById("mapDanger").innerText = Game.map.danger.toString();
+      document.getElementById("mapDanger").innerText = getMapDescription() + " [Danger: " + Game.map.danger + "]";
       let soulEl = document.getElementById("souls");
       let souls = [];
-      let m = getVictim().monster;
-      if (m) {
-        souls.push(getSoul(m));
-      } else {
-        souls.push(EmptySoul);
-      }
-      for (let soul of Game.player.soulSlots.generic) {
-        souls.push(soul);
+      let c = getVictim();
+      if (c.monster) {
+        let soul = getSoul(c.monster);
+        document.getElementById("hereGlyph").innerHTML = Glyphs[soul.glyph];
+        document.getElementById("hereWhat").innerHTML = soul.name;
+        document.getElementById("hereDescription").innerHTML = describeSoulEffects(soul);
+      } else if (c.tile) {
+        document.getElementById("hereGlyph").innerHTML = Glyphs[c.tile.glyph];
+        document.getElementById("hereWhat").innerHTML = c.tile.glyph;
+        if (c.exitDanger) {
+          document.getElementById("hereDescription").innerHTML = "Danger: " + c.exitDanger;
+        } else {
+          document.getElementById("hereDescription").innerHTML = "";
+        }
       }
       soulEl.innerHTML = "";
-      for (let soul of souls) {
+      for (let soul of Game.player.soulSlots.generic) {
         let el = document.createElement("div");
         el.className = "soul-glyph";
         el.innerHTML = Glyphs[soul.glyph];
@@ -4671,7 +4728,7 @@ void main() {
         soulEl.appendChild(el);
         el = document.createElement("div");
         el.className = "soul-effect";
-        el.innerHTML = describeSoulEffect(soul);
+        el.innerHTML = describeSoulEffects(soul);
         soulEl.appendChild(el);
       }
     };
