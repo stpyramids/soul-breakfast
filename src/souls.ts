@@ -3,7 +3,7 @@ import { Roll, asRoll, describeRoll } from "./utils";
 
 export type Status = "slow";
 
-export type Targeting = "seek-closest" | "seek-strong";
+export type Targeting = "seek closest" | "seek strong";
 export type TargetingEffect = {
   type: "targeting";
   targeting: Targeting;
@@ -32,19 +32,19 @@ export type WandEffect =
   | StatusEffect;
 
 export const WandEffects: { [id: string]: WandEffect } = {
-  seek_closest: { type: "targeting", targeting: "seek-closest", count: 1 },
+  seek_closest: { type: "targeting", targeting: "seek closest", count: 1 },
   bolt: { type: "projectile", projectile: "bolt" },
   weakMana: { type: "damage", damage: asRoll(1, 4, 0) },
 };
 
-export type StatBonus = "sight" | "speed" | "max-essence";
+export type StatBonus = "sight" | "speed" | "max essence";
 export type StatBonusEffect = {
-  type: "stat-bonus";
+  type: "stat bonus";
   stat: StatBonus;
   power: number;
 };
 export type SoakDamageEffect = {
-  type: "soak-damage";
+  type: "soak damage";
   power: number;
 };
 
@@ -77,9 +77,9 @@ export function isEmptySoul(soul: Soul): boolean {
 
 function describeSoulEffect(e: SoulEffect) {
   switch (e.type) {
-    case "soak-damage":
-      return "soak " + e.power + "damage";
-    case "stat-bonus":
+    case "soak damage":
+      return "soak " + e.power + " damage";
+    case "stat bonus":
       if (e.stat === "speed") {
         return "+" + Math.floor(e.power * 100) + "% " + e.stat;
       } else {

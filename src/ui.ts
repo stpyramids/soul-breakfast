@@ -28,35 +28,41 @@ function tick() {
     return;
   }
 
+  let noop = false;
   while (Game.player.energy >= 1.0) {
     let nextCommand = UI.commandQueue.shift();
     if (nextCommand) {
-      Commands[nextCommand]();
-      Game.turns += 1;
+      noop = !Commands[nextCommand]();
+      if (!noop) {
+        Game.turns += 1;
+      }
       UI.uiCallback();
     } else {
       break;
     }
   }
 
-  for (let i = 0; i < Game.map.w * Game.map.h; i++) {
-    if (Game.map.monsters[i]) {
-      // This is all pretty stupid
-      const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
-      const m = c.monster!;
-      if (!m.dying) {
-        const arch = MonsterArchetypes[m.archetype];
-        const ai = AI[arch.ai];
-        m.energy += arch.speed;
-        while (m.energy >= 1.0) {
-          m.energy -= ai(c);
+  // Don't let UI act when game is 'paused'
+  if (!(noop || activeChoice)) {
+    for (let i = 0; i < Game.map.w * Game.map.h; i++) {
+      if (Game.map.monsters[i]) {
+        // This is all pretty stupid
+        const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
+        const m = c.monster!;
+        if (!m.dying) {
+          const arch = MonsterArchetypes[m.archetype];
+          const ai = AI[arch.ai];
+          m.energy += arch.speed;
+          while (m.energy >= 1.0) {
+            m.energy -= ai(c);
+          }
         }
       }
     }
-  }
 
-  if (Game.player.energy < 1.0) {
-    Game.player.energy += getPlayerSpeed();
+    if (Game.player.energy < 1.0) {
+      Game.player.energy += getPlayerSpeed();
+    }
   }
 
   recomputeFOV();
@@ -77,7 +83,7 @@ function handleInput() {
       UI.uiCallback();
     } else {
       let command = Commands[e.key];
-      if (command) {
+      if (command !== undefined) {
         UI.commandQueue.push(e.key);
         setTimeout(tick, 0);
       }
@@ -207,6 +213,7 @@ export function runGame() {
     document.getElementById("essence")!.innerText =
       Game.player.essence.toString();
     document.getElementById("maxEssence")!.innerText = maxEssence().toString();
+    document.getElementById("turns")!.innerText = Game.turns.toString();
     document.getElementById("mapDanger")!.innerText =
       getMapDescription() + " [Danger: " + Game.map.danger + "]";
 
@@ -272,6 +279,6 @@ export function startNewGame() {
     "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!"
   );
   msg.break();
-  msg.help("Reach danger level 50 to win.");
+  msg.help("Reach danger level %s to win.", Game.maxLevel);
   UI.uiCallback();
 }

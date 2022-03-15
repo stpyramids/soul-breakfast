@@ -24,6 +24,7 @@ export let Game = {
       generic: [EmptySoul, EmptySoul, EmptySoul] as Array<Soul>,
     },
   },
+  maxLevel: 30,
   map: {
     danger: 1,
     w: 80,

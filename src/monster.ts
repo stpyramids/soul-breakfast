@@ -13,15 +13,8 @@ import {
   newMap,
 } from "./map";
 import { msg } from "./msg";
-import {
-  EmptySoul,
-  Soul,
-  WandEffect,
-  RingEffect,
-  GenericEffect,
-  isEmptySoul,
-} from "./souls";
-import { keysOf, asRoll, doRoll, Roll, describeRoll } from "./utils";
+import { EmptySoul, Soul, isEmptySoul } from "./souls";
+import { keysOf, asRoll, doRoll, Roll } from "./utils";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
 const verminHP: Roll = { n: 1, sides: 1, mod: 0 };
@@ -93,42 +86,67 @@ export type Attack = {
   attackFrom: (c: XYContents) => void;
 };
 
+const DamageDescriptions = [
+  [0, "You absorb the attack"],
+  [1, "Your essence trembles"],
+  [5, "Your essence wavers"],
+  [10, "You stagger as your essence is drained"],
+  [20, "Your connection to the mortal world frays"],
+  [30, "Your being is stretched to the breaking point"],
+  [50, "You briefly swim through endless aeons of hell"],
+];
+
+export function getDamageDescription(dmg: number) {
+  for (let i = DamageDescriptions.length - 1; i >= 0; i--) {
+    if (DamageDescriptions[i][0] <= dmg) {
+      return DamageDescriptions[i][1];
+    }
+  }
+  return DamageDescriptions[0][1];
+}
 export function doDamage(dmg: number) {
-  dmg -= applySoak(dmg);
+  dmg = applySoak(dmg);
   if (dmg <= 0) {
     msg.combat("You absorb the attack!");
     return;
   }
-  msg.combat("Your essence wavers!");
+  msg.combat("%s (%s)%s", getDamageDescription(dmg), dmg, dmg > 8 ? "!" : ".");
+  let wasZero = Game.player.essence === 0;
   Game.player.essence -= dmg;
   if (Game.player.essence < 0) {
     let extra = Math.abs(Game.player.essence);
     Game.player.essence = 0;
     let soulChecked = false;
     let soulBroken = false;
-    for (let slotGroup of keysOf(Game.player.soulSlots)) {
-      let slots = Game.player.soulSlots[slotGroup];
-      for (let i = 0; i < slots.length; i++) {
-        if (!isEmptySoul(slots[i])) {
-          soulChecked = true;
-          let roll = asRoll(1, slots[i].essence, 1);
-          if (doRoll(roll) < extra) {
-            soulBroken = true;
-            msg.angry("No!");
-            msg.essence("The %s soul breaks free!", slots[i].name);
-            slots[i] = EmptySoul;
-            break;
+    if (wasZero) {
+      for (let slotGroup of keysOf(Game.player.soulSlots)) {
+        let slots = Game.player.soulSlots[slotGroup];
+        for (let i = 0; i < slots.length; i++) {
+          if (!isEmptySoul(slots[i])) {
+            soulChecked = true;
+            let roll = asRoll(1, slots[i].essence, 1);
+            if (doRoll(roll) < extra) {
+              soulBroken = true;
+              msg.angry("No!");
+              msg.essence("The %s soul breaks free!", slots[i].name);
+              slots[i] = EmptySoul;
+              break;
+            }
           }
         }
       }
-    }
-    if (!soulChecked) {
-      let blowback = doRoll(asRoll(1, extra, -3));
-      if (blowback > 0) {
-        msg.angry("I cannot hold together! I must flee!");
-        newMap({
-          danger: Game.map.danger - Math.floor(blowback / 2),
-        });
+      if (!soulChecked) {
+        let blowback = doRoll(asRoll(1, extra, -3));
+        if (blowback > 0) {
+          msg.angry("I cannot hold together! I must flee!");
+          let newDanger = Game.map.danger - ROT.RNG.getUniformInt(1, blowback);
+          if (newDanger < 1) {
+            newDanger = 1;
+          }
+          newMap({
+            danger: newDanger,
+          });
+        }
       }
     } else {
       msg.tutorial(
@@ -152,9 +170,9 @@ export function meleeAttack(verb: string, damage: Roll): Attack {
       let m = c.monster;
       let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
       // TODO combat parameters
-      if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
+      if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
         // damage dice scale up with danger
-        let dmgRoll = { ...damage, n: (danger / 2) * damage.n };
+        let dmgRoll = { ...damage, n: damage.n + Math.floor(danger / 5) };
         let dmg = doRoll(dmgRoll);
         doDamage(dmg);
       }
@@ -170,9 +188,9 @@ export function rangedAttack(verb: string, damage: Roll): Attack {
       let m = c.monster;
       let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
       // TODO combat parameters
-      if (doRoll(asRoll(1, 100, 0)) > 100 - danger * 2) {
+      if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
         // damage dice scale up with danger
-        let dmgRoll = { ...damage, n: (danger / 2) * damage.n };
+        let dmgRoll = { ...damage, n: damage.n + Math.floor(danger / 5) };
         let dmg = doRoll(dmgRoll);
         doDamage(dmg);
         // TODO some kind of effect
@@ -220,7 +238,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     glyph: a.glyph,
     essence: a.danger,
     name: a.name,
-    effects: [{ type: "stat-bonus", stat: "max-essence", power: a.danger }],
+    effects: [{ type: "stat bonus", stat: "max essence", power: a.danger }],
   }),
   extraDamage: (a) => ({
     glyph: a.glyph,
@@ -228,8 +246,8 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     name: a.name,
     effects: [
       {
-        type: "stat-bonus",
-        stat: "max-essence",
+        type: "stat bonus",
+        stat: "max essence",
         power: Math.floor(a.danger / 2) + 1,
       },
       { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) },
@@ -241,8 +259,8 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     name: a.name,
     effects: [
       {
-        type: "stat-bonus",
-        stat: "max-essence",
+        type: "stat bonus",
+        stat: "max essence",
         power: Math.floor(a.danger / 2) + 1,
       },
       { type: "status", status: "slow", power: Math.floor(a.danger / 2) + 1 },
@@ -253,9 +271,9 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     essence: a.danger,
     name: a.name,
     effects: [
-      { type: "stat-bonus", stat: "max-essence", power: a.danger },
+      { type: "stat bonus", stat: "max essence", power: a.danger },
       {
-        type: "stat-bonus",
+        type: "stat bonus",
         stat: "sight",
         power: Math.floor(a.danger / 2) + 1,
       },
@@ -268,12 +286,12 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     name: a.name,
     effects: [
       {
-        type: "stat-bonus",
-        stat: "max-essence",
+        type: "stat bonus",
+        stat: "max essence",
         power: Math.floor(a.danger * 0.8),
       },
       {
-        type: "stat-bonus",
+        type: "stat bonus",
         stat: "speed",
         power: 0.05 * Math.floor(a.danger / 2),
       },
@@ -286,12 +304,12 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     name: a.name,
     effects: [
       {
-        type: "stat-bonus",
-        stat: "max-essence",
+        type: "stat bonus",
+        stat: "max essence",
         power: Math.floor(a.danger / 2) + 1,
       },
       {
-        type: "soak-damage",
+        type: "soak damage",
         power: Math.floor(a.danger / 5),
       },
     ],

@@ -92,7 +92,7 @@ export function findTargets(): Array<XYContents> {
   let targets: Array<XYContents> = [];
   let targetEffect = getWand().targeting;
   switch (targetEffect.targeting) {
-    case "seek-closest":
+    case "seek closest":
       let monstersByDistance: Array<[number, XYContents]> = [];
       for (let [x, y] of seenXYs) {
         if (x == Game.player.x && y == Game.player.y) {
@@ -226,7 +226,7 @@ export function newMap(opts?: NewMapOptions) {
     });
   }
 
-  if (Game.map.danger >= 50) {
+  if (Game.map.danger >= Game.maxLevel) {
     msg.tutorial(
       "Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination."
     );

@@ -30,7 +30,7 @@ import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
 
 export function maxEssence(): number {
-  return Game.player.maxEssence + getStatBonus("max-essence");
+  return Game.player.maxEssence + getStatBonus("max essence");
 }
 
 function gainEssence(amt: number) {
@@ -90,7 +90,7 @@ function getStatBonus(stat: StatBonus): number {
   let base = 0;
   for (let soul of Game.player.soulSlots.generic) {
     for (let effect of soul.effects) {
-      if (effect.type == "stat-bonus" && effect.stat == stat) {
+      if (effect.type == "stat bonus" && effect.stat == stat) {
         base += effect.power;
       }
     }
@@ -110,7 +110,7 @@ export function applySoak(dmg: number): number {
   let soak = 0;
   for (let soul of Game.player.soulSlots.generic) {
     for (let effect of soul.effects) {
-      if (effect.type == "soak-damage") {
+      if (effect.type == "soak damage") {
         soak += effect.power;
       }
     }
@@ -152,8 +152,8 @@ function doMovePlayer(dx: number, dy: number): boolean {
   const ny = p.y + dy;
   const c = contentsAt(nx, ny);
   let blocked = c.blocked;
-  // The player can phase through weak or dying monsters.
-  if (blocked && c.monster && weakMonster(c.monster)) {
+  // The player can phase through monsters.
+  if (blocked && c.monster) {
     blocked = false;
   }
   if (!blocked) {
@@ -161,16 +161,24 @@ function doMovePlayer(dx: number, dy: number): boolean {
     p.y = ny;
     p.energy -= 1.0;
     if (c.monster) {
-      if (!Game.player.knownMonsters[c.monster.archetype]) {
-        msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
-        Game.player.knownMonsters[c.monster.archetype] = true;
-        let archetype = MonsterArchetypes[c.monster.archetype];
-        if (archetype.soul === "vermin") {
-          msg.angry("Petty vermin!");
-          msg.tutorial("Use 'd' to devour essence from weak creatures.");
-        } else {
-          msg.tutorial("Use 'c' to claim a weakened creature's soul.");
+      if (weakMonster(c.monster)) {
+        if (!Game.player.knownMonsters[c.monster.archetype]) {
+          msg.essence(
+            "You feel the essence of %the awaiting your grasp.",
+            D(c)
+          );
+          Game.player.knownMonsters[c.monster.archetype] = true;
+          let archetype = MonsterArchetypes[c.monster.archetype];
+          if (archetype.soul === "vermin") {
+            msg.angry("Petty vermin!");
+            msg.tutorial("Use 'd' to devour essence from weak creatures.");
+          } else {
+            msg.tutorial("Use 'c' to claim a weakened creature's soul.");
+          }
         }
+      } else {
+        msg.think("The essence of %the resists my grasp.", D(c));
+        msg.tutorial("Fire spells using SPACE to weaken creatures.");
       }
     }
     if (c.exitDanger) {
@@ -187,39 +195,40 @@ function doMovePlayer(dx: number, dy: number): boolean {
   }
 }
 
-function movePlayer(dx: number, dy: number) {
+function movePlayer(dx: number, dy: number): () => boolean {
   return () => {
     if (!doMovePlayer(dx, dy)) {
       const p = Game.player;
       const nx = p.x + dx;
       const ny = p.y + dy;
       const c = contentsAt(nx, ny);
-      if (c.monster) {
-        msg.think("The essence of %the resists my passage.", D(c));
-        msg.tutorial("Fire spells using SPACE to weaken creatures.");
-      } else {
-        msg.think("There is no passing this way.");
-      }
+      msg.think("There is no passing this way.");
+      return false;
     }
+    return true;
   };
 }
 
-function movePlayerUntil(key: string, dx: number, dy: number) {
+function movePlayerUntil(key: string, dx: number, dy: number): () => boolean {
   return () => {
     if (canSeeThreat()) {
       msg.think("Danger threatens!");
-      return;
+      return false;
     }
     if (doMovePlayer(dx, dy)) {
       UI.commandQueue.push(key);
+      return true;
+    } else {
+      return false;
     }
   };
 }
 
-export const Commands: { [key: string]: Function } = {
+export const Commands: { [key: string]: () => boolean } = {
   // Wait
   ".": () => {
     Game.player.energy -= 1.0;
+    return true;
   },
   // Movement
   h: movePlayer(-1, 0),
@@ -243,8 +252,10 @@ export const Commands: { [key: string]: Function } = {
       } else {
         msg.angry("The wretched creature resists!");
       }
+      return true;
     } else {
       msg.think("Nothing is here to drain of essence.");
+      return false;
     }
   },
   // (c)laim
@@ -272,7 +283,7 @@ export const Commands: { [key: string]: Function } = {
             } else if (slots[i].name === soul.name) {
               msg.essence("You already have claimed this soul.");
               claimed = true;
-              break;
+              return false;
             }
           }
           if (!claimed) {
@@ -280,6 +291,7 @@ export const Commands: { [key: string]: Function } = {
             msg.tutorial("Use 'r' to release a soul.");
           } else {
             killMonsterAt(c, "drain");
+            return true;
           }
         } else {
           msg.angry("The wretched creature resists!");
@@ -288,6 +300,7 @@ export const Commands: { [key: string]: Function } = {
     } else {
       msg.think("No soul is here to claim.");
     }
+    return false;
   },
   // Pass through exit
   ">": () => {
@@ -308,17 +321,18 @@ export const Commands: { [key: string]: Function } = {
     } else {
       msg.think("There is no passage here.");
     }
+    return false;
   },
   // release soul
   r: () => {
-    tryReleaseSoul();
+    return tryReleaseSoul();
   },
   // fire spell
   " ": () => {
     let wand = getWand();
     if (wand.cost > Game.player.essence) {
       msg.angry("I must have more essence!");
-      return;
+      return false;
     }
     // Do targeting
     let targets = findTargets();
@@ -330,10 +344,11 @@ export const Commands: { [key: string]: Function } = {
       }
     } else {
       msg.think("I see none here to destroy.");
-      return;
+      return false;
     }
     Game.player.essence -= wand.cost;
     Game.player.energy -= 1.0;
+    return true;
   },
   // Quit and reset
   Q: () => {
@@ -351,6 +366,7 @@ export const Commands: { [key: string]: Function } = {
         },
       }
     );
+    return false;
   },
   // Wizard commands
   W: () => {
@@ -375,6 +391,7 @@ export const Commands: { [key: string]: Function } = {
         }
       );
     }
+    return false;
   },
 };
 
