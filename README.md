@@ -63,3 +63,29 @@ Some of these are documented in game. Online
   - Combat messages
   - Level themes
 - Detailed online help
+
+## Mechanics Notes
+
+The original game concept had soul slots associated with "wand", "ring", and "crown". The original plan, which would have given you nine slots right off the bat (and only being able to put one type of soul in a given slot) doesn't seem like it would be very fun. However, I do like the idea of typed slots and I do think that there should be more than just 3 slots in the long term. So here's my general idea: the wand, ring, and crown relics are upgrades you unlock as the game progresses. Each of them serves as a soul slot, and there are particular high-level soul effects that only function if you put them in the correct slot:
+
+- Wand (knife?) effects enhance your attack
+- Ring (spoon?) effects enhance your defense
+- Crown (fork?) effects grant passive and active abilities
+
+Winning the game would require unlocking all three bonus slots and filling them with a specific soul from a top-tier monster. These are marked by special soul effects, and only one monster type has the appropriate soul for each relic.
+
+Unlocking a relic slot would become possible after a certain danger level. Passages to a challenge level with a higher effective danger and some special map generation logic appear. These passages are free but you must claim the relic to exit. Blowback works the same in these levels, and you can retry them as much as you want.
+
+I'm not sure whether you could lose relic slots or not. If so, you'd be able to regain them.
+
+So the gameplay looks more or less like this:
+
+- Gain essence
+- Fight enemies
+- Claim souls
+- Go to harder levels
+- Repeat until you see a portal to a relic challenge
+- Win the relic challenge and unlock the new slot
+- Repeat until you have all three relics
+- Find the monsters with the 'sovereign' soul effects and claim them into the appropriate slot
+- Enter some kind of final area, perhaps? Or do you just win outright? I like the idea that having all three sovereign souls makes you comically powerful and you get a victory lap of sorts

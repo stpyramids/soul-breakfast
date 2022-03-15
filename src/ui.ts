@@ -1,21 +1,13 @@
 import * as ROT from "rot-js";
 
 import { Colors } from "./colors";
-import { Commands, getPlayerSpeed, maxEssence } from "./commands";
+import { Commands, getPlayerSpeed } from "./commands";
 import { Game, resetGame } from "./game";
 import { Glyphs } from "./glyphs";
-import {
-  contentsAt,
-  recomputeFOV,
-  findTargets,
-  seenXYs,
-  getVictim,
-  newMap,
-  getMapDescription,
-} from "./map";
-import { MonsterArchetypes, AI, weakMonster, getSoul } from "./monster";
+import { contentsAt, recomputeFOV, findTargets, seenXYs, newMap } from "./map";
+import { MonsterArchetypes, AI, weakMonster } from "./monster";
 import { msg } from "./msg";
-import { Soul, EmptySoul, describeSoulEffects } from "./souls";
+import { renderControls } from "./ui/controls";
 
 export const UI = {
   commandQueue: [] as Array<keyof typeof Commands>,
@@ -71,24 +63,6 @@ function tick() {
   if (UI.commandQueue.length > 0) {
     tick();
   }
-}
-
-/// Input handling
-
-function handleInput() {
-  document.addEventListener("keydown", (e) => {
-    if (activeChoice) {
-      activeChoice.callbacks.onChoose(e.key);
-      activeChoice = null;
-      UI.uiCallback();
-    } else {
-      let command = Commands[e.key];
-      if (command !== undefined) {
-        UI.commandQueue.push(e.key);
-        setTimeout(tick, 0);
-      }
-    }
-  });
 }
 
 /// Graphics
@@ -182,85 +156,53 @@ export function offerChoice(
 
 // Initializes the game state and begins rendering to a ROT.js canvas.
 export function runGame() {
+  let logMessages: Array<Array<[string, string]>> = [];
+
   // This part of the ROT.js API is not exposed as a type definition.
   (ROT.Util.format as any).map.the = "the";
+
+  // Render the UI for the first time
+  renderControls(Game, logMessages);
+
   // Set up the ROT.js playfield
   let playarea = document.getElementById("playarea")!;
-  let messages = document.getElementById("messages")!;
   let display = new ROT.Display(Game.viewport);
   let dispC = display.getContainer()!;
   playarea.appendChild(dispC);
-  let logEl = document.createElement("ul");
-  logEl.className = "messageLog";
-  messages.appendChild(logEl);
-  let logMessages: Array<[string, string]> = [];
+
+  // Set up UI rendering
   UI.uiCallback = () => {
     // Draw the map
     drawMap(display);
-    // Update message log
-    if (logMessages.length > 0) {
-      let logLine = document.createElement("li");
-      for (let [msg, msgType] of logMessages) {
-        let msgEl = document.createElement("span");
-        msgEl.className = "msg-" + msgType;
-        msgEl.innerHTML = msg + " ";
-        logLine.appendChild(msgEl);
-      }
-      logEl.prepend(logLine);
-      logMessages.length = 0;
-    }
-    // Update stat view
-    document.getElementById("essence")!.innerText =
-      Game.player.essence.toString();
-    document.getElementById("maxEssence")!.innerText = maxEssence().toString();
-    document.getElementById("turns")!.innerText = Game.turns.toString();
-    document.getElementById("mapDanger")!.innerText =
-      getMapDescription() + " [Danger: " + Game.map.danger + "]";
-
-    // Update soul view
-    let soulEl = document.getElementById("souls")!;
-    let souls: Array<Soul> = [];
-    let c = getVictim();
-    if (c.monster) {
-      let soul = getSoul(c.monster);
-      document.getElementById("hereGlyph")!.innerHTML = Glyphs[soul.glyph];
-      document.getElementById("hereWhat")!.innerHTML = soul.name;
-      document.getElementById("hereDescription")!.innerHTML =
-        describeSoulEffects(soul);
-    } else if (c.tile) {
-      document.getElementById("hereGlyph")!.innerHTML = Glyphs[c.tile.glyph];
-      document.getElementById("hereWhat")!.innerHTML = c.tile.glyph;
-      if (c.exitDanger) {
-        document.getElementById("hereDescription")!.innerHTML =
-          "Danger: " + c.exitDanger;
-      } else {
-        document.getElementById("hereDescription")!.innerHTML = "";
-      }
-    }
-    soulEl.innerHTML = "";
-    for (let soul of Game.player.soulSlots.generic) {
-      let el = document.createElement("div");
-      el.className = "soul-glyph";
-      el.innerHTML = Glyphs[soul.glyph]; // TODO
-      soulEl.appendChild(el);
-      el = document.createElement("div");
-      el.className = "soul-name";
-      el.innerHTML = soul.name; // TODO
-      soulEl.appendChild(el);
-      el = document.createElement("div");
-      el.className = "soul-effect";
-      el.innerHTML = describeSoulEffects(soul);
-      soulEl.appendChild(el);
-    }
+    renderControls(Game, logMessages);
   };
   UI.logCallback = (msg: string, msgType: string | undefined) => {
     if (!msgType) {
       msgType = "info";
     }
-    logMessages.push([msg, msgType]);
+    if (!logMessages[Game.turns]) {
+      logMessages[Game.turns] = [];
+    }
+    logMessages[Game.turns].push([msg, msgType]);
   };
   handleInput();
   startNewGame();
+}
+
+function handleInput() {
+  document.addEventListener("keydown", (e) => {
+    if (activeChoice) {
+      activeChoice.callbacks.onChoose(e.key);
+      activeChoice = null;
+      UI.uiCallback();
+    } else {
+      let command = Commands[e.key];
+      if (command !== undefined) {
+        UI.commandQueue.push(e.key);
+        setTimeout(tick, 0);
+      }
+    }
+  });
 }
 
 export function startNewGame() {

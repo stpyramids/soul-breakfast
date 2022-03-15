@@ -37,7 +37,9 @@ export let Game = {
   monsterSouls: {} as { [id: string]: Soul },
 };
 
-let freshGame = JSON.parse(JSON.stringify(Game)) as typeof Game;
+export type GameState = typeof Game;
+
+let freshGame = JSON.parse(JSON.stringify(Game)) as GameState;
 
 export function resetGame() {
   Game = freshGame;
