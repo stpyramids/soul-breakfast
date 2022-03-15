@@ -6,18 +6,18 @@
   var __hasOwnProp = Object.prototype.hasOwnProperty;
   var __propIsEnum = Object.prototype.propertyIsEnumerable;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __spreadValues = (a, b) => {
-    for (var prop in b || (b = {}))
-      if (__hasOwnProp.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
+  var __spreadValues = (a2, b2) => {
+    for (var prop in b2 || (b2 = {}))
+      if (__hasOwnProp.call(b2, prop))
+        __defNormalProp(a2, prop, b2[prop]);
     if (__getOwnPropSymbols)
-      for (var prop of __getOwnPropSymbols(b)) {
-        if (__propIsEnum.call(b, prop))
-          __defNormalProp(a, prop, b[prop]);
+      for (var prop of __getOwnPropSymbols(b2)) {
+        if (__propIsEnum.call(b2, prop))
+          __defNormalProp(a2, prop, b2[prop]);
       }
-    return a;
+    return a2;
   };
-  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+  var __spreadProps = (a2, b2) => __defProps(a2, __getOwnPropDescs(b2));
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
@@ -48,11 +48,11 @@
       return this;
     }
     getUniform() {
-      let t = 2091639 * this._s0 + this._c * FRAC;
+      let t2 = 2091639 * this._s0 + this._c * FRAC;
       this._s0 = this._s1;
       this._s1 = this._s2;
-      this._c = t | 0;
-      this._s2 = t - this._c;
+      this._c = t2 | 0;
+      this._s2 = t2 - this._c;
       return this._s2;
     }
     getUniformInt(lowerBound, upperBound) {
@@ -61,13 +61,13 @@
       return Math.floor(this.getUniform() * (max - min + 1)) + min;
     }
     getNormal(mean = 0, stddev = 1) {
-      let u, v, r;
+      let u2, v2, r2;
       do {
-        u = 2 * this.getUniform() - 1;
-        v = 2 * this.getUniform() - 1;
-        r = u * u + v * v;
-      } while (r > 1 || r == 0);
-      let gauss = u * Math.sqrt(-2 * Math.log(r) / r);
+        u2 = 2 * this.getUniform() - 1;
+        v2 = 2 * this.getUniform() - 1;
+        r2 = u2 * u2 + v2 * v2;
+      } while (r2 > 1 || r2 == 0);
+      let gauss = u2 * Math.sqrt(-2 * Math.log(r2) / r2);
       return mean + gauss * stddev;
     }
     getPercentage() {
@@ -156,17 +156,17 @@
       this._ctx.fillStyle = this._options.bg;
       this._ctx.fillRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height);
     }
-    eventToPosition(x, y) {
+    eventToPosition(x2, y2) {
       let canvas = this._ctx.canvas;
       let rect = canvas.getBoundingClientRect();
-      x -= rect.left;
-      y -= rect.top;
-      x *= canvas.width / rect.width;
-      y *= canvas.height / rect.height;
-      if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
+      x2 -= rect.left;
+      y2 -= rect.top;
+      x2 *= canvas.width / rect.width;
+      y2 *= canvas.height / rect.height;
+      if (x2 < 0 || y2 < 0 || x2 >= canvas.width || y2 >= canvas.height) {
         return [-1, -1];
       }
-      return this._normalizedEventToPosition(x, y);
+      return this._normalizedEventToPosition(x2, y2);
     }
   };
 
@@ -178,8 +178,8 @@
     format: () => format,
     mod: () => mod
   });
-  function mod(x, n) {
-    return (x % n + n) % n;
+  function mod(x2, n2) {
+    return (x2 % n2 + n2) % n2;
   }
   function clamp(val, min = 0, max = 1) {
     if (val < min)
@@ -231,10 +231,10 @@
       this._hexSize = 0;
     }
     draw(data, clearBefore) {
-      let [x, y, ch, fg, bg] = data;
+      let [x2, y2, ch, fg, bg] = data;
       let px = [
-        (x + 1) * this._spacingX,
-        y * this._spacingY + this._hexSize
+        (x2 + 1) * this._spacingX,
+        y2 * this._spacingY + this._hexSize
       ];
       if (this._options.transpose) {
         px.reverse();
@@ -248,8 +248,8 @@
       }
       this._ctx.fillStyle = fg;
       let chars = [].concat(ch);
-      for (let i = 0; i < chars.length; i++) {
-        this._ctx.fillText(chars[i], px[0], Math.ceil(px[1]));
+      for (let i2 = 0; i2 < chars.length; i2++) {
+        this._ctx.fillText(chars[i2], px[0], Math.ceil(px[1]));
       }
     }
     computeSize(availWidth, availHeight) {
@@ -280,47 +280,47 @@
       let fontSize = 2 * hexSize / (this._options.spacing * (1 + ratio / Math.sqrt(3)));
       return Math.ceil(fontSize) - 1;
     }
-    _normalizedEventToPosition(x, y) {
+    _normalizedEventToPosition(x2, y2) {
       let nodeSize;
       if (this._options.transpose) {
-        x += y;
-        y = x - y;
-        x -= y;
+        x2 += y2;
+        y2 = x2 - y2;
+        x2 -= y2;
         nodeSize = this._ctx.canvas.width;
       } else {
         nodeSize = this._ctx.canvas.height;
       }
       let size = nodeSize / this._options.height;
-      y = Math.floor(y / size);
-      if (mod(y, 2)) {
-        x -= this._spacingX;
-        x = 1 + 2 * Math.floor(x / (2 * this._spacingX));
+      y2 = Math.floor(y2 / size);
+      if (mod(y2, 2)) {
+        x2 -= this._spacingX;
+        x2 = 1 + 2 * Math.floor(x2 / (2 * this._spacingX));
       } else {
-        x = 2 * Math.floor(x / (2 * this._spacingX));
+        x2 = 2 * Math.floor(x2 / (2 * this._spacingX));
       }
-      return [x, y];
+      return [x2, y2];
     }
     _fill(cx, cy) {
-      let a = this._hexSize;
-      let b = this._options.border;
+      let a2 = this._hexSize;
+      let b2 = this._options.border;
       const ctx = this._ctx;
       ctx.beginPath();
       if (this._options.transpose) {
-        ctx.moveTo(cx - a + b, cy);
-        ctx.lineTo(cx - a / 2 + b, cy + this._spacingX - b);
-        ctx.lineTo(cx + a / 2 - b, cy + this._spacingX - b);
-        ctx.lineTo(cx + a - b, cy);
-        ctx.lineTo(cx + a / 2 - b, cy - this._spacingX + b);
-        ctx.lineTo(cx - a / 2 + b, cy - this._spacingX + b);
-        ctx.lineTo(cx - a + b, cy);
+        ctx.moveTo(cx - a2 + b2, cy);
+        ctx.lineTo(cx - a2 / 2 + b2, cy + this._spacingX - b2);
+        ctx.lineTo(cx + a2 / 2 - b2, cy + this._spacingX - b2);
+        ctx.lineTo(cx + a2 - b2, cy);
+        ctx.lineTo(cx + a2 / 2 - b2, cy - this._spacingX + b2);
+        ctx.lineTo(cx - a2 / 2 + b2, cy - this._spacingX + b2);
+        ctx.lineTo(cx - a2 + b2, cy);
       } else {
-        ctx.moveTo(cx, cy - a + b);
-        ctx.lineTo(cx + this._spacingX - b, cy - a / 2 + b);
-        ctx.lineTo(cx + this._spacingX - b, cy + a / 2 - b);
-        ctx.lineTo(cx, cy + a - b);
-        ctx.lineTo(cx - this._spacingX + b, cy + a / 2 - b);
-        ctx.lineTo(cx - this._spacingX + b, cy - a / 2 + b);
-        ctx.lineTo(cx, cy - a + b);
+        ctx.moveTo(cx, cy - a2 + b2);
+        ctx.lineTo(cx + this._spacingX - b2, cy - a2 / 2 + b2);
+        ctx.lineTo(cx + this._spacingX - b2, cy + a2 / 2 - b2);
+        ctx.lineTo(cx, cy + a2 - b2);
+        ctx.lineTo(cx - this._spacingX + b2, cy + a2 / 2 - b2);
+        ctx.lineTo(cx - this._spacingX + b2, cy - a2 / 2 + b2);
+        ctx.lineTo(cx, cy - a2 + b2);
       }
       ctx.fill();
     }
@@ -365,47 +365,47 @@
         }
       }
       _drawWithCache(data) {
-        let [x, y, ch, fg, bg] = data;
+        let [x2, y2, ch, fg, bg] = data;
         let hash = "" + ch + fg + bg;
         let canvas;
         if (hash in this._canvasCache) {
           canvas = this._canvasCache[hash];
         } else {
-          let b = this._options.border;
+          let b2 = this._options.border;
           canvas = document.createElement("canvas");
           let ctx = canvas.getContext("2d");
           canvas.width = this._spacingX;
           canvas.height = this._spacingY;
           ctx.fillStyle = bg;
-          ctx.fillRect(b, b, canvas.width - b, canvas.height - b);
+          ctx.fillRect(b2, b2, canvas.width - b2, canvas.height - b2);
           if (ch) {
             ctx.fillStyle = fg;
             ctx.font = this._ctx.font;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             let chars = [].concat(ch);
-            for (let i = 0; i < chars.length; i++) {
-              ctx.fillText(chars[i], this._spacingX / 2, Math.ceil(this._spacingY / 2));
+            for (let i2 = 0; i2 < chars.length; i2++) {
+              ctx.fillText(chars[i2], this._spacingX / 2, Math.ceil(this._spacingY / 2));
             }
           }
           this._canvasCache[hash] = canvas;
         }
-        this._ctx.drawImage(canvas, x * this._spacingX, y * this._spacingY);
+        this._ctx.drawImage(canvas, x2 * this._spacingX, y2 * this._spacingY);
       }
       _drawNoCache(data, clearBefore) {
-        let [x, y, ch, fg, bg] = data;
+        let [x2, y2, ch, fg, bg] = data;
         if (clearBefore) {
-          let b = this._options.border;
+          let b2 = this._options.border;
           this._ctx.fillStyle = bg;
-          this._ctx.fillRect(x * this._spacingX + b, y * this._spacingY + b, this._spacingX - b, this._spacingY - b);
+          this._ctx.fillRect(x2 * this._spacingX + b2, y2 * this._spacingY + b2, this._spacingX - b2, this._spacingY - b2);
         }
         if (!ch) {
           return;
         }
         this._ctx.fillStyle = fg;
         let chars = [].concat(ch);
-        for (let i = 0; i < chars.length; i++) {
-          this._ctx.fillText(chars[i], (x + 0.5) * this._spacingX, Math.ceil((y + 0.5) * this._spacingY));
+        for (let i2 = 0; i2 < chars.length; i2++) {
+          this._ctx.fillText(chars[i2], (x2 + 0.5) * this._spacingX, Math.ceil((y2 + 0.5) * this._spacingY));
         }
       }
       computeSize(availWidth, availHeight) {
@@ -427,8 +427,8 @@
         }
         return Math.floor(boxHeight / this._options.spacing);
       }
-      _normalizedEventToPosition(x, y) {
-        return [Math.floor(x / this._spacingX), Math.floor(y / this._spacingY)];
+      _normalizedEventToPosition(x2, y2) {
+        return [Math.floor(x2 / this._spacingX), Math.floor(y2 / this._spacingY)];
       }
       _updateSize() {
         const opts = this._options;
@@ -454,15 +454,15 @@
       this._colorCanvas = document.createElement("canvas");
     }
     draw(data, clearBefore) {
-      let [x, y, ch, fg, bg] = data;
+      let [x2, y2, ch, fg, bg] = data;
       let tileWidth = this._options.tileWidth;
       let tileHeight = this._options.tileHeight;
       if (clearBefore) {
         if (this._options.tileColorize) {
-          this._ctx.clearRect(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+          this._ctx.clearRect(x2 * tileWidth, y2 * tileHeight, tileWidth, tileHeight);
         } else {
           this._ctx.fillStyle = bg;
-          this._ctx.fillRect(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+          this._ctx.fillRect(x2 * tileWidth, y2 * tileHeight, tileWidth, tileHeight);
         }
       }
       if (!ch) {
@@ -471,18 +471,18 @@
       let chars = [].concat(ch);
       let fgs = [].concat(fg);
       let bgs = [].concat(bg);
-      for (let i = 0; i < chars.length; i++) {
-        let tile = this._options.tileMap[chars[i]];
+      for (let i2 = 0; i2 < chars.length; i2++) {
+        let tile = this._options.tileMap[chars[i2]];
         if (!tile) {
-          throw new Error(`Char "${chars[i]}" not found in tileMap`);
+          throw new Error(`Char "${chars[i2]}" not found in tileMap`);
         }
         if (this._options.tileColorize) {
           let canvas = this._colorCanvas;
           let context = canvas.getContext("2d");
           context.globalCompositeOperation = "source-over";
           context.clearRect(0, 0, tileWidth, tileHeight);
-          let fg2 = fgs[i];
-          let bg2 = bgs[i];
+          let fg2 = fgs[i2];
+          let bg2 = bgs[i2];
           context.drawImage(this._options.tileSet, tile[0], tile[1], tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
           if (fg2 != "transparent") {
             context.fillStyle = fg2;
@@ -494,9 +494,9 @@
             context.globalCompositeOperation = "destination-over";
             context.fillRect(0, 0, tileWidth, tileHeight);
           }
-          this._ctx.drawImage(canvas, x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+          this._ctx.drawImage(canvas, x2 * tileWidth, y2 * tileHeight, tileWidth, tileHeight);
         } else {
-          this._ctx.drawImage(this._options.tileSet, tile[0], tile[1], tileWidth, tileHeight, x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+          this._ctx.drawImage(this._options.tileSet, tile[0], tile[1], tileWidth, tileHeight, x2 * tileWidth, y2 * tileHeight, tileWidth, tileHeight);
         }
       }
     }
@@ -508,8 +508,8 @@
     computeFontSize() {
       throw new Error("Tile backend does not understand font size");
     }
-    _normalizedEventToPosition(x, y) {
-      return [Math.floor(x / this._options.tileWidth), Math.floor(y / this._options.tileHeight)];
+    _normalizedEventToPosition(x2, y2) {
+      return [Math.floor(x2 / this._options.tileWidth), Math.floor(y2 / this._options.tileHeight)];
     }
     _updateSize() {
       const opts = this._options;
@@ -522,24 +522,24 @@
 
   // node_modules/rot-js/lib/color.js
   function fromString(str) {
-    let cached, r;
+    let cached, r2;
     if (str in CACHE) {
       cached = CACHE[str];
     } else {
       if (str.charAt(0) == "#") {
         let matched = str.match(/[0-9a-f]/gi) || [];
-        let values = matched.map((x) => parseInt(x, 16));
+        let values = matched.map((x2) => parseInt(x2, 16));
         if (values.length == 3) {
-          cached = values.map((x) => x * 17);
+          cached = values.map((x2) => x2 * 17);
         } else {
-          for (let i = 0; i < 3; i++) {
-            values[i + 1] += 16 * values[i];
-            values.splice(i, 1);
+          for (let i2 = 0; i2 < 3; i2++) {
+            values[i2 + 1] += 16 * values[i2];
+            values.splice(i2, 1);
           }
           cached = values;
         }
-      } else if (r = str.match(/rgb\(([0-9, ]+)\)/i)) {
-        cached = r[1].split(/\s*,\s*/).map((x) => parseInt(x));
+      } else if (r2 = str.match(/rgb\(([0-9, ]+)\)/i)) {
+        cached = r2[1].split(/\s*,\s*/).map((x2) => parseInt(x2));
       } else {
         cached = [0, 0, 0];
       }
@@ -703,8 +703,8 @@
       this._uniforms = {};
       try {
         this._gl = this._initWebGL();
-      } catch (e) {
-        alert(e.message);
+      } catch (e2) {
+        alert(e2.message);
       }
     }
     static isSupported() {
@@ -729,9 +729,9 @@
     draw(data, clearBefore) {
       const gl = this._gl;
       const opts = this._options;
-      let [x, y, ch, fg, bg] = data;
-      let scissorY = gl.canvas.height - (y + 1) * opts.tileHeight;
-      gl.scissor(x * opts.tileWidth, scissorY, opts.tileWidth, opts.tileHeight);
+      let [x2, y2, ch, fg, bg] = data;
+      let scissorY = gl.canvas.height - (y2 + 1) * opts.tileHeight;
+      gl.scissor(x2 * opts.tileWidth, scissorY, opts.tileWidth, opts.tileHeight);
       if (clearBefore) {
         if (opts.tileColorize) {
           gl.clearColor(0, 0, 0, 0);
@@ -746,17 +746,17 @@
       let chars = [].concat(ch);
       let bgs = [].concat(bg);
       let fgs = [].concat(fg);
-      gl.uniform2fv(this._uniforms["targetPosRel"], [x, y]);
-      for (let i = 0; i < chars.length; i++) {
-        let tile = this._options.tileMap[chars[i]];
+      gl.uniform2fv(this._uniforms["targetPosRel"], [x2, y2]);
+      for (let i2 = 0; i2 < chars.length; i2++) {
+        let tile = this._options.tileMap[chars[i2]];
         if (!tile) {
-          throw new Error(`Char "${chars[i]}" not found in tileMap`);
+          throw new Error(`Char "${chars[i2]}" not found in tileMap`);
         }
         gl.uniform1f(this._uniforms["colorize"], opts.tileColorize ? 1 : 0);
         gl.uniform2fv(this._uniforms["tilesetPosAbs"], tile);
         if (opts.tileColorize) {
-          gl.uniform4fv(this._uniforms["tint"], parseColor(fgs[i]));
-          gl.uniform4fv(this._uniforms["bg"], parseColor(bgs[i]));
+          gl.uniform4fv(this._uniforms["tint"], parseColor(fgs[i2]));
+          gl.uniform4fv(this._uniforms["bg"], parseColor(bgs[i2]));
         }
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
@@ -775,17 +775,17 @@
     computeFontSize() {
       throw new Error("Tile backend does not understand font size");
     }
-    eventToPosition(x, y) {
+    eventToPosition(x2, y2) {
       let canvas = this._gl.canvas;
       let rect = canvas.getBoundingClientRect();
-      x -= rect.left;
-      y -= rect.top;
-      x *= canvas.width / rect.width;
-      y *= canvas.height / rect.height;
-      if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) {
+      x2 -= rect.left;
+      y2 -= rect.top;
+      x2 *= canvas.width / rect.width;
+      y2 *= canvas.height / rect.height;
+      if (x2 < 0 || y2 < 0 || x2 >= canvas.width || y2 >= canvas.height) {
         return [-1, -1];
       }
-      return this._normalizedEventToPosition(x, y);
+      return this._normalizedEventToPosition(x2, y2);
     }
     _initWebGL() {
       let gl = document.createElement("canvas").getContext("webgl2", { preserveDrawingBuffer: true });
@@ -800,8 +800,8 @@
       gl.enable(gl.SCISSOR_TEST);
       return gl;
     }
-    _normalizedEventToPosition(x, y) {
-      return [Math.floor(x / this._options.tileWidth), Math.floor(y / this._options.tileHeight)];
+    _normalizedEventToPosition(x2, y2) {
+      return [Math.floor(x2 / this._options.tileWidth), Math.floor(y2 / this._options.tileHeight)];
     }
     _updateSize() {
       const gl = this._gl;
@@ -892,15 +892,15 @@ void main() {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   }
   function createTexture(gl, data) {
-    let t = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, t);
+    let t2 = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t2);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, data);
-    return t;
+    return t2;
   }
   var colorCache = {};
   function parseColor(color) {
@@ -910,11 +910,11 @@ void main() {
         parsed = [0, 0, 0, 0];
       } else if (color.indexOf("rgba") > -1) {
         parsed = (color.match(/[\d.]+/g) || []).map(Number);
-        for (let i = 0; i < 3; i++) {
-          parsed[i] = parsed[i] / 255;
+        for (let i2 = 0; i2 < 3; i2++) {
+          parsed[i2] = parsed[i2] / 255;
         }
       } else {
-        parsed = fromString(color).map(($) => $ / 255);
+        parsed = fromString(color).map(($2) => $2 / 255);
         parsed.push(1);
       }
       colorCache[color] = parsed;
@@ -929,18 +929,18 @@ void main() {
   function colorToAnsi(fg, bg) {
     return `\x1B[0;38;5;${termcolor(fg)};48;5;${termcolor(bg)}m`;
   }
-  function positionToAnsi(x, y) {
-    return `\x1B[${y + 1};${x + 1}H`;
+  function positionToAnsi(x2, y2) {
+    return `\x1B[${y2 + 1};${x2 + 1}H`;
   }
   function termcolor(color) {
     const SRC_COLORS = 256;
     const DST_COLORS = 6;
     const COLOR_RATIO = DST_COLORS / SRC_COLORS;
     let rgb = fromString(color);
-    let r = Math.floor(rgb[0] * COLOR_RATIO);
-    let g = Math.floor(rgb[1] * COLOR_RATIO);
-    let b = Math.floor(rgb[2] * COLOR_RATIO);
-    return r * 36 + g * 6 + b * 1 + 16;
+    let r2 = Math.floor(rgb[0] * COLOR_RATIO);
+    let g2 = Math.floor(rgb[1] * COLOR_RATIO);
+    let b2 = Math.floor(rgb[2] * COLOR_RATIO);
+    return r2 * 36 + g2 * 6 + b2 * 1 + 16;
   }
   var Term = class extends Backend {
     constructor() {
@@ -962,9 +962,9 @@ void main() {
       process.stdout.write(clearToAnsi(this._options.bg));
     }
     draw(data, clearBefore) {
-      let [x, y, ch, fg, bg] = data;
-      let dx = this._offset[0] + x;
-      let dy = this._offset[1] + y;
+      let [x2, y2, ch, fg, bg] = data;
+      let dx = this._offset[0] + x2;
+      let dy = this._offset[1] + y2;
       let size = this.computeSize();
       if (dx < 0 || dx >= size[0]) {
         return;
@@ -1003,8 +1003,8 @@ void main() {
     computeFontSize() {
       throw new Error("Terminal backend has no notion of font size");
     }
-    eventToPosition(x, y) {
-      return [x, y];
+    eventToPosition(x2, y2) {
+      return [x2, y2];
     }
     computeSize() {
       return [process.stdout.columns, process.stdout.rows];
@@ -1048,17 +1048,17 @@ void main() {
     if (!maxWidth) {
       maxWidth = Infinity;
     }
-    let i = 0;
+    let i2 = 0;
     let lineLength = 0;
     let lastTokenWithSpace = -1;
-    while (i < tokens.length) {
-      let token = tokens[i];
+    while (i2 < tokens.length) {
+      let token = tokens[i2];
       if (token.type == TYPE_NEWLINE) {
         lineLength = 0;
         lastTokenWithSpace = -1;
       }
       if (token.type != TYPE_TEXT) {
-        i++;
+        i2++;
         continue;
       }
       while (lineLength == 0 && token.value.charAt(0) == " ") {
@@ -1066,7 +1066,7 @@ void main() {
       }
       let index = token.value.indexOf("\n");
       if (index != -1) {
-        token.value = breakInsideToken(tokens, i, index, true);
+        token.value = breakInsideToken(tokens, i2, index, true);
         let arr = token.value.split("");
         while (arr.length && arr[arr.length - 1] == " ") {
           arr.pop();
@@ -1074,7 +1074,7 @@ void main() {
         token.value = arr.join("");
       }
       if (!token.value.length) {
-        tokens.splice(i, 1);
+        tokens.splice(i2, 1);
         continue;
       }
       if (lineLength + token.value.length > maxWidth) {
@@ -1090,27 +1090,27 @@ void main() {
           index2 = nextIndex;
         }
         if (index2 != -1) {
-          token.value = breakInsideToken(tokens, i, index2, true);
+          token.value = breakInsideToken(tokens, i2, index2, true);
         } else if (lastTokenWithSpace != -1) {
           let token2 = tokens[lastTokenWithSpace];
           let breakIndex = token2.value.lastIndexOf(" ");
           token2.value = breakInsideToken(tokens, lastTokenWithSpace, breakIndex, true);
-          i = lastTokenWithSpace;
+          i2 = lastTokenWithSpace;
         } else {
-          token.value = breakInsideToken(tokens, i, maxWidth - lineLength, false);
+          token.value = breakInsideToken(tokens, i2, maxWidth - lineLength, false);
         }
       } else {
         lineLength += token.value.length;
         if (token.value.indexOf(" ") != -1) {
-          lastTokenWithSpace = i;
+          lastTokenWithSpace = i2;
         }
       }
-      i++;
+      i2++;
     }
     tokens.push({ type: TYPE_NEWLINE });
     let lastTextToken = null;
-    for (let i2 = 0; i2 < tokens.length; i2++) {
-      let token = tokens[i2];
+    for (let i3 = 0; i3 < tokens.length; i3++) {
+      let token = tokens[i3];
       switch (token.type) {
         case TYPE_TEXT:
           lastTextToken = token;
@@ -1190,9 +1190,9 @@ void main() {
         this._tick = this._tick.bind(this);
         this._backend.schedule(this._tick);
       }
-      DEBUG(x, y, what) {
+      DEBUG(x2, y2, what) {
         let colors = [this._options.bg, this._options.fg];
-        this.draw(x, y, null, null, colors[what % colors.length]);
+        this.draw(x2, y2, null, null, colors[what % colors.length]);
       }
       clear() {
         this._data = {};
@@ -1227,26 +1227,26 @@ void main() {
         let height = Math.floor(availHeight / this._options.height);
         return [width, height];
       }
-      eventToPosition(e) {
-        let x, y;
-        if ("touches" in e) {
-          x = e.touches[0].clientX;
-          y = e.touches[0].clientY;
+      eventToPosition(e2) {
+        let x2, y2;
+        if ("touches" in e2) {
+          x2 = e2.touches[0].clientX;
+          y2 = e2.touches[0].clientY;
         } else {
-          x = e.clientX;
-          y = e.clientY;
+          x2 = e2.clientX;
+          y2 = e2.clientY;
         }
-        return this._backend.eventToPosition(x, y);
+        return this._backend.eventToPosition(x2, y2);
       }
-      draw(x, y, ch, fg, bg) {
+      draw(x2, y2, ch, fg, bg) {
         if (!fg) {
           fg = this._options.fg;
         }
         if (!bg) {
           bg = this._options.bg;
         }
-        let key = `${x},${y}`;
-        this._data[key] = [x, y, ch, fg, bg];
+        let key = `${x2},${y2}`;
+        this._data[key] = [x2, y2, ch, fg, bg];
         if (this._dirty === true) {
           return;
         }
@@ -1255,25 +1255,25 @@ void main() {
         }
         this._dirty[key] = true;
       }
-      drawOver(x, y, ch, fg, bg) {
-        const key = `${x},${y}`;
+      drawOver(x2, y2, ch, fg, bg) {
+        const key = `${x2},${y2}`;
         const existing = this._data[key];
         if (existing) {
           existing[2] = ch || existing[2];
           existing[3] = fg || existing[3];
           existing[4] = bg || existing[4];
         } else {
-          this.draw(x, y, ch, fg, bg);
+          this.draw(x2, y2, ch, fg, bg);
         }
       }
-      drawText(x, y, text, maxWidth) {
+      drawText(x2, y2, text, maxWidth) {
         let fg = null;
         let bg = null;
-        let cx = x;
-        let cy = y;
+        let cx = x2;
+        let cy = y2;
         let lines = 1;
         if (!maxWidth) {
-          maxWidth = this._options.width - x;
+          maxWidth = this._options.width - x2;
         }
         let tokens = tokenize(text, maxWidth);
         while (tokens.length) {
@@ -1281,28 +1281,28 @@ void main() {
           switch (token.type) {
             case TYPE_TEXT:
               let isSpace = false, isPrevSpace = false, isFullWidth = false, isPrevFullWidth = false;
-              for (let i = 0; i < token.value.length; i++) {
-                let cc = token.value.charCodeAt(i);
-                let c = token.value.charAt(i);
+              for (let i2 = 0; i2 < token.value.length; i2++) {
+                let cc = token.value.charCodeAt(i2);
+                let c2 = token.value.charAt(i2);
                 if (this._options.layout === "term") {
                   let cch = cc >> 8;
                   let isCJK = cch === 17 || cch >= 46 && cch <= 159 || cch >= 172 && cch <= 215 || cc >= 43360 && cc <= 43391;
                   if (isCJK) {
-                    this.draw(cx + 0, cy, c, fg, bg);
+                    this.draw(cx + 0, cy, c2, fg, bg);
                     this.draw(cx + 1, cy, "	", fg, bg);
                     cx += 2;
                     continue;
                   }
                 }
                 isFullWidth = cc > 65280 && cc < 65377 || cc > 65500 && cc < 65512 || cc > 65518;
-                isSpace = c.charCodeAt(0) == 32 || c.charCodeAt(0) == 12288;
+                isSpace = c2.charCodeAt(0) == 32 || c2.charCodeAt(0) == 12288;
                 if (isPrevFullWidth && !isFullWidth && !isSpace) {
                   cx++;
                 }
                 if (isFullWidth && !isPrevSpace) {
                   cx++;
                 }
-                this.draw(cx++, cy, c, fg, bg);
+                this.draw(cx++, cy, c2, fg, bg);
                 isPrevSpace = isSpace;
                 isPrevFullWidth = isFullWidth;
               }
@@ -1314,7 +1314,7 @@ void main() {
               bg = token.value || null;
               break;
             case TYPE_NEWLINE:
-              cx = x;
+              cx = x2;
               cy++;
               lines++;
               break;
@@ -1362,7 +1362,7 @@ void main() {
       this._lightPasses = lightPassesCallback;
       this._options = Object.assign({ topology: 8 }, options);
     }
-    _getCircle(cx, cy, r) {
+    _getCircle(cx, cy, r2) {
       let result = [];
       let dirs, countFactor, startOffset;
       switch (this._options.topology) {
@@ -1390,13 +1390,13 @@ void main() {
           throw new Error("Incorrect topology for FOV computation");
           break;
       }
-      let x = cx + startOffset[0] * r;
-      let y = cy + startOffset[1] * r;
-      for (let i = 0; i < dirs.length; i++) {
-        for (let j = 0; j < r * countFactor; j++) {
-          result.push([x, y]);
-          x += dirs[i][0];
-          y += dirs[i][1];
+      let x2 = cx + startOffset[0] * r2;
+      let y2 = cy + startOffset[1] * r2;
+      for (let i2 = 0; i2 < dirs.length; i2++) {
+        for (let j2 = 0; j2 < r2 * countFactor; j2++) {
+          result.push([x2, y2]);
+          x2 += dirs[i2][0];
+          y2 += dirs[i2][1];
         }
       }
       return result;
@@ -1405,24 +1405,24 @@ void main() {
 
   // node_modules/rot-js/lib/fov/discrete-shadowcasting.js
   var DiscreteShadowcasting = class extends FOV {
-    compute(x, y, R, callback) {
-      callback(x, y, 0, 1);
-      if (!this._lightPasses(x, y)) {
+    compute(x2, y2, R, callback) {
+      callback(x2, y2, 0, 1);
+      if (!this._lightPasses(x2, y2)) {
         return;
       }
       let DATA = [];
       let A, B, cx, cy, blocks;
-      for (let r = 1; r <= R; r++) {
-        let neighbors = this._getCircle(x, y, r);
+      for (let r2 = 1; r2 <= R; r2++) {
+        let neighbors = this._getCircle(x2, y2, r2);
         let angle = 360 / neighbors.length;
-        for (let i = 0; i < neighbors.length; i++) {
-          cx = neighbors[i][0];
-          cy = neighbors[i][1];
-          A = angle * (i - 0.5);
+        for (let i2 = 0; i2 < neighbors.length; i2++) {
+          cx = neighbors[i2][0];
+          cy = neighbors[i2][1];
+          A = angle * (i2 - 0.5);
           B = A + angle;
           blocks = !this._lightPasses(cx, cy);
           if (this._visibleCoords(Math.floor(A), Math.ceil(B), blocks, DATA)) {
-            callback(cx, cy, r, 1);
+            callback(cx, cy, r2, 1);
           }
           if (DATA.length == 2 && DATA[0] == 0 && DATA[1] == 360) {
             return;
@@ -1485,25 +1485,25 @@ void main() {
 
   // node_modules/rot-js/lib/fov/precise-shadowcasting.js
   var PreciseShadowcasting = class extends FOV {
-    compute(x, y, R, callback) {
-      callback(x, y, 0, 1);
-      if (!this._lightPasses(x, y)) {
+    compute(x2, y2, R, callback) {
+      callback(x2, y2, 0, 1);
+      if (!this._lightPasses(x2, y2)) {
         return;
       }
       let SHADOWS = [];
       let cx, cy, blocks, A1, A2, visibility;
-      for (let r = 1; r <= R; r++) {
-        let neighbors = this._getCircle(x, y, r);
+      for (let r2 = 1; r2 <= R; r2++) {
+        let neighbors = this._getCircle(x2, y2, r2);
         let neighborCount = neighbors.length;
-        for (let i = 0; i < neighborCount; i++) {
-          cx = neighbors[i][0];
-          cy = neighbors[i][1];
-          A1 = [i ? 2 * i - 1 : 2 * neighborCount - 1, 2 * neighborCount];
-          A2 = [2 * i + 1, 2 * neighborCount];
+        for (let i2 = 0; i2 < neighborCount; i2++) {
+          cx = neighbors[i2][0];
+          cy = neighbors[i2][1];
+          A1 = [i2 ? 2 * i2 - 1 : 2 * neighborCount - 1, 2 * neighborCount];
+          A2 = [2 * i2 + 1, 2 * neighborCount];
           blocks = !this._lightPasses(cx, cy);
           visibility = this._checkVisibility(A1, A2, blocks, SHADOWS);
           if (visibility) {
-            callback(cx, cy, r, visibility);
+            callback(cx, cy, r2, visibility);
           }
           if (SHADOWS.length == 2 && SHADOWS[0][0] == 0 && SHADOWS[1][0] == SHADOWS[1][1]) {
             return;
@@ -1555,14 +1555,14 @@ void main() {
       let remove = index2 - index1 + 1;
       if (remove % 2) {
         if (index1 % 2) {
-          let P = SHADOWS[index1];
-          visibleLength = (A2[0] * P[1] - P[0] * A2[1]) / (P[1] * A2[1]);
+          let P2 = SHADOWS[index1];
+          visibleLength = (A2[0] * P2[1] - P2[0] * A2[1]) / (P2[1] * A2[1]);
           if (blocks) {
             SHADOWS.splice(index1, remove, A2);
           }
         } else {
-          let P = SHADOWS[index2];
-          visibleLength = (P[0] * A1[1] - A1[0] * P[1]) / (A1[1] * P[1]);
+          let P2 = SHADOWS[index2];
+          visibleLength = (P2[0] * A1[1] - A1[0] * P2[1]) / (A1[1] * P2[1]);
           if (blocks) {
             SHADOWS.splice(index1, remove, A1);
           }
@@ -1599,38 +1599,38 @@ void main() {
     [1, 0, 0, 1]
   ];
   var RecursiveShadowcasting = class extends FOV {
-    compute(x, y, R, callback) {
-      callback(x, y, 0, 1);
-      for (let i = 0; i < OCTANTS.length; i++) {
-        this._renderOctant(x, y, OCTANTS[i], R, callback);
+    compute(x2, y2, R, callback) {
+      callback(x2, y2, 0, 1);
+      for (let i2 = 0; i2 < OCTANTS.length; i2++) {
+        this._renderOctant(x2, y2, OCTANTS[i2], R, callback);
       }
     }
-    compute180(x, y, R, dir, callback) {
-      callback(x, y, 0, 1);
+    compute180(x2, y2, R, dir, callback) {
+      callback(x2, y2, 0, 1);
       let previousOctant = (dir - 1 + 8) % 8;
       let nextPreviousOctant = (dir - 2 + 8) % 8;
       let nextOctant = (dir + 1 + 8) % 8;
-      this._renderOctant(x, y, OCTANTS[nextPreviousOctant], R, callback);
-      this._renderOctant(x, y, OCTANTS[previousOctant], R, callback);
-      this._renderOctant(x, y, OCTANTS[dir], R, callback);
-      this._renderOctant(x, y, OCTANTS[nextOctant], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[nextPreviousOctant], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[previousOctant], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[dir], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[nextOctant], R, callback);
     }
-    compute90(x, y, R, dir, callback) {
-      callback(x, y, 0, 1);
+    compute90(x2, y2, R, dir, callback) {
+      callback(x2, y2, 0, 1);
       let previousOctant = (dir - 1 + 8) % 8;
-      this._renderOctant(x, y, OCTANTS[dir], R, callback);
-      this._renderOctant(x, y, OCTANTS[previousOctant], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[dir], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[previousOctant], R, callback);
     }
-    _renderOctant(x, y, octant, R, callback) {
-      this._castVisibility(x, y, 1, 1, 0, R + 1, octant[0], octant[1], octant[2], octant[3], callback);
+    _renderOctant(x2, y2, octant, R, callback) {
+      this._castVisibility(x2, y2, 1, 1, 0, R + 1, octant[0], octant[1], octant[2], octant[3], callback);
     }
     _castVisibility(startX, startY, row, visSlopeStart, visSlopeEnd, radius, xx, xy, yx, yy, callback) {
       if (visSlopeStart < visSlopeEnd) {
         return;
       }
-      for (let i = row; i <= radius; i++) {
-        let dx = -i - 1;
-        let dy = -i;
+      for (let i2 = row; i2 <= radius; i2++) {
+        let dx = -i2 - 1;
+        let dy = -i2;
         let blocked = false;
         let newStart = 0;
         while (dx <= 0) {
@@ -1646,12 +1646,12 @@ void main() {
             break;
           }
           if (dx * dx + dy * dy < radius * radius) {
-            callback(mapX, mapY, i, 1);
+            callback(mapX, mapY, i2, 1);
           }
           if (!blocked) {
-            if (!this._lightPasses(mapX, mapY) && i < radius) {
+            if (!this._lightPasses(mapX, mapY) && i2 < radius) {
               blocked = true;
-              this._castVisibility(startX, startY, i + 1, visSlopeStart, slopeStart, radius, xx, xy, yx, yy, callback);
+              this._castVisibility(startX, startY, i2 + 1, visSlopeStart, slopeStart, radius, xx, xy, yx, yy, callback);
               newStart = slopeEnd;
             }
           } else {
@@ -1681,10 +1681,10 @@ void main() {
     }
     _fillMap(value) {
       let map = [];
-      for (let i = 0; i < this._width; i++) {
+      for (let i2 = 0; i2 < this._width; i2++) {
         map.push([]);
-        for (let j = 0; j < this._height; j++) {
-          map[i].push(value);
+        for (let j2 = 0; j2 < this._height; j2++) {
+          map[i2].push(value);
         }
       }
       return map;
@@ -1694,12 +1694,12 @@ void main() {
   // node_modules/rot-js/lib/map/arena.js
   var Arena = class extends Map2 {
     create(callback) {
-      let w = this._width - 1;
-      let h = this._height - 1;
-      for (let i = 0; i <= w; i++) {
-        for (let j = 0; j <= h; j++) {
-          let empty = i && j && i < w && j < h;
-          callback(i, j, empty ? 0 : 1);
+      let w2 = this._width - 1;
+      let h2 = this._height - 1;
+      for (let i2 = 0; i2 <= w2; i2++) {
+        for (let j2 = 0; j2 <= h2; j2++) {
+          let empty = i2 && j2 && i2 < w2 && j2 < h2;
+          callback(i2, j2, empty ? 0 : 1);
         }
       }
       return this;
@@ -1736,7 +1736,7 @@ void main() {
         this.addDoor(doorX, doorY);
       }
     }
-    static createRandomAt(x, y, dx, dy, options) {
+    static createRandomAt(x2, y2, dx, dy, options) {
       let min = options.roomWidth[0];
       let max = options.roomWidth[1];
       let width = rng_default.getUniformInt(min, max);
@@ -1744,20 +1744,20 @@ void main() {
       max = options.roomHeight[1];
       let height = rng_default.getUniformInt(min, max);
       if (dx == 1) {
-        let y2 = y - Math.floor(rng_default.getUniform() * height);
-        return new this(x + 1, y2, x + width, y2 + height - 1, x, y);
+        let y22 = y2 - Math.floor(rng_default.getUniform() * height);
+        return new this(x2 + 1, y22, x2 + width, y22 + height - 1, x2, y2);
       }
       if (dx == -1) {
-        let y2 = y - Math.floor(rng_default.getUniform() * height);
-        return new this(x - width, y2, x - 1, y2 + height - 1, x, y);
+        let y22 = y2 - Math.floor(rng_default.getUniform() * height);
+        return new this(x2 - width, y22, x2 - 1, y22 + height - 1, x2, y2);
       }
       if (dy == 1) {
-        let x2 = x - Math.floor(rng_default.getUniform() * width);
-        return new this(x2, y + 1, x2 + width - 1, y + height, x, y);
+        let x22 = x2 - Math.floor(rng_default.getUniform() * width);
+        return new this(x22, y2 + 1, x22 + width - 1, y2 + height, x2, y2);
       }
       if (dy == -1) {
-        let x2 = x - Math.floor(rng_default.getUniform() * width);
-        return new this(x2, y - height, x2 + width - 1, y - 1, x, y);
+        let x22 = x2 - Math.floor(rng_default.getUniform() * width);
+        return new this(x22, y2 - height, x22 + width - 1, y2 - 1, x2, y2);
       }
       throw new Error("dx or dy must be 1 or -1");
     }
@@ -1789,8 +1789,8 @@ void main() {
       let y2 = y1 + height - 1;
       return new this(x1, y1, x2, y2);
     }
-    addDoor(x, y) {
-      this._doors[x + "," + y] = 1;
+    addDoor(x2, y2) {
+      this._doors[x2 + "," + y2] = 1;
       return this;
     }
     getDoors(cb) {
@@ -1809,15 +1809,15 @@ void main() {
       let right = this._x2 + 1;
       let top = this._y1 - 1;
       let bottom = this._y2 + 1;
-      for (let x = left; x <= right; x++) {
-        for (let y = top; y <= bottom; y++) {
-          if (x != left && x != right && y != top && y != bottom) {
+      for (let x2 = left; x2 <= right; x2++) {
+        for (let y2 = top; y2 <= bottom; y2++) {
+          if (x2 != left && x2 != right && y2 != top && y2 != bottom) {
             continue;
           }
-          if (isWallCallback(x, y)) {
+          if (isWallCallback(x2, y2)) {
             continue;
           }
-          this.addDoor(x, y);
+          this.addDoor(x2, y2);
         }
       }
       return this;
@@ -1830,14 +1830,14 @@ void main() {
       let right = this._x2 + 1;
       let top = this._y1 - 1;
       let bottom = this._y2 + 1;
-      for (let x = left; x <= right; x++) {
-        for (let y = top; y <= bottom; y++) {
-          if (x == left || x == right || y == top || y == bottom) {
-            if (!isWallCallback(x, y)) {
+      for (let x2 = left; x2 <= right; x2++) {
+        for (let y2 = top; y2 <= bottom; y2++) {
+          if (x2 == left || x2 == right || y2 == top || y2 == bottom) {
+            if (!isWallCallback(x2, y2)) {
               return false;
             }
           } else {
-            if (!canBeDugCallback(x, y)) {
+            if (!canBeDugCallback(x2, y2)) {
               return false;
             }
           }
@@ -1851,16 +1851,16 @@ void main() {
       let top = this._y1 - 1;
       let bottom = this._y2 + 1;
       let value = 0;
-      for (let x = left; x <= right; x++) {
-        for (let y = top; y <= bottom; y++) {
-          if (x + "," + y in this._doors) {
+      for (let x2 = left; x2 <= right; x2++) {
+        for (let y2 = top; y2 <= bottom; y2++) {
+          if (x2 + "," + y2 in this._doors) {
             value = 2;
-          } else if (x == left || x == right || y == top || y == bottom) {
+          } else if (x2 == left || x2 == right || y2 == top || y2 == bottom) {
             value = 1;
           } else {
             value = 0;
           }
-          digCallback(x, y, value);
+          digCallback(x2, y2, value);
         }
       }
     }
@@ -1889,11 +1889,11 @@ void main() {
       this._endY = endY;
       this._endsWithAWall = true;
     }
-    static createRandomAt(x, y, dx, dy, options) {
+    static createRandomAt(x2, y2, dx, dy, options) {
       let min = options.corridorLength[0];
       let max = options.corridorLength[1];
       let length = rng_default.getUniformInt(min, max);
-      return new this(x, y, x + dx * length, y + dy * length);
+      return new this(x2, y2, x2 + dx * length, y2 + dy * length);
     }
     debug() {
       console.log("corridor", this._startX, this._startY, this._endX, this._endY);
@@ -1913,22 +1913,22 @@ void main() {
       let nx = dy;
       let ny = -dx;
       let ok = true;
-      for (let i = 0; i < length; i++) {
-        let x = sx + i * dx;
-        let y = sy + i * dy;
-        if (!canBeDugCallback(x, y)) {
+      for (let i2 = 0; i2 < length; i2++) {
+        let x2 = sx + i2 * dx;
+        let y2 = sy + i2 * dy;
+        if (!canBeDugCallback(x2, y2)) {
           ok = false;
         }
-        if (!isWallCallback(x + nx, y + ny)) {
+        if (!isWallCallback(x2 + nx, y2 + ny)) {
           ok = false;
         }
-        if (!isWallCallback(x - nx, y - ny)) {
+        if (!isWallCallback(x2 - nx, y2 - ny)) {
           ok = false;
         }
         if (!ok) {
-          length = i;
-          this._endX = x - dx;
-          this._endY = y - dy;
+          length = i2;
+          this._endX = x2 - dx;
+          this._endY = y2 - dy;
           break;
         }
       }
@@ -1958,10 +1958,10 @@ void main() {
       if (dy) {
         dy = dy / Math.abs(dy);
       }
-      for (let i = 0; i < length; i++) {
-        let x = sx + i * dx;
-        let y = sy + i * dy;
-        digCallback(x, y, 0);
+      for (let i2 = 0; i2 < length; i2++) {
+        let x2 = sx + i2 * dx;
+        let y2 = sy + i2 * dy;
+        digCallback(x2, y2, 0);
       }
       return true;
     }
@@ -2028,21 +2028,21 @@ void main() {
         }
       }
       if (callback) {
-        for (let i = 0; i < this._width; i++) {
-          for (let j = 0; j < this._height; j++) {
-            callback(i, j, this._map[i][j]);
+        for (let i2 = 0; i2 < this._width; i2++) {
+          for (let j2 = 0; j2 < this._height; j2++) {
+            callback(i2, j2, this._map[i2][j2]);
           }
         }
       }
       return this;
     }
     _generateRooms() {
-      let w = this._width - 2;
-      let h = this._height - 2;
+      let w2 = this._width - 2;
+      let h2 = this._height - 2;
       let room;
       do {
         room = this._generateRoom();
-        if (this._dug / (w * h) > this._options.roomDugPercentage) {
+        if (this._dug / (w2 * h2) > this._options.roomDugPercentage) {
           break;
         }
       } while (room);
@@ -2067,8 +2067,8 @@ void main() {
         cnt++;
         this._corridors = [];
         this._map = this._fillMap(1);
-        for (let i = 0; i < this._rooms.length; i++) {
-          let room = this._rooms[i];
+        for (let i2 = 0; i2 < this._rooms.length; i2++) {
+          let room = this._rooms[i2];
           room.clearDoors();
           room.create(this._digCallback);
         }
@@ -2105,15 +2105,15 @@ void main() {
       let dist = Infinity;
       let center = room.getCenter();
       let result = null;
-      for (let i = 0; i < rooms.length; i++) {
-        let r = rooms[i];
-        let c = r.getCenter();
-        let dx = c[0] - center[0];
-        let dy = c[1] - center[1];
-        let d = dx * dx + dy * dy;
-        if (d < dist) {
-          dist = d;
-          result = r;
+      for (let i2 = 0; i2 < rooms.length; i2++) {
+        let r2 = rooms[i2];
+        let c2 = r2.getCenter();
+        let dx = c2[0] - center[0];
+        let dy = c2[1] - center[1];
+        let d2 = dx * dx + dy * dy;
+        if (d2 < dist) {
+          dist = d2;
+          result = r2;
         }
       }
       return result;
@@ -2242,55 +2242,55 @@ void main() {
       }
       let avail = [];
       let lastBadIndex = -2;
-      for (let i = 0; i < length; i++) {
-        let x = start[0] + i * dir[0];
-        let y = start[1] + i * dir[1];
+      for (let i2 = 0; i2 < length; i2++) {
+        let x2 = start[0] + i2 * dir[0];
+        let y2 = start[1] + i2 * dir[1];
         avail.push(null);
-        let isWall = this._map[x][y] == 1;
+        let isWall = this._map[x2][y2] == 1;
         if (isWall) {
-          if (lastBadIndex != i - 1) {
-            avail[i] = [x, y];
+          if (lastBadIndex != i2 - 1) {
+            avail[i2] = [x2, y2];
           }
         } else {
-          lastBadIndex = i;
-          if (i) {
-            avail[i - 1] = null;
+          lastBadIndex = i2;
+          if (i2) {
+            avail[i2 - 1] = null;
           }
         }
       }
-      for (let i = avail.length - 1; i >= 0; i--) {
-        if (!avail[i]) {
-          avail.splice(i, 1);
+      for (let i2 = avail.length - 1; i2 >= 0; i2--) {
+        if (!avail[i2]) {
+          avail.splice(i2, 1);
         }
       }
       return avail.length ? rng_default.getItem(avail) : null;
     }
     _digLine(points) {
-      for (let i = 1; i < points.length; i++) {
-        let start = points[i - 1];
-        let end = points[i];
+      for (let i2 = 1; i2 < points.length; i2++) {
+        let start = points[i2 - 1];
+        let end = points[i2];
         let corridor = new Corridor(start[0], start[1], end[0], end[1]);
         corridor.create(this._digCallback);
         this._corridors.push(corridor);
       }
     }
-    _digCallback(x, y, value) {
-      this._map[x][y] = value;
+    _digCallback(x2, y2, value) {
+      this._map[x2][y2] = value;
       if (value == 0) {
         this._dug++;
       }
     }
-    _isWallCallback(x, y) {
-      if (x < 0 || y < 0 || x >= this._width || y >= this._height) {
+    _isWallCallback(x2, y2) {
+      if (x2 < 0 || y2 < 0 || x2 >= this._width || y2 >= this._height) {
         return false;
       }
-      return this._map[x][y] == 1;
+      return this._map[x2][y2] == 1;
     }
-    _canBeDugCallback(x, y) {
-      if (x < 1 || y < 1 || x + 1 >= this._width || y + 1 >= this._height) {
+    _canBeDugCallback(x2, y2) {
+      if (x2 < 1 || y2 < 1 || x2 + 1 >= this._width || y2 + 1 >= this._height) {
         return false;
       }
-      return this._map[x][y] == 1;
+      return this._map[x2][y2] == 1;
     }
   };
 
@@ -2308,9 +2308,9 @@ void main() {
       this._map = this._fillMap(0);
     }
     randomize(probability) {
-      for (let i = 0; i < this._width; i++) {
-        for (let j = 0; j < this._height; j++) {
-          this._map[i][j] = rng_default.getUniform() < probability ? 1 : 0;
+      for (let i2 = 0; i2 < this._width; i2++) {
+        for (let j2 = 0; j2 < this._height; j2++) {
+          this._map[i2][j2] = rng_default.getUniform() < probability ? 1 : 0;
         }
       }
       return this;
@@ -2318,27 +2318,27 @@ void main() {
     setOptions(options) {
       Object.assign(this._options, options);
     }
-    set(x, y, value) {
-      this._map[x][y] = value;
+    set(x2, y2, value) {
+      this._map[x2][y2] = value;
     }
     create(callback) {
       let newMap2 = this._fillMap(0);
       let born = this._options.born;
       let survive = this._options.survive;
-      for (let j = 0; j < this._height; j++) {
+      for (let j2 = 0; j2 < this._height; j2++) {
         let widthStep = 1;
         let widthStart = 0;
         if (this._options.topology == 6) {
           widthStep = 2;
-          widthStart = j % 2;
+          widthStart = j2 % 2;
         }
-        for (let i = widthStart; i < this._width; i += widthStep) {
-          let cur = this._map[i][j];
-          let ncount = this._getNeighbors(i, j);
+        for (let i2 = widthStart; i2 < this._width; i2 += widthStep) {
+          let cur = this._map[i2][j2];
+          let ncount = this._getNeighbors(i2, j2);
           if (cur && survive.indexOf(ncount) != -1) {
-            newMap2[i][j] = 1;
+            newMap2[i2][j2] = 1;
           } else if (!cur && born.indexOf(ncount) != -1) {
-            newMap2[i][j] = 1;
+            newMap2[i2][j2] = 1;
           }
         }
       }
@@ -2346,28 +2346,28 @@ void main() {
       callback && this._serviceCallback(callback);
     }
     _serviceCallback(callback) {
-      for (let j = 0; j < this._height; j++) {
+      for (let j2 = 0; j2 < this._height; j2++) {
         let widthStep = 1;
         let widthStart = 0;
         if (this._options.topology == 6) {
           widthStep = 2;
-          widthStart = j % 2;
+          widthStart = j2 % 2;
         }
-        for (let i = widthStart; i < this._width; i += widthStep) {
-          callback(i, j, this._map[i][j]);
+        for (let i2 = widthStart; i2 < this._width; i2 += widthStep) {
+          callback(i2, j2, this._map[i2][j2]);
         }
       }
     }
     _getNeighbors(cx, cy) {
       let result = 0;
-      for (let i = 0; i < this._dirs.length; i++) {
-        let dir = this._dirs[i];
-        let x = cx + dir[0];
-        let y = cy + dir[1];
-        if (x < 0 || x >= this._width || y < 0 || y >= this._height) {
+      for (let i2 = 0; i2 < this._dirs.length; i2++) {
+        let dir = this._dirs[i2];
+        let x2 = cx + dir[0];
+        let y2 = cy + dir[1];
+        if (x2 < 0 || x2 >= this._width || y2 < 0 || y2 >= this._height) {
           continue;
         }
-        result += this._map[x][y] == 1 ? 1 : 0;
+        result += this._map[x2][y2] == 1 ? 1 : 0;
       }
       return result;
     }
@@ -2382,12 +2382,12 @@ void main() {
         widthStep = 2;
         widthStarts = [0, 1];
       }
-      for (let y = 0; y < this._height; y++) {
-        for (let x = widthStarts[y % 2]; x < this._width; x += widthStep) {
-          if (this._freeSpace(x, y, value)) {
-            let p = [x, y];
+      for (let y2 = 0; y2 < this._height; y2++) {
+        for (let x2 = widthStarts[y2 % 2]; x2 < this._width; x2 += widthStep) {
+          if (this._freeSpace(x2, y2, value)) {
+            let p = [x2, y2];
             notConnected[this._pointKey(p)] = p;
-            allFreeSpace.push([x, y]);
+            allFreeSpace.push([x2, y2]);
           }
         }
       }
@@ -2406,20 +2406,20 @@ void main() {
         this._findConnected(local, notConnected, [from], true, value);
         let tunnelFn = this._options.topology == 6 ? this._tunnelToConnected6 : this._tunnelToConnected;
         tunnelFn.call(this, to, from, connected, notConnected, value, connectionCallback);
-        for (let k in local) {
-          let pp = local[k];
+        for (let k2 in local) {
+          let pp = local[k2];
           this._map[pp[0]][pp[1]] = value;
-          connected[k] = pp;
-          delete notConnected[k];
+          connected[k2] = pp;
+          delete notConnected[k2];
         }
       }
       callback && this._serviceCallback(callback);
     }
     _getFromTo(connected, notConnected) {
-      let from = [0, 0], to = [0, 0], d;
+      let from = [0, 0], to = [0, 0], d2;
       let connectedKeys = Object.keys(connected);
       let notConnectedKeys = Object.keys(notConnected);
-      for (let i = 0; i < 5; i++) {
+      for (let i2 = 0; i2 < 5; i2++) {
         if (connectedKeys.length < notConnectedKeys.length) {
           let keys = connectedKeys;
           to = connected[keys[rng_default.getUniformInt(0, keys.length - 1)]];
@@ -2429,8 +2429,8 @@ void main() {
           from = notConnected[keys[rng_default.getUniformInt(0, keys.length - 1)]];
           to = this._getClosest(from, connected);
         }
-        d = (from[0] - to[0]) * (from[0] - to[0]) + (from[1] - to[1]) * (from[1] - to[1]);
-        if (d < 64) {
+        d2 = (from[0] - to[0]) * (from[0] - to[0]) + (from[1] - to[1]) * (from[1] - to[1]);
+        if (d2 < 64) {
           break;
         }
       }
@@ -2439,11 +2439,11 @@ void main() {
     _getClosest(point, space) {
       let minPoint = null;
       let minDist = null;
-      for (let k in space) {
-        let p = space[k];
-        let d = (p[0] - point[0]) * (p[0] - point[0]) + (p[1] - point[1]) * (p[1] - point[1]);
-        if (minDist == null || d < minDist) {
-          minDist = d;
+      for (let k2 in space) {
+        let p = space[k2];
+        let d2 = (p[0] - point[0]) * (p[0] - point[0]) + (p[1] - point[1]) * (p[1] - point[1]);
+        if (minDist == null || d2 < minDist) {
+          minDist = d2;
           minPoint = p;
         }
       }
@@ -2470,81 +2470,81 @@ void main() {
             [p[0], p[1] - 1]
           ];
         }
-        for (let i = 0; i < tests.length; i++) {
-          let key = this._pointKey(tests[i]);
-          if (connected[key] == null && this._freeSpace(tests[i][0], tests[i][1], value)) {
-            connected[key] = tests[i];
+        for (let i2 = 0; i2 < tests.length; i2++) {
+          let key = this._pointKey(tests[i2]);
+          if (connected[key] == null && this._freeSpace(tests[i2][0], tests[i2][1], value)) {
+            connected[key] = tests[i2];
             if (!keepNotConnected) {
               delete notConnected[key];
             }
-            stack.push(tests[i]);
+            stack.push(tests[i2]);
           }
         }
       }
     }
     _tunnelToConnected(to, from, connected, notConnected, value, connectionCallback) {
-      let a, b;
+      let a2, b2;
       if (from[0] < to[0]) {
-        a = from;
-        b = to;
+        a2 = from;
+        b2 = to;
       } else {
-        a = to;
-        b = from;
+        a2 = to;
+        b2 = from;
       }
-      for (let xx = a[0]; xx <= b[0]; xx++) {
-        this._map[xx][a[1]] = value;
-        let p = [xx, a[1]];
+      for (let xx = a2[0]; xx <= b2[0]; xx++) {
+        this._map[xx][a2[1]] = value;
+        let p = [xx, a2[1]];
         let pkey = this._pointKey(p);
         connected[pkey] = p;
         delete notConnected[pkey];
       }
-      if (connectionCallback && a[0] < b[0]) {
-        connectionCallback(a, [b[0], a[1]]);
+      if (connectionCallback && a2[0] < b2[0]) {
+        connectionCallback(a2, [b2[0], a2[1]]);
       }
-      let x = b[0];
+      let x2 = b2[0];
       if (from[1] < to[1]) {
-        a = from;
-        b = to;
+        a2 = from;
+        b2 = to;
       } else {
-        a = to;
-        b = from;
+        a2 = to;
+        b2 = from;
       }
-      for (let yy = a[1]; yy < b[1]; yy++) {
-        this._map[x][yy] = value;
-        let p = [x, yy];
+      for (let yy = a2[1]; yy < b2[1]; yy++) {
+        this._map[x2][yy] = value;
+        let p = [x2, yy];
         let pkey = this._pointKey(p);
         connected[pkey] = p;
         delete notConnected[pkey];
       }
-      if (connectionCallback && a[1] < b[1]) {
-        connectionCallback([b[0], a[1]], [b[0], b[1]]);
+      if (connectionCallback && a2[1] < b2[1]) {
+        connectionCallback([b2[0], a2[1]], [b2[0], b2[1]]);
       }
     }
     _tunnelToConnected6(to, from, connected, notConnected, value, connectionCallback) {
-      let a, b;
+      let a2, b2;
       if (from[0] < to[0]) {
-        a = from;
-        b = to;
+        a2 = from;
+        b2 = to;
       } else {
-        a = to;
-        b = from;
+        a2 = to;
+        b2 = from;
       }
-      let xx = a[0];
-      let yy = a[1];
-      while (!(xx == b[0] && yy == b[1])) {
+      let xx = a2[0];
+      let yy = a2[1];
+      while (!(xx == b2[0] && yy == b2[1])) {
         let stepWidth = 2;
-        if (yy < b[1]) {
+        if (yy < b2[1]) {
           yy++;
           stepWidth = 1;
-        } else if (yy > b[1]) {
+        } else if (yy > b2[1]) {
           yy--;
           stepWidth = 1;
         }
-        if (xx < b[0]) {
+        if (xx < b2[0]) {
           xx += stepWidth;
-        } else if (xx > b[0]) {
+        } else if (xx > b2[0]) {
           xx -= stepWidth;
-        } else if (b[1] % 2) {
+        } else if (b2[1] % 2) {
           xx -= stepWidth;
         } else {
           xx += stepWidth;
@@ -2559,8 +2559,8 @@ void main() {
         connectionCallback(from, to);
       }
     }
-    _freeSpace(x, y, value) {
-      return x >= 0 && x < this._width && y >= 0 && y < this._height && this._map[x][y] == value;
+    _freeSpace(x2, y2, value) {
+      return x2 >= 0 && x2 < this._width && y2 >= 0 && y2 < this._height && this._map[x2][y2] == value;
     }
     _pointKey(p) {
       return p[0] + "." + p[1];
@@ -2616,18 +2616,18 @@ void main() {
           break;
         }
         let parts = wall.split(",");
-        let x = parseInt(parts[0]);
-        let y = parseInt(parts[1]);
-        let dir = this._getDiggingDirection(x, y);
+        let x2 = parseInt(parts[0]);
+        let y2 = parseInt(parts[1]);
+        let dir = this._getDiggingDirection(x2, y2);
         if (!dir) {
           continue;
         }
         let featureAttempts = 0;
         do {
           featureAttempts++;
-          if (this._tryFeature(x, y, dir[0], dir[1])) {
-            this._removeSurroundingWalls(x, y);
-            this._removeSurroundingWalls(x - dir[0], y - dir[1]);
+          if (this._tryFeature(x2, y2, dir[0], dir[1])) {
+            this._removeSurroundingWalls(x2, y2);
+            this._removeSurroundingWalls(x2 - dir[0], y2 - dir[1]);
             break;
           }
         } while (featureAttempts < this._featureAttempts);
@@ -2639,9 +2639,9 @@ void main() {
       } while (this._dug / area < this._options.dugPercentage || priorityWalls);
       this._addDoors();
       if (callback) {
-        for (let i = 0; i < this._width; i++) {
-          for (let j = 0; j < this._height; j++) {
-            callback(i, j, this._map[i][j]);
+        for (let i2 = 0; i2 < this._width; i2++) {
+          for (let j2 = 0; j2 < this._height; j2++) {
+            callback(i2, j2, this._map[i2][j2]);
           }
         }
       }
@@ -2649,28 +2649,28 @@ void main() {
       this._map = [];
       return this;
     }
-    _digCallback(x, y, value) {
+    _digCallback(x2, y2, value) {
       if (value == 0 || value == 2) {
-        this._map[x][y] = 0;
+        this._map[x2][y2] = 0;
         this._dug++;
       } else {
-        this._walls[x + "," + y] = 1;
+        this._walls[x2 + "," + y2] = 1;
       }
     }
-    _isWallCallback(x, y) {
-      if (x < 0 || y < 0 || x >= this._width || y >= this._height) {
+    _isWallCallback(x2, y2) {
+      if (x2 < 0 || y2 < 0 || x2 >= this._width || y2 >= this._height) {
         return false;
       }
-      return this._map[x][y] == 1;
+      return this._map[x2][y2] == 1;
     }
-    _canBeDugCallback(x, y) {
-      if (x < 1 || y < 1 || x + 1 >= this._width || y + 1 >= this._height) {
+    _canBeDugCallback(x2, y2) {
+      if (x2 < 1 || y2 < 1 || x2 + 1 >= this._width || y2 + 1 >= this._height) {
         return false;
       }
-      return this._map[x][y] == 1;
+      return this._map[x2][y2] == 1;
     }
-    _priorityWallCallback(x, y) {
-      this._walls[x + "," + y] = 2;
+    _priorityWallCallback(x2, y2) {
+      this._walls[x2 + "," + y2] = 2;
     }
     _firstRoom() {
       let cx = Math.floor(this._width / 2);
@@ -2698,10 +2698,10 @@ void main() {
       delete this._walls[id];
       return id;
     }
-    _tryFeature(x, y, dx, dy) {
+    _tryFeature(x2, y2, dx, dy) {
       let featureName = rng_default.getWeightedValue(this._features);
       let ctor = FEATURES[featureName];
-      let feature = ctor.createRandomAt(x, y, dx, dy, this._options);
+      let feature = ctor.createRandomAt(x2, y2, dx, dy, this._options);
       if (!feature.isValid(this._isWallCallback, this._canBeDugCallback)) {
         return false;
       }
@@ -2717,14 +2717,14 @@ void main() {
     }
     _removeSurroundingWalls(cx, cy) {
       let deltas = DIRS[4];
-      for (let i = 0; i < deltas.length; i++) {
-        let delta = deltas[i];
-        let x = cx + delta[0];
-        let y = cy + delta[1];
-        delete this._walls[x + "," + y];
-        x = cx + 2 * delta[0];
-        y = cy + 2 * delta[1];
-        delete this._walls[x + "," + y];
+      for (let i2 = 0; i2 < deltas.length; i2++) {
+        let delta = deltas[i2];
+        let x2 = cx + delta[0];
+        let y2 = cy + delta[1];
+        delete this._walls[x2 + "," + y2];
+        x2 = cx + 2 * delta[0];
+        y2 = cy + 2 * delta[1];
+        delete this._walls[x2 + "," + y2];
       }
     }
     _getDiggingDirection(cx, cy) {
@@ -2733,11 +2733,11 @@ void main() {
       }
       let result = null;
       let deltas = DIRS[4];
-      for (let i = 0; i < deltas.length; i++) {
-        let delta = deltas[i];
-        let x = cx + delta[0];
-        let y = cy + delta[1];
-        if (!this._map[x][y]) {
+      for (let i2 = 0; i2 < deltas.length; i2++) {
+        let delta = deltas[i2];
+        let x2 = cx + delta[0];
+        let y2 = cy + delta[1];
+        if (!this._map[x2][y2]) {
           if (result) {
             return null;
           }
@@ -2751,12 +2751,12 @@ void main() {
     }
     _addDoors() {
       let data = this._map;
-      function isWallCallback(x, y) {
-        return data[x][y] == 1;
+      function isWallCallback(x2, y2) {
+        return data[x2][y2] == 1;
       }
       ;
-      for (let i = 0; i < this._rooms.length; i++) {
-        let room = this._rooms[i];
+      for (let i2 = 0; i2 < this._rooms.length; i2++) {
+        let room = this._rooms[i2];
         room.clearDoors();
         room.addDoors(isWallCallback);
       }
@@ -2764,60 +2764,60 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/ellermaze.js
-  function addToList(i, L, R) {
-    R[L[i + 1]] = R[i];
-    L[R[i]] = L[i + 1];
-    R[i] = i + 1;
-    L[i + 1] = i;
+  function addToList(i2, L2, R) {
+    R[L2[i2 + 1]] = R[i2];
+    L2[R[i2]] = L2[i2 + 1];
+    R[i2] = i2 + 1;
+    L2[i2 + 1] = i2;
   }
-  function removeFromList(i, L, R) {
-    R[L[i]] = R[i];
-    L[R[i]] = L[i];
-    R[i] = i;
-    L[i] = i;
+  function removeFromList(i2, L2, R) {
+    R[L2[i2]] = R[i2];
+    L2[R[i2]] = L2[i2];
+    R[i2] = i2;
+    L2[i2] = i2;
   }
   var EllerMaze = class extends Map2 {
     create(callback) {
       let map = this._fillMap(1);
-      let w = Math.ceil((this._width - 2) / 2);
+      let w2 = Math.ceil((this._width - 2) / 2);
       let rand = 9 / 24;
-      let L = [];
+      let L2 = [];
       let R = [];
-      for (let i = 0; i < w; i++) {
-        L.push(i);
-        R.push(i);
+      for (let i2 = 0; i2 < w2; i2++) {
+        L2.push(i2);
+        R.push(i2);
       }
-      L.push(w - 1);
-      let j;
-      for (j = 1; j + 3 < this._height; j += 2) {
-        for (let i = 0; i < w; i++) {
-          let x = 2 * i + 1;
-          let y = j;
-          map[x][y] = 0;
-          if (i != L[i + 1] && rng_default.getUniform() > rand) {
-            addToList(i, L, R);
-            map[x + 1][y] = 0;
+      L2.push(w2 - 1);
+      let j2;
+      for (j2 = 1; j2 + 3 < this._height; j2 += 2) {
+        for (let i2 = 0; i2 < w2; i2++) {
+          let x2 = 2 * i2 + 1;
+          let y2 = j2;
+          map[x2][y2] = 0;
+          if (i2 != L2[i2 + 1] && rng_default.getUniform() > rand) {
+            addToList(i2, L2, R);
+            map[x2 + 1][y2] = 0;
           }
-          if (i != L[i] && rng_default.getUniform() > rand) {
-            removeFromList(i, L, R);
+          if (i2 != L2[i2] && rng_default.getUniform() > rand) {
+            removeFromList(i2, L2, R);
           } else {
-            map[x][y + 1] = 0;
+            map[x2][y2 + 1] = 0;
           }
         }
       }
-      for (let i = 0; i < w; i++) {
-        let x = 2 * i + 1;
-        let y = j;
-        map[x][y] = 0;
-        if (i != L[i + 1] && (i == L[i] || rng_default.getUniform() > rand)) {
-          addToList(i, L, R);
-          map[x + 1][y] = 0;
+      for (let i2 = 0; i2 < w2; i2++) {
+        let x2 = 2 * i2 + 1;
+        let y2 = j2;
+        map[x2][y2] = 0;
+        if (i2 != L2[i2 + 1] && (i2 == L2[i2] || rng_default.getUniform() > rand)) {
+          addToList(i2, L2, R);
+          map[x2 + 1][y2] = 0;
         }
-        removeFromList(i, L, R);
+        removeFromList(i2, L2, R);
       }
-      for (let i = 0; i < this._width; i++) {
-        for (let j2 = 0; j2 < this._height; j2++) {
-          callback(i, j2, map[i][j2]);
+      for (let i2 = 0; i2 < this._width; i2++) {
+        for (let j3 = 0; j3 < this._height; j3++) {
+          callback(i2, j3, map[i2][j3]);
         }
       }
       return this;
@@ -2832,23 +2832,23 @@ void main() {
       this._map = [];
     }
     create(callback) {
-      let w = this._width;
-      let h = this._height;
+      let w2 = this._width;
+      let h2 = this._height;
       this._map = [];
-      for (let i = 0; i < w; i++) {
+      for (let i2 = 0; i2 < w2; i2++) {
         this._map.push([]);
-        for (let j = 0; j < h; j++) {
-          let border = i == 0 || j == 0 || i + 1 == w || j + 1 == h;
-          this._map[i].push(border ? 1 : 0);
+        for (let j2 = 0; j2 < h2; j2++) {
+          let border = i2 == 0 || j2 == 0 || i2 + 1 == w2 || j2 + 1 == h2;
+          this._map[i2].push(border ? 1 : 0);
         }
       }
       this._stack = [
-        [1, 1, w - 2, h - 2]
+        [1, 1, w2 - 2, h2 - 2]
       ];
       this._process();
-      for (let i = 0; i < w; i++) {
-        for (let j = 0; j < h; j++) {
-          callback(i, j, this._map[i][j]);
+      for (let i2 = 0; i2 < w2; i2++) {
+        for (let j2 = 0; j2 < h2; j2++) {
+          callback(i2, j2, this._map[i2][j2]);
         }
       }
       this._map = [];
@@ -2863,68 +2863,68 @@ void main() {
     _partitionRoom(room) {
       let availX = [];
       let availY = [];
-      for (let i = room[0] + 1; i < room[2]; i++) {
-        let top = this._map[i][room[1] - 1];
-        let bottom = this._map[i][room[3] + 1];
-        if (top && bottom && !(i % 2)) {
-          availX.push(i);
+      for (let i2 = room[0] + 1; i2 < room[2]; i2++) {
+        let top = this._map[i2][room[1] - 1];
+        let bottom = this._map[i2][room[3] + 1];
+        if (top && bottom && !(i2 % 2)) {
+          availX.push(i2);
         }
       }
-      for (let j = room[1] + 1; j < room[3]; j++) {
-        let left = this._map[room[0] - 1][j];
-        let right = this._map[room[2] + 1][j];
-        if (left && right && !(j % 2)) {
-          availY.push(j);
+      for (let j2 = room[1] + 1; j2 < room[3]; j2++) {
+        let left = this._map[room[0] - 1][j2];
+        let right = this._map[room[2] + 1][j2];
+        if (left && right && !(j2 % 2)) {
+          availY.push(j2);
         }
       }
       if (!availX.length || !availY.length) {
         return;
       }
-      let x = rng_default.getItem(availX);
-      let y = rng_default.getItem(availY);
-      this._map[x][y] = 1;
+      let x2 = rng_default.getItem(availX);
+      let y2 = rng_default.getItem(availY);
+      this._map[x2][y2] = 1;
       let walls = [];
-      let w = [];
-      walls.push(w);
-      for (let i = room[0]; i < x; i++) {
-        this._map[i][y] = 1;
-        if (i % 2)
-          w.push([i, y]);
+      let w2 = [];
+      walls.push(w2);
+      for (let i2 = room[0]; i2 < x2; i2++) {
+        this._map[i2][y2] = 1;
+        if (i2 % 2)
+          w2.push([i2, y2]);
       }
-      w = [];
-      walls.push(w);
-      for (let i = x + 1; i <= room[2]; i++) {
-        this._map[i][y] = 1;
-        if (i % 2)
-          w.push([i, y]);
+      w2 = [];
+      walls.push(w2);
+      for (let i2 = x2 + 1; i2 <= room[2]; i2++) {
+        this._map[i2][y2] = 1;
+        if (i2 % 2)
+          w2.push([i2, y2]);
       }
-      w = [];
-      walls.push(w);
-      for (let j = room[1]; j < y; j++) {
-        this._map[x][j] = 1;
-        if (j % 2)
-          w.push([x, j]);
+      w2 = [];
+      walls.push(w2);
+      for (let j2 = room[1]; j2 < y2; j2++) {
+        this._map[x2][j2] = 1;
+        if (j2 % 2)
+          w2.push([x2, j2]);
       }
-      w = [];
-      walls.push(w);
-      for (let j = y + 1; j <= room[3]; j++) {
-        this._map[x][j] = 1;
-        if (j % 2)
-          w.push([x, j]);
+      w2 = [];
+      walls.push(w2);
+      for (let j2 = y2 + 1; j2 <= room[3]; j2++) {
+        this._map[x2][j2] = 1;
+        if (j2 % 2)
+          w2.push([x2, j2]);
       }
       let solid = rng_default.getItem(walls);
-      for (let i = 0; i < walls.length; i++) {
-        let w2 = walls[i];
-        if (w2 == solid) {
+      for (let i2 = 0; i2 < walls.length; i2++) {
+        let w3 = walls[i2];
+        if (w3 == solid) {
           continue;
         }
-        let hole = rng_default.getItem(w2);
+        let hole = rng_default.getItem(w3);
         this._map[hole[0]][hole[1]] = 0;
       }
-      this._stack.push([room[0], room[1], x - 1, y - 1]);
-      this._stack.push([x + 1, room[1], room[2], y - 1]);
-      this._stack.push([room[0], y + 1, x - 1, room[3]]);
-      this._stack.push([x + 1, y + 1, room[2], room[3]]);
+      this._stack.push([room[0], room[1], x2 - 1, y2 - 1]);
+      this._stack.push([x2 + 1, room[1], room[2], y2 - 1]);
+      this._stack.push([room[0], y2 + 1, x2 - 1, room[3]]);
+      this._stack.push([x2 + 1, y2 + 1, room[2], room[3]]);
     }
   };
 
@@ -2966,12 +2966,12 @@ void main() {
               this._randomize(dirs);
             }
             blocked = true;
-            for (let i = 0; i < 4; i++) {
-              nx = cx + dirs[i][0] * 2;
-              ny = cy + dirs[i][1] * 2;
+            for (let i2 = 0; i2 < 4; i2++) {
+              nx = cx + dirs[i2][0] * 2;
+              ny = cy + dirs[i2][1] * 2;
               if (this._isFree(map, nx, ny, width, height)) {
                 map[nx][ny] = 0;
-                map[cx + dirs[i][0]][cy + dirs[i][1]] = 0;
+                map[cx + dirs[i2][0]][cy + dirs[i2][1]] = 0;
                 cx = nx;
                 cy = ny;
                 blocked = false;
@@ -2982,18 +2982,18 @@ void main() {
           } while (!blocked);
         }
       } while (done + 1 < width * height / 4);
-      for (let i = 0; i < this._width; i++) {
-        for (let j = 0; j < this._height; j++) {
-          callback(i, j, map[i][j]);
+      for (let i2 = 0; i2 < this._width; i2++) {
+        for (let j2 = 0; j2 < this._height; j2++) {
+          callback(i2, j2, map[i2][j2]);
         }
       }
       this._map = [];
       return this;
     }
     _randomize(dirs) {
-      for (let i = 0; i < 4; i++) {
-        dirs[i][0] = 0;
-        dirs[i][1] = 0;
+      for (let i2 = 0; i2 < 4; i2++) {
+        dirs[i2][0] = 0;
+        dirs[i2][1] = 0;
       }
       switch (Math.floor(rng_default.getUniform() * 4)) {
         case 0:
@@ -3022,11 +3022,11 @@ void main() {
           break;
       }
     }
-    _isFree(map, x, y, width, height) {
-      if (x < 1 || y < 1 || x >= width || y >= height) {
+    _isFree(map, x2, y2, width, height) {
+      if (x2 < 1 || y2 < 1 || x2 >= width || y2 >= height) {
         return false;
       }
-      return map[x][y];
+      return map[x2][y2];
     }
   };
 
@@ -3060,9 +3060,9 @@ void main() {
       this._createRooms();
       this._createCorridors();
       if (callback) {
-        for (let i = 0; i < this._width; i++) {
-          for (let j = 0; j < this._height; j++) {
-            callback(i, j, this.map[i][j]);
+        for (let i2 = 0; i2 < this._width; i2++) {
+          for (let j2 = 0; j2 < this._height; j2++) {
+            callback(i2, j2, this.map[i2][j2]);
           }
         }
       }
@@ -3080,10 +3080,10 @@ void main() {
       return [min, max];
     }
     _initRooms() {
-      for (let i = 0; i < this._options.cellWidth; i++) {
+      for (let i2 = 0; i2 < this._options.cellWidth; i2++) {
         this.rooms.push([]);
-        for (let j = 0; j < this._options.cellHeight; j++) {
-          this.rooms[i].push({ "x": 0, "y": 0, "width": 0, "height": 0, "connections": [], "cellx": i, "celly": j });
+        for (let j2 = 0; j2 < this._options.cellHeight; j2++) {
+          this.rooms[i2].push({ "x": 0, "y": 0, "width": 0, "height": 0, "connections": [], "cellx": i2, "celly": j2 });
         }
       }
     }
@@ -3135,17 +3135,17 @@ void main() {
       let room;
       let otherRoom;
       let validRoom;
-      for (let i = 0; i < this._options.cellWidth; i++) {
-        for (let j = 0; j < this._options.cellHeight; j++) {
-          room = this.rooms[i][j];
+      for (let i2 = 0; i2 < this._options.cellWidth; i2++) {
+        for (let j2 = 0; j2 < this._options.cellHeight; j2++) {
+          room = this.rooms[i2][j2];
           if (room["connections"].length == 0) {
             let directions = [0, 2, 4, 6];
             directions = rng_default.shuffle(directions);
             validRoom = false;
             do {
               let dirIdx = directions.pop();
-              let newI = i + DIRS[8][dirIdx][0];
-              let newJ = j + DIRS[8][dirIdx][1];
+              let newI = i2 + DIRS[8][dirIdx][0];
+              let newJ = j2 + DIRS[8][dirIdx][1];
               if (newI < 0 || newI >= cw || newJ < 0 || newJ >= ch) {
                 continue;
               }
@@ -3154,8 +3154,8 @@ void main() {
               if (otherRoom["connections"].length == 0) {
                 break;
               }
-              for (let k = 0; k < otherRoom["connections"].length; k++) {
-                if (otherRoom["connections"][k][0] == i && otherRoom["connections"][k][1] == j) {
+              for (let k2 = 0; k2 < otherRoom["connections"].length; k2++) {
+                if (otherRoom["connections"][k2][0] == i2 && otherRoom["connections"][k2][1] == j2) {
                   validRoom = false;
                   break;
                 }
@@ -3176,8 +3176,8 @@ void main() {
     _createRandomRoomConnections() {
     }
     _createRooms() {
-      let w = this._width;
-      let h = this._height;
+      let w2 = this._width;
+      let h2 = this._height;
       let cw = this._options.cellWidth;
       let ch = this._options.cellHeight;
       let cwp = Math.floor(this._width / cw);
@@ -3189,10 +3189,10 @@ void main() {
       let sx;
       let sy;
       let otherRoom;
-      for (let i = 0; i < cw; i++) {
-        for (let j = 0; j < ch; j++) {
-          sx = cwp * i;
-          sy = chp * j;
+      for (let i2 = 0; i2 < cw; i2++) {
+        for (let j2 = 0; j2 < ch; j2++) {
+          sx = cwp * i2;
+          sy = chp * j2;
           if (sx == 0) {
             sx = 1;
           }
@@ -3201,28 +3201,28 @@ void main() {
           }
           roomw = rng_default.getUniformInt(roomWidth[0], roomWidth[1]);
           roomh = rng_default.getUniformInt(roomHeight[0], roomHeight[1]);
-          if (j > 0) {
-            otherRoom = this.rooms[i][j - 1];
+          if (j2 > 0) {
+            otherRoom = this.rooms[i2][j2 - 1];
             while (sy - (otherRoom["y"] + otherRoom["height"]) < 3) {
               sy++;
             }
           }
-          if (i > 0) {
-            otherRoom = this.rooms[i - 1][j];
+          if (i2 > 0) {
+            otherRoom = this.rooms[i2 - 1][j2];
             while (sx - (otherRoom["x"] + otherRoom["width"]) < 3) {
               sx++;
             }
           }
           let sxOffset = Math.round(rng_default.getUniformInt(0, cwp - roomw) / 2);
           let syOffset = Math.round(rng_default.getUniformInt(0, chp - roomh) / 2);
-          while (sx + sxOffset + roomw >= w) {
+          while (sx + sxOffset + roomw >= w2) {
             if (sxOffset) {
               sxOffset--;
             } else {
               roomw--;
             }
           }
-          while (sy + syOffset + roomh >= h) {
+          while (sy + syOffset + roomh >= h2) {
             if (syOffset) {
               syOffset--;
             } else {
@@ -3231,10 +3231,10 @@ void main() {
           }
           sx = sx + sxOffset;
           sy = sy + syOffset;
-          this.rooms[i][j]["x"] = sx;
-          this.rooms[i][j]["y"] = sy;
-          this.rooms[i][j]["width"] = roomw;
-          this.rooms[i][j]["height"] = roomh;
+          this.rooms[i2][j2]["x"] = sx;
+          this.rooms[i2][j2]["y"] = sy;
+          this.rooms[i2][j2]["width"] = roomw;
+          this.rooms[i2][j2]["height"] = roomh;
           for (let ii = sx; ii < sx + roomw; ii++) {
             for (let jj = sy; jj < sy + roomh; jj++) {
               this.map[ii][jj] = 0;
@@ -3319,11 +3319,11 @@ void main() {
       let otherRoom;
       let wall;
       let otherWall;
-      for (let i = 0; i < cw; i++) {
-        for (let j = 0; j < ch; j++) {
-          room = this.rooms[i][j];
-          for (let k = 0; k < room["connections"].length; k++) {
-            connection = room["connections"][k];
+      for (let i2 = 0; i2 < cw; i2++) {
+        for (let j2 = 0; j2 < ch; j2++) {
+          room = this.rooms[i2][j2];
+          for (let k2 = 0; k2 < room["connections"].length; k2++) {
+            connection = room["connections"][k2];
             otherRoom = this.rooms[connection[0]][connection[1]];
             if (otherRoom["cellx"] > room["cellx"]) {
               wall = 2;
@@ -3375,16 +3375,16 @@ void main() {
   function keysOf(obj) {
     return Object.keys(obj);
   }
-  function asRoll(n, sides, mod2) {
-    return { n, sides, mod: mod2 };
+  function asRoll(n2, sides, mod2) {
+    return { n: n2, sides, mod: mod2 };
   }
   function doRoll(roll) {
-    let n = 0;
-    for (let i = 0; i < roll.n; i += 1) {
-      n += rng_default.getUniformInt(1, roll.sides);
+    let n2 = 0;
+    for (let i2 = 0; i2 < roll.n; i2 += 1) {
+      n2 += rng_default.getUniformInt(1, roll.sides);
     }
-    let v = n + roll.mod;
-    return v;
+    let v2 = n2 + roll.mod;
+    return v2;
   }
   function describeRoll(roll) {
     return roll.n + "d" + roll.sides + "+" + roll.mod;
@@ -3405,37 +3405,37 @@ void main() {
   function isEmptySoul(soul) {
     return soul.essence === 0;
   }
-  function describeSoulEffect(e) {
-    switch (e.type) {
+  function describeSoulEffect(e2) {
+    switch (e2.type) {
       case "soak damage":
-        return "soak " + e.power + " damage";
+        return "soak " + e2.power + " damage";
       case "stat bonus":
-        if (e.stat === "speed") {
-          return "+" + Math.floor(e.power * 100) + "% " + e.stat;
+        if (e2.stat === "speed") {
+          return "+" + Math.floor(e2.power * 100) + "% " + e2.stat;
         } else {
-          return "+" + e.power + " " + e.stat;
+          return "+" + e2.power + " " + e2.stat;
         }
       case "damage":
-        return "damage " + describeRoll(e.damage);
+        return "damage " + describeRoll(e2.damage);
       case "status":
-        return e.status + " " + e.power;
+        return e2.status + " " + e2.power;
       case "projectile":
-        return e.projectile;
+        return e2.projectile;
       case "targeting":
-        return e.targeting;
+        return e2.targeting;
     }
   }
-  function describeSoulEffects(s) {
-    if (isEmptySoul(s)) {
+  function describeSoulEffects(s2) {
+    if (isEmptySoul(s2)) {
       return " ";
-    } else if (s.effects.length === 0) {
-      return "+" + s.essence + " essence";
+    } else if (s2.effects.length === 0) {
+      return "+" + s2.essence + " essence";
     } else {
-      let d = [];
-      for (let effect of s.effects) {
-        d.push(describeSoulEffect(effect));
+      let d2 = [];
+      for (let effect of s2.effects) {
+        d2.push(describeSoulEffect(effect));
       }
-      return d.join(", ");
+      return d2.join(", ");
     }
   }
 
@@ -3504,55 +3504,55 @@ void main() {
   // src/monster.ts
   var verminHP = { n: 1, sides: 1, mod: 0 };
   var AI = {
-    passive: (c) => {
+    passive: (c2) => {
       return 1;
     },
-    wander: (c) => {
-      let nx = c.x + rng_default.getUniformInt(-1, 1);
-      let ny = c.y + rng_default.getUniformInt(-1, 1);
+    wander: (c2) => {
+      let nx = c2.x + rng_default.getUniformInt(-1, 1);
+      let ny = c2.y + rng_default.getUniformInt(-1, 1);
       let spot = contentsAt(nx, ny);
-      moveMonster(c, spot);
+      moveMonster(c2, spot);
       return 1;
     },
-    nipper: (c) => {
-      let m = c.monster;
-      let arch = MonsterArchetypes[m.archetype];
+    nipper: (c2) => {
+      let m2 = c2.monster;
+      let arch = MonsterArchetypes[m2.archetype];
       let attack = Attacks[arch.attack];
-      if (attack.canReachFrom(c)) {
-        attack.attackFrom(c);
+      if (attack.canReachFrom(c2)) {
+        attack.attackFrom(c2);
         return 1;
       } else {
-        return AI.wander(c);
+        return AI.wander(c2);
       }
     },
-    stationary: (c) => {
-      let m = c.monster;
-      let arch = MonsterArchetypes[m.archetype];
+    stationary: (c2) => {
+      let m2 = c2.monster;
+      let arch = MonsterArchetypes[m2.archetype];
       let attack = Attacks[arch.attack];
-      if (attack.canReachFrom(c)) {
-        attack.attackFrom(c);
+      if (attack.canReachFrom(c2)) {
+        attack.attackFrom(c2);
       }
       return 1;
     },
-    charge: (c) => {
-      let m = c.monster;
-      let arch = MonsterArchetypes[m.archetype];
+    charge: (c2) => {
+      let m2 = c2.monster;
+      let arch = MonsterArchetypes[m2.archetype];
       let attack = Attacks[arch.attack];
-      if (attack.canReachFrom(c)) {
-        attack.attackFrom(c);
+      if (attack.canReachFrom(c2)) {
+        attack.attackFrom(c2);
         return 1;
       } else if (rng_default.getUniformInt(0, 3) == 0) {
         return 1;
       } else {
-        if (playerCanSee(c.x, c.y)) {
-          let dx = Game.player.x - c.x;
+        if (playerCanSee(c2.x, c2.y)) {
+          let dx = Game.player.x - c2.x;
           dx = dx == 0 ? 0 : dx / Math.abs(dx);
-          let dy = Game.player.y - c.y;
+          let dy = Game.player.y - c2.y;
           dy = dy == 0 ? 0 : dy / Math.abs(dy);
-          moveMonster(c, contentsAt(c.x + dx, c.y + dy));
+          moveMonster(c2, contentsAt(c2.x + dx, c2.y + dy));
           return 1;
         } else {
-          return AI.wander(c);
+          return AI.wander(c2);
         }
       }
     }
@@ -3567,9 +3567,9 @@ void main() {
     [50, "You briefly swim through endless aeons of hell"]
   ];
   function getDamageDescription(dmg) {
-    for (let i = DamageDescriptions.length - 1; i >= 0; i--) {
-      if (DamageDescriptions[i][0] <= dmg) {
-        return DamageDescriptions[i][1];
+    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
+      if (DamageDescriptions[i2][0] <= dmg) {
+        return DamageDescriptions[i2][1];
       }
     }
     return DamageDescriptions[0][1];
@@ -3591,15 +3591,15 @@ void main() {
       if (wasZero) {
         for (let slotGroup of keysOf(Game.player.soulSlots)) {
           let slots = Game.player.soulSlots[slotGroup];
-          for (let i = 0; i < slots.length; i++) {
-            if (!isEmptySoul(slots[i])) {
+          for (let i2 = 0; i2 < slots.length; i2++) {
+            if (!isEmptySoul(slots[i2])) {
               soulChecked = true;
-              let roll = asRoll(1, slots[i].essence, 1);
+              let roll = asRoll(1, slots[i2].essence, 1);
               if (doRoll(roll) < extra) {
                 soulBroken = true;
                 msg.angry("No!");
-                msg.essence("The %s soul breaks free!", slots[i].name);
-                slots[i] = EmptySoul;
+                msg.essence("The %s soul breaks free!", slots[i2].name);
+                slots[i2] = EmptySoul;
                 break;
               }
             }
@@ -3625,11 +3625,11 @@ void main() {
   }
   function meleeAttack(verb, damage) {
     return {
-      canReachFrom: (c) => (Game.player.x === c.x || Game.player.x === c.x - 1 || Game.player.x === c.x + 1) && (Game.player.y === c.y || Game.player.y === c.y - 1 || Game.player.y === c.y + 1),
-      attackFrom: (c) => {
-        msg.combat("%The %s you!", D(c), verb);
-        let m = c.monster;
-        let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+      canReachFrom: (c2) => (Game.player.x === c2.x || Game.player.x === c2.x - 1 || Game.player.x === c2.x + 1) && (Game.player.y === c2.y || Game.player.y === c2.y - 1 || Game.player.y === c2.y + 1),
+      attackFrom: (c2) => {
+        msg.combat("%The %s you!", D(c2), verb);
+        let m2 = c2.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].danger : 1;
         if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
           let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
           let dmg = doRoll(dmgRoll);
@@ -3640,11 +3640,11 @@ void main() {
   }
   function rangedAttack(verb, damage) {
     return {
-      canReachFrom: (c) => playerCanSee(c.x, c.y),
-      attackFrom: (c) => {
-        msg.combat("%The %s you!", D(c), verb);
-        let m = c.monster;
-        let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+      canReachFrom: (c2) => playerCanSee(c2.x, c2.y),
+      attackFrom: (c2) => {
+        msg.combat("%The %s you!", D(c2), verb);
+        let m2 = c2.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].danger : 1;
         if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
           let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
           let dmg = doRoll(dmgRoll);
@@ -3655,8 +3655,8 @@ void main() {
   }
   var Attacks = {
     none: {
-      canReachFrom: (c) => false,
-      attackFrom: (c) => {
+      canReachFrom: (c2) => false,
+      attackFrom: (c2) => {
       }
     },
     bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
@@ -3666,89 +3666,89 @@ void main() {
     abjure: rangedAttack("abjures", asRoll(1, 4, 2))
   };
   var SoulFactories = {
-    vermin: (a) => ({
-      glyph: a.glyph,
-      essence: Math.floor((a.danger + 1) / 2),
-      name: a.name,
+    vermin: (a2) => ({
+      glyph: a2.glyph,
+      essence: Math.floor((a2.danger + 1) / 2),
+      name: a2.name,
       effects: []
     }),
-    maxEssence: (a) => ({
-      glyph: a.glyph,
-      essence: a.danger,
-      name: a.name,
-      effects: [{ type: "stat bonus", stat: "max essence", power: a.danger }]
+    maxEssence: (a2) => ({
+      glyph: a2.glyph,
+      essence: a2.danger,
+      name: a2.name,
+      effects: [{ type: "stat bonus", stat: "max essence", power: a2.danger }]
     }),
-    extraDamage: (a) => ({
-      glyph: a.glyph,
-      essence: a.danger,
-      name: a.name,
+    extraDamage: (a2) => ({
+      glyph: a2.glyph,
+      essence: a2.danger,
+      name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a.danger / 2) + 1
+          power: Math.floor(a2.danger / 2) + 1
         },
-        { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) }
+        { type: "damage", damage: asRoll(Math.floor(a2.danger / 2), 4, 1) }
       ]
     }),
-    slow: (a) => ({
-      glyph: a.glyph,
-      essence: a.danger,
-      name: a.name,
+    slow: (a2) => ({
+      glyph: a2.glyph,
+      essence: a2.danger,
+      name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a.danger / 2) + 1
+          power: Math.floor(a2.danger / 2) + 1
         },
-        { type: "status", status: "slow", power: Math.floor(a.danger / 2) + 1 }
+        { type: "status", status: "slow", power: Math.floor(a2.danger / 2) + 1 }
       ]
     }),
-    sight: (a) => ({
-      glyph: a.glyph,
-      essence: a.danger,
-      name: a.name,
+    sight: (a2) => ({
+      glyph: a2.glyph,
+      essence: a2.danger,
+      name: a2.name,
       effects: [
-        { type: "stat bonus", stat: "max essence", power: a.danger },
+        { type: "stat bonus", stat: "max essence", power: a2.danger },
         {
           type: "stat bonus",
           stat: "sight",
-          power: Math.floor(a.danger / 2) + 1
+          power: Math.floor(a2.danger / 2) + 1
         }
       ]
     }),
-    speed: (a) => ({
-      glyph: a.glyph,
+    speed: (a2) => ({
+      glyph: a2.glyph,
       type: "ring",
-      essence: a.danger,
-      name: a.name,
+      essence: a2.danger,
+      name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a.danger * 0.8)
+          power: Math.floor(a2.danger * 0.8)
         },
         {
           type: "stat bonus",
           stat: "speed",
-          power: 0.05 * Math.floor(a.danger / 2)
+          power: 0.05 * Math.floor(a2.danger / 2)
         }
       ]
     }),
-    soak: (a) => ({
-      glyph: a.glyph,
+    soak: (a2) => ({
+      glyph: a2.glyph,
       type: "ring",
-      essence: a.danger,
-      name: a.name,
+      essence: a2.danger,
+      name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a.danger / 2) + 1
+          power: Math.floor(a2.danger / 2) + 1
         },
         {
           type: "soak damage",
-          power: Math.floor(a.danger / 5)
+          power: Math.floor(a2.danger / 5)
         }
       ]
     })
@@ -3998,17 +3998,17 @@ void main() {
       dying: false
     };
   }
-  function weakMonster(m) {
-    return m.hp <= 1 || m.dying;
+  function weakMonster(m2) {
+    return m2.hp <= 1 || m2.dying;
   }
-  function getSoul(m) {
-    let soul = Game.monsterSouls[m.archetype];
+  function getSoul(m2) {
+    let soul = Game.monsterSouls[m2.archetype];
     if (soul) {
       return soul;
     } else {
-      let arch = MonsterArchetypes[m.archetype];
+      let arch = MonsterArchetypes[m2.archetype];
       soul = SoulFactories[arch.soul](arch);
-      Game.monsterSouls[m.archetype] = soul;
+      Game.monsterSouls[m2.archetype] = soul;
       return soul;
     }
   }
@@ -4033,9 +4033,9 @@ void main() {
     [25, "teeming necropolis"]
   ];
   function getMapDescription() {
-    for (let i = DangerDescriptions.length - 1; i >= 0; i--) {
-      if (DangerDescriptions[i][0] < Game.map.danger) {
-        return DangerDescriptions[i][1];
+    for (let i2 = DangerDescriptions.length - 1; i2 >= 0; i2--) {
+      if (DangerDescriptions[i2][0] < Game.map.danger) {
+        return DangerDescriptions[i2][1];
       }
     }
     return DangerDescriptions[0][1];
@@ -4050,23 +4050,23 @@ void main() {
     }
   }
   var seenXYs = [];
-  var FOV2 = new fov_default.PreciseShadowcasting((x, y) => {
-    let c = contentsAt(x, y);
-    return !(!c.tile || c.tile.blocks);
+  var FOV2 = new fov_default.PreciseShadowcasting((x2, y2) => {
+    let c2 = contentsAt(x2, y2);
+    return !(!c2.tile || c2.tile.blocks);
   });
   function recomputeFOV() {
     seenXYs.length = 0;
-    FOV2.compute(Game.player.x, Game.player.y, getPlayerVision(), (fx, fy, r, v) => {
+    FOV2.compute(Game.player.x, Game.player.y, getPlayerVision(), (fx, fy, r2, v2) => {
       seenXYs.push([fx, fy]);
     });
   }
-  function playerCanSee(x, y) {
-    return !!seenXYs.find(([sx, sy]) => x == sx && y == sy);
+  function playerCanSee(x2, y2) {
+    return !!seenXYs.find(([sx, sy]) => x2 == sx && y2 == sy);
   }
   function canSeeThreat() {
-    for (let [x, y] of seenXYs) {
-      let c = contentsAt(x, y);
-      if (c.monster && !weakMonster(c.monster)) {
+    for (let [x2, y2] of seenXYs) {
+      let c2 = contentsAt(x2, y2);
+      if (c2.monster && !weakMonster(c2.monster)) {
         return true;
       }
     }
@@ -4078,19 +4078,19 @@ void main() {
     switch (targetEffect.targeting) {
       case "seek closest":
         let monstersByDistance = [];
-        for (let [x, y] of seenXYs) {
-          if (x == Game.player.x && y == Game.player.y) {
+        for (let [x2, y2] of seenXYs) {
+          if (x2 == Game.player.x && y2 == Game.player.y) {
             continue;
           }
-          let c = contentsAt(x, y);
-          if (c.monster) {
-            let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x), 2) + Math.pow(Math.abs(Game.player.y - y), 2));
-            monstersByDistance.push([dist, c]);
+          let c2 = contentsAt(x2, y2);
+          if (c2.monster) {
+            let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x2), 2) + Math.pow(Math.abs(Game.player.y - y2), 2));
+            monstersByDistance.push([dist, c2]);
           }
         }
-        monstersByDistance.sort(([a, _v], [b, _v2]) => a - b);
-        for (let i = 0; i < targetEffect.count && i < monstersByDistance.length; i++) {
-          targets.push(monstersByDistance[i][1]);
+        monstersByDistance.sort(([a2, _v], [b2, _v2]) => a2 - b2);
+        for (let i2 = 0; i2 < targetEffect.count && i2 < monstersByDistance.length; i2++) {
+          targets.push(monstersByDistance[i2][1]);
         }
     }
     return targets;
@@ -4110,8 +4110,8 @@ void main() {
     map.create();
     let rooms = map.getRooms();
     for (let room of rooms) {
-      room.create((x, y, v) => {
-        Game.map.tiles[x + y * Game.map.w] = v === 1 ? Tiles.wall : Tiles.floor;
+      room.create((x2, y2, v2) => {
+        Game.map.tiles[x2 + y2 * Game.map.w] = v2 === 1 ? Tiles.wall : Tiles.floor;
       });
     }
     rooms = rng_default.shuffle(rooms);
@@ -4158,16 +4158,16 @@ void main() {
       while (appearing > 0) {
         let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
         let my = rng_default.getUniformInt(room.getTop(), room.getBottom());
-        let c = contentsAt(mx, my);
-        if (!c.blocked) {
+        let c2 = contentsAt(mx, my);
+        if (!c2.blocked) {
           Game.map.monsters[mx + my * Game.map.w] = spawnMonster(mArch);
         }
         appearing -= 1;
       }
     }
     for (let corridor of map.getCorridors()) {
-      corridor.create((x, y, v) => {
-        Game.map.tiles[x + y * Game.map.w] = Tiles.floor;
+      corridor.create((x2, y2, v2) => {
+        Game.map.tiles[x2 + y2 * Game.map.w] = Tiles.floor;
       });
     }
     if (Game.map.danger >= Game.maxLevel) {
@@ -4178,19 +4178,19 @@ void main() {
       msg.tutorial("Thanks for playing!");
     }
   }
-  function tileAt(x, y) {
-    return Game.map.tiles[x + y * Game.map.w];
+  function tileAt(x2, y2) {
+    return Game.map.tiles[x2 + y2 * Game.map.w];
   }
-  function monsterAt(x, y) {
-    return Game.map.monsters[x + y * Game.map.w];
+  function monsterAt(x2, y2) {
+    return Game.map.monsters[x2 + y2 * Game.map.w];
   }
-  function playerAt(x, y) {
-    return Game.player.x === x && Game.player.y === y;
+  function playerAt(x2, y2) {
+    return Game.player.x === x2 && Game.player.y === y2;
   }
-  function contentsAt(x, y) {
-    let tile = tileAt(x, y);
-    let monster = monsterAt(x, y);
-    let player = playerAt(x, y);
+  function contentsAt(x2, y2) {
+    let tile = tileAt(x2, y2);
+    let monster = monsterAt(x2, y2);
+    let player = playerAt(x2, y2);
     let archetype = (monster == null ? void 0 : monster.archetype) || null;
     let blocked = player;
     if (!tile || tile.blocks) {
@@ -4201,12 +4201,12 @@ void main() {
     }
     let exitDanger = null;
     if ((tile == null ? void 0 : tile.glyph) === "exit") {
-      let exit = Game.map.exits.find(([ex, ey, _]) => ex === x && ey === y);
+      let exit = Game.map.exits.find(([ex, ey, _2]) => ex === x2 && ey === y2);
       exitDanger = (exit == null ? void 0 : exit[2]) || null;
     }
     return {
-      x,
-      y,
+      x: x2,
+      y: y2,
       tile,
       monster,
       player,
@@ -4296,9 +4296,9 @@ void main() {
   function tryReleaseSoul() {
     let slots = Game.player.soulSlots.generic;
     let opts = /* @__PURE__ */ new Map();
-    for (let i in slots) {
-      if (!isEmptySoul(slots[i])) {
-        opts.set((parseInt(i) + 1).toString(), slots[i].name);
+    for (let i2 in slots) {
+      if (!isEmptySoul(slots[i2])) {
+        opts.set((parseInt(i2) + 1).toString(), slots[i2].name);
       }
     }
     if (opts.size === 0) {
@@ -4324,21 +4324,21 @@ void main() {
     const p = Game.player;
     const nx = p.x + dx;
     const ny = p.y + dy;
-    const c = contentsAt(nx, ny);
-    let blocked = c.blocked;
-    if (blocked && c.monster) {
+    const c2 = contentsAt(nx, ny);
+    let blocked = c2.blocked;
+    if (blocked && c2.monster) {
       blocked = false;
     }
     if (!blocked) {
       p.x = nx;
       p.y = ny;
       p.energy -= 1;
-      if (c.monster) {
-        if (weakMonster(c.monster)) {
-          if (!Game.player.knownMonsters[c.monster.archetype]) {
-            msg.essence("You feel the essence of %the awaiting your grasp.", D(c));
-            Game.player.knownMonsters[c.monster.archetype] = true;
-            let archetype = MonsterArchetypes[c.monster.archetype];
+      if (c2.monster) {
+        if (weakMonster(c2.monster)) {
+          if (!Game.player.knownMonsters[c2.monster.archetype]) {
+            msg.essence("You feel the essence of %the awaiting your grasp.", D(c2));
+            Game.player.knownMonsters[c2.monster.archetype] = true;
+            let archetype = MonsterArchetypes[c2.monster.archetype];
             if (archetype.soul === "vermin") {
               msg.angry("Petty vermin!");
               msg.tutorial("Use 'd' to devour essence from weak creatures.");
@@ -4347,12 +4347,12 @@ void main() {
             }
           }
         } else {
-          msg.think("The essence of %the resists my grasp.", D(c));
+          msg.think("The essence of %the resists my grasp.", D(c2));
           msg.tutorial("Fire spells using SPACE to weaken creatures.");
         }
       }
-      if (c.exitDanger) {
-        msg.log("There is a passage to another area here. [Danger: %s]", c.exitDanger);
+      if (c2.exitDanger) {
+        msg.log("There is a passage to another area here. [Danger: %s]", c2.exitDanger);
         msg.tutorial("Spend essence to pass into newer, more difficult areas.");
       }
       return true;
@@ -4366,7 +4366,7 @@ void main() {
         const p = Game.player;
         const nx = p.x + dx;
         const ny = p.y + dy;
-        const c = contentsAt(nx, ny);
+        const c2 = contentsAt(nx, ny);
         msg.think("There is no passing this way.");
         return false;
       }
@@ -4401,14 +4401,14 @@ void main() {
     k: movePlayer(0, -1),
     K: movePlayerUntil("K", 0, -1),
     d: () => {
-      let c = contentsAt(Game.player.x, Game.player.y);
-      if (c.monster) {
+      let c2 = contentsAt(Game.player.x, Game.player.y);
+      if (c2.monster) {
         Game.player.energy -= 0.5;
-        if (weakMonster(c.monster)) {
-          let soul = getSoul(c.monster);
-          msg.essence("You devour the essence of %the.", D(c));
+        if (weakMonster(c2.monster)) {
+          let soul = getSoul(c2.monster);
+          msg.essence("You devour the essence of %the.", D(c2));
           gainEssence(soul.essence);
-          killMonsterAt(c, "drain");
+          killMonsterAt(c2, "drain");
         } else {
           msg.angry("The wretched creature resists!");
         }
@@ -4419,25 +4419,25 @@ void main() {
       }
     },
     c: () => {
-      let c = contentsAt(Game.player.x, Game.player.y);
-      if (c.monster) {
-        let soul = getSoul(c.monster);
+      let c2 = contentsAt(Game.player.x, Game.player.y);
+      if (c2.monster) {
+        let soul = getSoul(c2.monster);
         if (soul.effects.length === 0) {
           msg.angry("This vermin has no soul worthy of claiming.");
           msg.tutorial("Vermin can be (d)evoured for essence.");
         } else {
           Game.player.energy -= 1;
-          if (weakMonster(c.monster)) {
+          if (weakMonster(c2.monster)) {
             let slots = Game.player.soulSlots.generic;
             let claimed = false;
-            for (let i = 0; i < slots.length; i++) {
-              if (isEmptySoul(slots[i])) {
-                slots[i] = soul;
-                msg.essence("You claim the soul of %the.", D(c));
+            for (let i2 = 0; i2 < slots.length; i2++) {
+              if (isEmptySoul(slots[i2])) {
+                slots[i2] = soul;
+                msg.essence("You claim the soul of %the.", D(c2));
                 msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
                 claimed = true;
                 break;
-              } else if (slots[i].name === soul.name) {
+              } else if (slots[i2].name === soul.name) {
                 msg.essence("You already have claimed this soul.");
                 claimed = true;
                 return false;
@@ -4447,7 +4447,7 @@ void main() {
               msg.essence("You must release a soul before claiming another.");
               msg.tutorial("Use 'r' to release a soul.");
             } else {
-              killMonsterAt(c, "drain");
+              killMonsterAt(c2, "drain");
               return true;
             }
           } else {
@@ -4460,14 +4460,14 @@ void main() {
       return false;
     },
     ">": () => {
-      let c = contentsAt(Game.player.x, Game.player.y);
-      if (c.exitDanger) {
-        let exitCost = c.exitDanger;
+      let c2 = contentsAt(Game.player.x, Game.player.y);
+      if (c2.exitDanger) {
+        let exitCost = c2.exitDanger;
         if (Game.player.essence >= exitCost) {
           Game.player.energy -= 1;
           msg.essence("You pour essence into the passage and force it open.");
           loseEssence(exitCost);
-          newMap({ danger: c.exitDanger });
+          newMap({ danger: c2.exitDanger });
         } else {
           msg.angry("I need more essence to pass!");
           msg.tutorial("Passages to more dangerous areas require spending more essence to enter.");
@@ -4534,9 +4534,9 @@ void main() {
       return false;
     }
   };
-  function D(c) {
-    if (c.monster) {
-      let monster = c.monster;
+  function D(c2) {
+    if (c2.monster) {
+      let monster = c2.monster;
       return {
         toString: () => MonsterArchetypes[monster.archetype].name,
         the: () => "the " + MonsterArchetypes[monster.archetype].name
@@ -4548,34 +4548,34 @@ void main() {
       };
     }
   }
-  function killMonsterAt(c, death) {
-    if (c.monster) {
-      c.monster.hp = 0;
-      msg.combat(DeathMessages[death], D(c));
-      Game.map.monsters[c.x + c.y * Game.map.w] = null;
+  function killMonsterAt(c2, death) {
+    if (c2.monster) {
+      c2.monster.hp = 0;
+      msg.combat(DeathMessages[death], D(c2));
+      Game.map.monsters[c2.x + c2.y * Game.map.w] = null;
     }
   }
-  function damageMonsterAt(c, damage, status) {
-    let m = c.monster;
-    if (m) {
-      let wasDying = weakMonster(m);
-      m.hp -= doRoll(damage.damage);
-      if (m.hp > 1) {
-        msg.combat("You see %the %s!", D(c), m.hp == 1 ? "stagger" : "shudder");
+  function damageMonsterAt(c2, damage, status) {
+    let m2 = c2.monster;
+    if (m2) {
+      let wasDying = weakMonster(m2);
+      m2.hp -= doRoll(damage.damage);
+      if (m2.hp > 1) {
+        msg.combat("You see %the %s!", D(c2), m2.hp == 1 ? "stagger" : "shudder");
         if (status) {
           switch (status.status) {
             case "slow":
-              msg.combat("%The slows down!", D(c));
-              m.energy = -status.power;
+              msg.combat("%The slows down!", D(c2));
+              m2.energy = -status.power;
           }
         }
       } else {
         if (wasDying) {
-          killMonsterAt(c, "force");
+          killMonsterAt(c2, "force");
         } else {
-          msg.combat("You see %the collapse!", D(c));
+          msg.combat("You see %the collapse!", D(c2));
           msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
-          m.dying = true;
+          m2.dying = true;
         }
       }
     }
@@ -4596,6 +4596,438 @@ void main() {
     ghost: "g",
     eyeball: "e"
   };
+
+  // node_modules/preact/dist/preact.module.js
+  var n;
+  var l;
+  var u;
+  var i;
+  var t;
+  var o;
+  var r;
+  var f;
+  var e = {};
+  var c = [];
+  var s = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;
+  function a(n2, l2) {
+    for (var u2 in l2)
+      n2[u2] = l2[u2];
+    return n2;
+  }
+  function h(n2) {
+    var l2 = n2.parentNode;
+    l2 && l2.removeChild(n2);
+  }
+  function v(l2, u2, i2) {
+    var t2, o2, r2, f2 = {};
+    for (r2 in u2)
+      r2 == "key" ? t2 = u2[r2] : r2 == "ref" ? o2 = u2[r2] : f2[r2] = u2[r2];
+    if (arguments.length > 2 && (f2.children = arguments.length > 3 ? n.call(arguments, 2) : i2), typeof l2 == "function" && l2.defaultProps != null)
+      for (r2 in l2.defaultProps)
+        f2[r2] === void 0 && (f2[r2] = l2.defaultProps[r2]);
+    return y(l2, f2, t2, o2, null);
+  }
+  function y(n2, i2, t2, o2, r2) {
+    var f2 = { type: n2, props: i2, key: t2, ref: o2, __k: null, __: null, __b: 0, __e: null, __d: void 0, __c: null, __h: null, constructor: void 0, __v: r2 == null ? ++u : r2 };
+    return r2 == null && l.vnode != null && l.vnode(f2), f2;
+  }
+  function d(n2) {
+    return n2.children;
+  }
+  function _(n2, l2) {
+    this.props = n2, this.context = l2;
+  }
+  function k(n2, l2) {
+    if (l2 == null)
+      return n2.__ ? k(n2.__, n2.__.__k.indexOf(n2) + 1) : null;
+    for (var u2; l2 < n2.__k.length; l2++)
+      if ((u2 = n2.__k[l2]) != null && u2.__e != null)
+        return u2.__e;
+    return typeof n2.type == "function" ? k(n2) : null;
+  }
+  function b(n2) {
+    var l2, u2;
+    if ((n2 = n2.__) != null && n2.__c != null) {
+      for (n2.__e = n2.__c.base = null, l2 = 0; l2 < n2.__k.length; l2++)
+        if ((u2 = n2.__k[l2]) != null && u2.__e != null) {
+          n2.__e = n2.__c.base = u2.__e;
+          break;
+        }
+      return b(n2);
+    }
+  }
+  function m(n2) {
+    (!n2.__d && (n2.__d = true) && t.push(n2) && !g.__r++ || r !== l.debounceRendering) && ((r = l.debounceRendering) || o)(g);
+  }
+  function g() {
+    for (var n2; g.__r = t.length; )
+      n2 = t.sort(function(n3, l2) {
+        return n3.__v.__b - l2.__v.__b;
+      }), t = [], n2.some(function(n3) {
+        var l2, u2, i2, t2, o2, r2;
+        n3.__d && (o2 = (t2 = (l2 = n3).__v).__e, (r2 = l2.__P) && (u2 = [], (i2 = a({}, t2)).__v = t2.__v + 1, j(r2, t2, i2, l2.__n, r2.ownerSVGElement !== void 0, t2.__h != null ? [o2] : null, u2, o2 == null ? k(t2) : o2, t2.__h), z(u2, t2), t2.__e != o2 && b(t2)));
+      });
+  }
+  function w(n2, l2, u2, i2, t2, o2, r2, f2, s2, a2) {
+    var h2, v2, p, _2, b2, m2, g2, w2 = i2 && i2.__k || c, A = w2.length;
+    for (u2.__k = [], h2 = 0; h2 < l2.length; h2++)
+      if ((_2 = u2.__k[h2] = (_2 = l2[h2]) == null || typeof _2 == "boolean" ? null : typeof _2 == "string" || typeof _2 == "number" || typeof _2 == "bigint" ? y(null, _2, null, null, _2) : Array.isArray(_2) ? y(d, { children: _2 }, null, null, null) : _2.__b > 0 ? y(_2.type, _2.props, _2.key, null, _2.__v) : _2) != null) {
+        if (_2.__ = u2, _2.__b = u2.__b + 1, (p = w2[h2]) === null || p && _2.key == p.key && _2.type === p.type)
+          w2[h2] = void 0;
+        else
+          for (v2 = 0; v2 < A; v2++) {
+            if ((p = w2[v2]) && _2.key == p.key && _2.type === p.type) {
+              w2[v2] = void 0;
+              break;
+            }
+            p = null;
+          }
+        j(n2, _2, p = p || e, t2, o2, r2, f2, s2, a2), b2 = _2.__e, (v2 = _2.ref) && p.ref != v2 && (g2 || (g2 = []), p.ref && g2.push(p.ref, null, _2), g2.push(v2, _2.__c || b2, _2)), b2 != null ? (m2 == null && (m2 = b2), typeof _2.type == "function" && _2.__k === p.__k ? _2.__d = s2 = x(_2, s2, n2) : s2 = P(n2, _2, p, w2, b2, s2), typeof u2.type == "function" && (u2.__d = s2)) : s2 && p.__e == s2 && s2.parentNode != n2 && (s2 = k(p));
+      }
+    for (u2.__e = m2, h2 = A; h2--; )
+      w2[h2] != null && (typeof u2.type == "function" && w2[h2].__e != null && w2[h2].__e == u2.__d && (u2.__d = k(i2, h2 + 1)), N(w2[h2], w2[h2]));
+    if (g2)
+      for (h2 = 0; h2 < g2.length; h2++)
+        M(g2[h2], g2[++h2], g2[++h2]);
+  }
+  function x(n2, l2, u2) {
+    for (var i2, t2 = n2.__k, o2 = 0; t2 && o2 < t2.length; o2++)
+      (i2 = t2[o2]) && (i2.__ = n2, l2 = typeof i2.type == "function" ? x(i2, l2, u2) : P(u2, i2, i2, t2, i2.__e, l2));
+    return l2;
+  }
+  function P(n2, l2, u2, i2, t2, o2) {
+    var r2, f2, e2;
+    if (l2.__d !== void 0)
+      r2 = l2.__d, l2.__d = void 0;
+    else if (u2 == null || t2 != o2 || t2.parentNode == null)
+      n:
+        if (o2 == null || o2.parentNode !== n2)
+          n2.appendChild(t2), r2 = null;
+        else {
+          for (f2 = o2, e2 = 0; (f2 = f2.nextSibling) && e2 < i2.length; e2 += 2)
+            if (f2 == t2)
+              break n;
+          n2.insertBefore(t2, o2), r2 = o2;
+        }
+    return r2 !== void 0 ? r2 : t2.nextSibling;
+  }
+  function C(n2, l2, u2, i2, t2) {
+    var o2;
+    for (o2 in u2)
+      o2 === "children" || o2 === "key" || o2 in l2 || H(n2, o2, null, u2[o2], i2);
+    for (o2 in l2)
+      t2 && typeof l2[o2] != "function" || o2 === "children" || o2 === "key" || o2 === "value" || o2 === "checked" || u2[o2] === l2[o2] || H(n2, o2, l2[o2], u2[o2], i2);
+  }
+  function $(n2, l2, u2) {
+    l2[0] === "-" ? n2.setProperty(l2, u2) : n2[l2] = u2 == null ? "" : typeof u2 != "number" || s.test(l2) ? u2 : u2 + "px";
+  }
+  function H(n2, l2, u2, i2, t2) {
+    var o2;
+    n:
+      if (l2 === "style")
+        if (typeof u2 == "string")
+          n2.style.cssText = u2;
+        else {
+          if (typeof i2 == "string" && (n2.style.cssText = i2 = ""), i2)
+            for (l2 in i2)
+              u2 && l2 in u2 || $(n2.style, l2, "");
+          if (u2)
+            for (l2 in u2)
+              i2 && u2[l2] === i2[l2] || $(n2.style, l2, u2[l2]);
+        }
+      else if (l2[0] === "o" && l2[1] === "n")
+        o2 = l2 !== (l2 = l2.replace(/Capture$/, "")), l2 = l2.toLowerCase() in n2 ? l2.toLowerCase().slice(2) : l2.slice(2), n2.l || (n2.l = {}), n2.l[l2 + o2] = u2, u2 ? i2 || n2.addEventListener(l2, o2 ? T : I, o2) : n2.removeEventListener(l2, o2 ? T : I, o2);
+      else if (l2 !== "dangerouslySetInnerHTML") {
+        if (t2)
+          l2 = l2.replace(/xlink[H:h]/, "h").replace(/sName$/, "s");
+        else if (l2 !== "href" && l2 !== "list" && l2 !== "form" && l2 !== "tabIndex" && l2 !== "download" && l2 in n2)
+          try {
+            n2[l2] = u2 == null ? "" : u2;
+            break n;
+          } catch (n3) {
+          }
+        typeof u2 == "function" || (u2 != null && (u2 !== false || l2[0] === "a" && l2[1] === "r") ? n2.setAttribute(l2, u2) : n2.removeAttribute(l2));
+      }
+  }
+  function I(n2) {
+    this.l[n2.type + false](l.event ? l.event(n2) : n2);
+  }
+  function T(n2) {
+    this.l[n2.type + true](l.event ? l.event(n2) : n2);
+  }
+  function j(n2, u2, i2, t2, o2, r2, f2, e2, c2) {
+    var s2, h2, v2, y2, p, k2, b2, m2, g2, x2, A, P2 = u2.type;
+    if (u2.constructor !== void 0)
+      return null;
+    i2.__h != null && (c2 = i2.__h, e2 = u2.__e = i2.__e, u2.__h = null, r2 = [e2]), (s2 = l.__b) && s2(u2);
+    try {
+      n:
+        if (typeof P2 == "function") {
+          if (m2 = u2.props, g2 = (s2 = P2.contextType) && t2[s2.__c], x2 = s2 ? g2 ? g2.props.value : s2.__ : t2, i2.__c ? b2 = (h2 = u2.__c = i2.__c).__ = h2.__E : ("prototype" in P2 && P2.prototype.render ? u2.__c = h2 = new P2(m2, x2) : (u2.__c = h2 = new _(m2, x2), h2.constructor = P2, h2.render = O), g2 && g2.sub(h2), h2.props = m2, h2.state || (h2.state = {}), h2.context = x2, h2.__n = t2, v2 = h2.__d = true, h2.__h = []), h2.__s == null && (h2.__s = h2.state), P2.getDerivedStateFromProps != null && (h2.__s == h2.state && (h2.__s = a({}, h2.__s)), a(h2.__s, P2.getDerivedStateFromProps(m2, h2.__s))), y2 = h2.props, p = h2.state, v2)
+            P2.getDerivedStateFromProps == null && h2.componentWillMount != null && h2.componentWillMount(), h2.componentDidMount != null && h2.__h.push(h2.componentDidMount);
+          else {
+            if (P2.getDerivedStateFromProps == null && m2 !== y2 && h2.componentWillReceiveProps != null && h2.componentWillReceiveProps(m2, x2), !h2.__e && h2.shouldComponentUpdate != null && h2.shouldComponentUpdate(m2, h2.__s, x2) === false || u2.__v === i2.__v) {
+              h2.props = m2, h2.state = h2.__s, u2.__v !== i2.__v && (h2.__d = false), h2.__v = u2, u2.__e = i2.__e, u2.__k = i2.__k, u2.__k.forEach(function(n3) {
+                n3 && (n3.__ = u2);
+              }), h2.__h.length && f2.push(h2);
+              break n;
+            }
+            h2.componentWillUpdate != null && h2.componentWillUpdate(m2, h2.__s, x2), h2.componentDidUpdate != null && h2.__h.push(function() {
+              h2.componentDidUpdate(y2, p, k2);
+            });
+          }
+          h2.context = x2, h2.props = m2, h2.state = h2.__s, (s2 = l.__r) && s2(u2), h2.__d = false, h2.__v = u2, h2.__P = n2, s2 = h2.render(h2.props, h2.state, h2.context), h2.state = h2.__s, h2.getChildContext != null && (t2 = a(a({}, t2), h2.getChildContext())), v2 || h2.getSnapshotBeforeUpdate == null || (k2 = h2.getSnapshotBeforeUpdate(y2, p)), A = s2 != null && s2.type === d && s2.key == null ? s2.props.children : s2, w(n2, Array.isArray(A) ? A : [A], u2, i2, t2, o2, r2, f2, e2, c2), h2.base = u2.__e, u2.__h = null, h2.__h.length && f2.push(h2), b2 && (h2.__E = h2.__ = null), h2.__e = false;
+        } else
+          r2 == null && u2.__v === i2.__v ? (u2.__k = i2.__k, u2.__e = i2.__e) : u2.__e = L(i2.__e, u2, i2, t2, o2, r2, f2, c2);
+      (s2 = l.diffed) && s2(u2);
+    } catch (n3) {
+      u2.__v = null, (c2 || r2 != null) && (u2.__e = e2, u2.__h = !!c2, r2[r2.indexOf(e2)] = null), l.__e(n3, u2, i2);
+    }
+  }
+  function z(n2, u2) {
+    l.__c && l.__c(u2, n2), n2.some(function(u3) {
+      try {
+        n2 = u3.__h, u3.__h = [], n2.some(function(n3) {
+          n3.call(u3);
+        });
+      } catch (n3) {
+        l.__e(n3, u3.__v);
+      }
+    });
+  }
+  function L(l2, u2, i2, t2, o2, r2, f2, c2) {
+    var s2, a2, v2, y2 = i2.props, p = u2.props, d2 = u2.type, _2 = 0;
+    if (d2 === "svg" && (o2 = true), r2 != null) {
+      for (; _2 < r2.length; _2++)
+        if ((s2 = r2[_2]) && "setAttribute" in s2 == !!d2 && (d2 ? s2.localName === d2 : s2.nodeType === 3)) {
+          l2 = s2, r2[_2] = null;
+          break;
+        }
+    }
+    if (l2 == null) {
+      if (d2 === null)
+        return document.createTextNode(p);
+      l2 = o2 ? document.createElementNS("http://www.w3.org/2000/svg", d2) : document.createElement(d2, p.is && p), r2 = null, c2 = false;
+    }
+    if (d2 === null)
+      y2 === p || c2 && l2.data === p || (l2.data = p);
+    else {
+      if (r2 = r2 && n.call(l2.childNodes), a2 = (y2 = i2.props || e).dangerouslySetInnerHTML, v2 = p.dangerouslySetInnerHTML, !c2) {
+        if (r2 != null)
+          for (y2 = {}, _2 = 0; _2 < l2.attributes.length; _2++)
+            y2[l2.attributes[_2].name] = l2.attributes[_2].value;
+        (v2 || a2) && (v2 && (a2 && v2.__html == a2.__html || v2.__html === l2.innerHTML) || (l2.innerHTML = v2 && v2.__html || ""));
+      }
+      if (C(l2, p, y2, o2, c2), v2)
+        u2.__k = [];
+      else if (_2 = u2.props.children, w(l2, Array.isArray(_2) ? _2 : [_2], u2, i2, t2, o2 && d2 !== "foreignObject", r2, f2, r2 ? r2[0] : i2.__k && k(i2, 0), c2), r2 != null)
+        for (_2 = r2.length; _2--; )
+          r2[_2] != null && h(r2[_2]);
+      c2 || ("value" in p && (_2 = p.value) !== void 0 && (_2 !== l2.value || d2 === "progress" && !_2 || d2 === "option" && _2 !== y2.value) && H(l2, "value", _2, y2.value, false), "checked" in p && (_2 = p.checked) !== void 0 && _2 !== l2.checked && H(l2, "checked", _2, y2.checked, false));
+    }
+    return l2;
+  }
+  function M(n2, u2, i2) {
+    try {
+      typeof n2 == "function" ? n2(u2) : n2.current = u2;
+    } catch (n3) {
+      l.__e(n3, i2);
+    }
+  }
+  function N(n2, u2, i2) {
+    var t2, o2;
+    if (l.unmount && l.unmount(n2), (t2 = n2.ref) && (t2.current && t2.current !== n2.__e || M(t2, null, u2)), (t2 = n2.__c) != null) {
+      if (t2.componentWillUnmount)
+        try {
+          t2.componentWillUnmount();
+        } catch (n3) {
+          l.__e(n3, u2);
+        }
+      t2.base = t2.__P = null;
+    }
+    if (t2 = n2.__k)
+      for (o2 = 0; o2 < t2.length; o2++)
+        t2[o2] && N(t2[o2], u2, typeof n2.type != "function");
+    i2 || n2.__e == null || h(n2.__e), n2.__e = n2.__d = void 0;
+  }
+  function O(n2, l2, u2) {
+    return this.constructor(n2, u2);
+  }
+  function S(u2, i2, t2) {
+    var o2, r2, f2;
+    l.__ && l.__(u2, i2), r2 = (o2 = typeof t2 == "function") ? null : t2 && t2.__k || i2.__k, f2 = [], j(i2, u2 = (!o2 && t2 || i2).__k = v(d, null, [u2]), r2 || e, e, i2.ownerSVGElement !== void 0, !o2 && t2 ? [t2] : r2 ? null : i2.firstChild ? n.call(i2.childNodes) : null, f2, !o2 && t2 ? t2 : r2 ? r2.__e : i2.firstChild, o2), z(f2, u2);
+  }
+  n = c.slice, l = { __e: function(n2, l2) {
+    for (var u2, i2, t2; l2 = l2.__; )
+      if ((u2 = l2.__c) && !u2.__)
+        try {
+          if ((i2 = u2.constructor) && i2.getDerivedStateFromError != null && (u2.setState(i2.getDerivedStateFromError(n2)), t2 = u2.__d), u2.componentDidCatch != null && (u2.componentDidCatch(n2), t2 = u2.__d), t2)
+            return u2.__E = u2;
+        } catch (l3) {
+          n2 = l3;
+        }
+    throw n2;
+  } }, u = 0, i = function(n2) {
+    return n2 != null && n2.constructor === void 0;
+  }, _.prototype.setState = function(n2, l2) {
+    var u2;
+    u2 = this.__s != null && this.__s !== this.state ? this.__s : this.__s = a({}, this.state), typeof n2 == "function" && (n2 = n2(a({}, u2), this.props)), n2 && a(u2, n2), n2 != null && this.__v && (l2 && this.__h.push(l2), m(this));
+  }, _.prototype.forceUpdate = function(n2) {
+    this.__v && (this.__e = true, n2 && this.__h.push(n2), m(this));
+  }, _.prototype.render = d, t = [], o = typeof Promise == "function" ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, g.__r = 0, f = 0;
+
+  // src/ui/controls.tsx
+  function renderControls(game, messages) {
+    S(/* @__PURE__ */ v(Interface, __spreadValues({}, { game, messages })), document.body);
+  }
+  function Interface(props) {
+    return /* @__PURE__ */ v("div", {
+      class: "wrapper"
+    }, /* @__PURE__ */ v(Playarea, null), /* @__PURE__ */ v(Sidebar, {
+      game: props.game
+    }), /* @__PURE__ */ v("div", {
+      id: "mapDanger"
+    }, getMapDescription() + " [Danger: " + props.game.map.danger + "]"), /* @__PURE__ */ v(MessageLog, {
+      messages: props.messages
+    }));
+  }
+  var Playarea = class extends _ {
+    constructor() {
+      super(...arguments);
+      this.shouldComponentUpdate = () => false;
+      this.render = (props) => /* @__PURE__ */ v("div", {
+        id: "playarea"
+      });
+    }
+  };
+  function Sidebar(props) {
+    const game = props.game;
+    return /* @__PURE__ */ v("div", {
+      id: "sidebar"
+    }, /* @__PURE__ */ v("h1", null, "SOUL \u{1F47B} BREAK \u{1F480} FAST"), /* @__PURE__ */ v(StatusView, {
+      game
+    }), /* @__PURE__ */ v("div", {
+      class: "sidebar-section"
+    }, /* @__PURE__ */ v("h2", null, "On Ground"), /* @__PURE__ */ v(WhatsHereView, {
+      here: getVictim()
+    })), /* @__PURE__ */ v("div", {
+      class: "sidebar-section"
+    }, /* @__PURE__ */ v("h2", null, "Souls"), /* @__PURE__ */ v(SoulListView, {
+      souls: game.player.soulSlots.generic
+    })), /* @__PURE__ */ v("div", {
+      class: "sidebar-section"
+    }, /* @__PURE__ */ v("h2", null, "Targets"), /* @__PURE__ */ v("div", {
+      id: "targets"
+    }, findTargets().map((c2) => {
+      if (c2.monster) {
+        let arch = MonsterArchetypes[c2.monster.archetype];
+        let glyph = Glyphs[arch.glyph];
+        let name = arch.name;
+        if (c2.monster.dying) {
+          name += " (dying)";
+        } else if (arch.soul == "vermin") {
+          name += " (vermin)";
+        }
+        let desc = arch.description;
+        return /* @__PURE__ */ v("div", {
+          class: "target-entry"
+        }, /* @__PURE__ */ v("div", {
+          class: "target-glyph soul-glyph"
+        }, glyph), /* @__PURE__ */ v("div", {
+          class: "target-name soul-name"
+        }, name), /* @__PURE__ */ v("div", {
+          class: "target-thoughts"
+        }, desc));
+      }
+    }))));
+  }
+  function StatusView(props) {
+    return /* @__PURE__ */ v("div", {
+      id: "status"
+    }, /* @__PURE__ */ v("div", {
+      class: "stat"
+    }, /* @__PURE__ */ v("div", {
+      class: "stat-label"
+    }, "Essence"), /* @__PURE__ */ v("div", {
+      class: "stat-value",
+      id: "essence"
+    }, props.game.player.essence), /* @__PURE__ */ v("div", {
+      class: "stat-label"
+    }, "/"), /* @__PURE__ */ v("div", {
+      class: "stat-value",
+      id: "maxEssence"
+    }, maxEssence())), /* @__PURE__ */ v("div", {
+      class: "stat"
+    }, /* @__PURE__ */ v("div", {
+      class: "stat-label"
+    }, "Turns"), /* @__PURE__ */ v("div", {
+      class: "stat-value",
+      id: "turns"
+    }, props.game.turns)));
+  }
+  function WhatsHereView(props) {
+    const here = props.here;
+    let glyph = "";
+    let what = "";
+    let desc = "";
+    if (here.monster) {
+      let soul = getSoul(here.monster);
+      glyph = Glyphs[soul.glyph];
+      what = soul.name;
+      desc = describeSoulEffects(soul);
+    } else if (here.tile) {
+      glyph = Glyphs[here.tile.glyph];
+      what = here.tile.glyph;
+      if (here.exitDanger) {
+        desc = "Danger: " + here.exitDanger;
+      }
+    }
+    return /* @__PURE__ */ v("div", {
+      id: "whatsHere"
+    }, /* @__PURE__ */ v("div", {
+      class: "soul-glyph",
+      id: "hereGlyph"
+    }, glyph), /* @__PURE__ */ v("div", {
+      class: "soul-name",
+      id: "hereWhat"
+    }, what), /* @__PURE__ */ v("div", {
+      class: "soul-effect",
+      id: "hereDescription"
+    }, desc));
+  }
+  function SoulListView(props) {
+    return /* @__PURE__ */ v("div", {
+      id: "souls"
+    }, props.souls.map((soul) => /* @__PURE__ */ v(SoulView, {
+      soul
+    })));
+  }
+  function SoulView(props) {
+    return /* @__PURE__ */ v(d, {
+      key: props.soul.name
+    }, /* @__PURE__ */ v("div", {
+      class: "soul-glyph"
+    }, Glyphs[props.soul.glyph]), /* @__PURE__ */ v("div", {
+      class: "soul-name"
+    }, props.soul.name), /* @__PURE__ */ v("div", {
+      class: "soul-effect"
+    }, describeSoulEffects(props.soul)));
+  }
+  function MessageLog(props) {
+    let entries = props.messages.map((msgs, i2) => {
+      let log = msgs.map(([msg2, msgType], i3) => /* @__PURE__ */ v("span", {
+        class: "msg-" + msgType
+      }, msg2 + " "));
+      return /* @__PURE__ */ v("li", {
+        key: "mgs-turn-" + i2
+      }, log);
+    }).reverse();
+    return /* @__PURE__ */ v("div", {
+      id: "messages"
+    }, /* @__PURE__ */ v("ul", {
+      class: "messageLog"
+    }, entries));
+  }
 
   // src/ui.ts
   var UI = {
@@ -4623,16 +5055,16 @@ void main() {
       }
     }
     if (!(noop || activeChoice)) {
-      for (let i = 0; i < Game.map.w * Game.map.h; i++) {
-        if (Game.map.monsters[i]) {
-          const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
-          const m = c.monster;
-          if (!m.dying) {
-            const arch = MonsterArchetypes[m.archetype];
+      for (let i2 = 0; i2 < Game.map.w * Game.map.h; i2++) {
+        if (Game.map.monsters[i2]) {
+          const c2 = contentsAt(i2 % Game.map.w, Math.floor(i2 / Game.map.w));
+          const m2 = c2.monster;
+          if (!m2.dying) {
+            const arch = MonsterArchetypes[m2.archetype];
             const ai = AI[arch.ai];
-            m.energy += arch.speed;
-            while (m.energy >= 1) {
-              m.energy -= ai(c);
+            m2.energy += arch.speed;
+            while (m2.energy >= 1) {
+              m2.energy -= ai(c2);
             }
           }
         }
@@ -4646,21 +5078,6 @@ void main() {
     if (UI.commandQueue.length > 0) {
       tick();
     }
-  }
-  function handleInput() {
-    document.addEventListener("keydown", (e) => {
-      if (activeChoice) {
-        activeChoice.callbacks.onChoose(e.key);
-        activeChoice = null;
-        UI.uiCallback();
-      } else {
-        let command = Commands[e.key];
-        if (command !== void 0) {
-          UI.commandQueue.push(e.key);
-          setTimeout(tick, 0);
-        }
-      }
-    });
   }
   function drawMap(display) {
     display.clear();
@@ -4686,26 +5103,26 @@ void main() {
       }
     }
     let targets = findTargets();
-    for (let [x, y] of seenXYs) {
-      if (x < sx) {
+    for (let [x2, y2] of seenXYs) {
+      if (x2 < sx) {
         return;
       }
-      if (y < sy) {
+      if (y2 < sy) {
         return;
       }
-      let c = contentsAt(x, y);
-      let isTarget = !!targets.find((c2) => c2.x === x && c2.y === y);
+      let c2 = contentsAt(x2, y2);
+      let isTarget = !!targets.find((c3) => c3.x === x2 && c3.y === y2);
       let bg = isTarget ? Colors.target : Colors.void;
-      Game.map.memory[x + y * Game.map.w] = c.memory;
-      if (c.player) {
-        display.draw(x - sx, y - sy, Glyphs[Game.player.glyph], "#ccc", bg);
-      } else if (c.monster) {
-        let arch = MonsterArchetypes[c.monster.archetype];
-        display.draw(x - sx, y - sy, Glyphs[arch.glyph], Colors[arch.color], c.monster.dying ? Colors.dying : isTarget ? Colors.target : weakMonster(c.monster) ? Colors.weak : Colors.critterBG);
-      } else if (c.tile) {
-        display.draw(x - sx, y - sy, Glyphs[c.tile.glyph], "#999", bg);
+      Game.map.memory[x2 + y2 * Game.map.w] = c2.memory;
+      if (c2.player) {
+        display.draw(x2 - sx, y2 - sy, Glyphs[Game.player.glyph], "#ccc", bg);
+      } else if (c2.monster) {
+        let arch = MonsterArchetypes[c2.monster.archetype];
+        display.draw(x2 - sx, y2 - sy, Glyphs[arch.glyph], Colors[arch.color], c2.monster.dying ? Colors.dying : isTarget ? Colors.target : weakMonster(c2.monster) ? Colors.weak : Colors.critterBG);
+      } else if (c2.tile) {
+        display.draw(x2 - sx, y2 - sy, Glyphs[c2.tile.glyph], "#999", bg);
       } else {
-        display.draw(x - sx, y - sy, Glyphs.rock, "#000", bg);
+        display.draw(x2 - sx, y2 - sy, Glyphs.rock, "#000", bg);
       }
     }
   }
@@ -4713,78 +5130,47 @@ void main() {
   function offerChoice(prompt, opts, callbacks) {
     activeChoice = { prompt, opts, callbacks };
     let choices = "";
-    opts.forEach((v, k) => choices += " (" + k + ") " + v);
+    opts.forEach((v2, k2) => choices += " (" + k2 + ") " + v2);
     msg.log(prompt + choices);
   }
   function runGame() {
+    let logMessages = [];
     Util.format.map.the = "the";
+    renderControls(Game, logMessages);
     let playarea = document.getElementById("playarea");
-    let messages = document.getElementById("messages");
     let display = new display_default(Game.viewport);
     let dispC = display.getContainer();
     playarea.appendChild(dispC);
-    let logEl = document.createElement("ul");
-    logEl.className = "messageLog";
-    messages.appendChild(logEl);
-    let logMessages = [];
     UI.uiCallback = () => {
       drawMap(display);
-      if (logMessages.length > 0) {
-        let logLine = document.createElement("li");
-        for (let [msg2, msgType] of logMessages) {
-          let msgEl = document.createElement("span");
-          msgEl.className = "msg-" + msgType;
-          msgEl.innerHTML = msg2 + " ";
-          logLine.appendChild(msgEl);
-        }
-        logEl.prepend(logLine);
-        logMessages.length = 0;
-      }
-      document.getElementById("essence").innerText = Game.player.essence.toString();
-      document.getElementById("maxEssence").innerText = maxEssence().toString();
-      document.getElementById("turns").innerText = Game.turns.toString();
-      document.getElementById("mapDanger").innerText = getMapDescription() + " [Danger: " + Game.map.danger + "]";
-      let soulEl = document.getElementById("souls");
-      let souls = [];
-      let c = getVictim();
-      if (c.monster) {
-        let soul = getSoul(c.monster);
-        document.getElementById("hereGlyph").innerHTML = Glyphs[soul.glyph];
-        document.getElementById("hereWhat").innerHTML = soul.name;
-        document.getElementById("hereDescription").innerHTML = describeSoulEffects(soul);
-      } else if (c.tile) {
-        document.getElementById("hereGlyph").innerHTML = Glyphs[c.tile.glyph];
-        document.getElementById("hereWhat").innerHTML = c.tile.glyph;
-        if (c.exitDanger) {
-          document.getElementById("hereDescription").innerHTML = "Danger: " + c.exitDanger;
-        } else {
-          document.getElementById("hereDescription").innerHTML = "";
-        }
-      }
-      soulEl.innerHTML = "";
-      for (let soul of Game.player.soulSlots.generic) {
-        let el = document.createElement("div");
-        el.className = "soul-glyph";
-        el.innerHTML = Glyphs[soul.glyph];
-        soulEl.appendChild(el);
-        el = document.createElement("div");
-        el.className = "soul-name";
-        el.innerHTML = soul.name;
-        soulEl.appendChild(el);
-        el = document.createElement("div");
-        el.className = "soul-effect";
-        el.innerHTML = describeSoulEffects(soul);
-        soulEl.appendChild(el);
-      }
+      renderControls(Game, logMessages);
     };
     UI.logCallback = (msg2, msgType) => {
       if (!msgType) {
         msgType = "info";
       }
-      logMessages.push([msg2, msgType]);
+      if (!logMessages[Game.turns]) {
+        logMessages[Game.turns] = [];
+      }
+      logMessages[Game.turns].push([msg2, msgType]);
     };
     handleInput();
     startNewGame();
+  }
+  function handleInput() {
+    document.addEventListener("keydown", (e2) => {
+      if (activeChoice) {
+        activeChoice.callbacks.onChoose(e2.key);
+        activeChoice = null;
+        UI.uiCallback();
+      } else {
+        let command = Commands[e2.key];
+        if (command !== void 0) {
+          UI.commandQueue.push(e2.key);
+          setTimeout(tick, 0);
+        }
+      }
+    });
   }
   function startNewGame() {
     resetGame();
