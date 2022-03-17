@@ -1,19 +1,25 @@
-import { GameState } from "../game";
+import { Game, GameState } from "../game";
 import { render, createElement, Fragment, Component } from "preact";
 import { findTargets, getMapDescription, getVictim, XYContents } from "../map";
 import { Glyphs } from "../glyphs";
 import { getSoul, MonsterArchetypes } from "../monster";
 import { describeSoulEffects, Soul } from "../souls";
 import { maxEssence } from "../commands";
+import { UI, UIState } from "../ui";
 
 export function renderControls(
   game: GameState,
+  ui: UIState,
   messages: [string, string][][]
 ) {
-  render(<Interface {...{ game, messages }} />, document.body);
+  render(<Interface {...{ game, ui, messages }} />, document.body);
 }
 
-function Interface(props: { game: GameState; messages: [string, string][][] }) {
+function Interface(props: {
+  game: GameState;
+  ui: UIState;
+  messages: [string, string][][];
+}) {
   return (
     <div class="wrapper">
       <Playarea />
@@ -21,7 +27,11 @@ function Interface(props: { game: GameState; messages: [string, string][][] }) {
       <div id="mapDanger">
         {getMapDescription() + " [Danger: " + props.game.map.danger + "]"}
       </div>
-      <MessageLog messages={props.messages} />
+      {props.ui.activeChoice ? (
+        <ChoiceBox ui={props.ui} />
+      ) : (
+        <MessageLog messages={props.messages} />
+      )}
     </div>
   );
 }
@@ -29,6 +39,28 @@ function Interface(props: { game: GameState; messages: [string, string][][] }) {
 class Playarea extends Component {
   shouldComponentUpdate = () => false;
   render = (props: {}) => <div id="playarea"></div>;
+}
+
+function ChoiceBox(props: { ui: UIState }) {
+  let choice = props.ui.activeChoice;
+  if (!choice) {
+    return null;
+  }
+  return (
+    <div id="choiceBox">
+      <div class="prompt">{choice.prompt}</div>
+      <div class="opts">
+        {Array.from(choice.opts, ([key, item]) => (
+          <Fragment key={key}>
+            <div class="choice-key">{key}</div>
+            <div class="choice-item">{item}</div>
+          </Fragment>
+        ))}
+        <div class="choice-key">ESC</div>
+        <div class="choice-item">Cancel</div>
+      </div>
+    </div>
+  );
 }
 
 function Sidebar(props: { game: GameState }) {
@@ -57,6 +89,12 @@ function Sidebar(props: { game: GameState }) {
                 name += " (dying)";
               } else if (arch.soul == "vermin") {
                 name += " (vermin)";
+              } else if (c.monster.hp === c.monster.maxHP) {
+                name += " (unharmed)";
+              } else if (c.monster.hp < c.monster.maxHP / 2) {
+                name += " (heavily wounded)";
+              } else {
+                name += " (slightly wounded)";
               }
               let desc = arch.description;
               return (
@@ -75,16 +113,17 @@ function Sidebar(props: { game: GameState }) {
 }
 
 function StatusView(props: { game: GameState }) {
+  let full = "rgba(0, 108, 139, 1)";
+  let lost = "rgba(193, 46, 46, 1)";
+  let empty = "rgba(94, 94, 94, 1)";
+  let essencePct = Math.floor((props.game.player.essence / maxEssence()) * 100);
+  let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
   return (
     <div id="status">
       <div class="stat">
         <div class="stat-label">Essence</div>
-        <div class="stat-value" id="essence">
-          {props.game.player.essence}
-        </div>
-        <div class="stat-label">/</div>
-        <div class="stat-value" id="maxEssence">
-          {maxEssence()}
+        <div class="stat-value" id="essence" style={gradient}>
+          {props.game.player.essence} / {maxEssence()}
         </div>
       </div>
       <div class="stat">

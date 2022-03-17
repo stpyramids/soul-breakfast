@@ -597,14 +597,17 @@ export type ArchetypeID = string;
 export type Monster = {
   archetype: ArchetypeID;
   hp: number;
+  maxHP: number;
   energy: number;
   dying: boolean;
 };
 
 export function spawnMonster(archetype: ArchetypeID): Monster {
+  let hp = doRoll(MonsterArchetypes[archetype].hp);
   return {
     archetype,
-    hp: doRoll(MonsterArchetypes[archetype].hp),
+    hp: hp,
+    maxHP: hp,
     energy: 1.0,
     dying: false,
   };

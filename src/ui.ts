@@ -13,7 +13,14 @@ export const UI = {
   commandQueue: [] as Array<keyof typeof Commands>,
   uiCallback: () => {},
   logCallback: (msg: string, msgType: string | undefined) => {},
+  activeChoice: null as {
+    prompt: string;
+    opts: Map<string, string>;
+    callbacks: { onChoose: (key: string) => void };
+  } | null,
 };
+
+export type UIState = typeof UI;
 
 function tick() {
   if (UI.commandQueue.length == 0) {
@@ -35,7 +42,7 @@ function tick() {
   }
 
   // Don't let UI act when game is 'paused'
-  if (!(noop || activeChoice)) {
+  if (!(noop || UI.activeChoice)) {
     for (let i = 0; i < Game.map.w * Game.map.h; i++) {
       if (Game.map.monsters[i]) {
         // This is all pretty stupid
@@ -137,21 +144,12 @@ function drawMap(display: ROT.Display) {
   }
 }
 
-let activeChoice: {
-  prompt: string;
-  opts: Map<string, string>;
-  callbacks: { onChoose: (key: string) => void };
-} | null = null;
-
 export function offerChoice(
   prompt: string,
   opts: Map<string, string>,
   callbacks: { onChoose: (key: string) => void }
 ) {
-  activeChoice = { prompt, opts, callbacks };
-  let choices = "";
-  opts.forEach((v, k) => (choices += " (" + k + ") " + v));
-  msg.log(prompt + choices);
+  UI.activeChoice = { prompt, opts, callbacks };
 }
 
 // Initializes the game state and begins rendering to a ROT.js canvas.
@@ -162,7 +160,7 @@ export function runGame() {
   (ROT.Util.format as any).map.the = "the";
 
   // Render the UI for the first time
-  renderControls(Game, logMessages);
+  renderControls(Game, UI, logMessages);
 
   // Set up the ROT.js playfield
   let playarea = document.getElementById("playarea")!;
@@ -174,7 +172,7 @@ export function runGame() {
   UI.uiCallback = () => {
     // Draw the map
     drawMap(display);
-    renderControls(Game, logMessages);
+    renderControls(Game, UI, logMessages);
   };
   UI.logCallback = (msg: string, msgType: string | undefined) => {
     if (!msgType) {
@@ -191,9 +189,9 @@ export function runGame() {
 
 function handleInput() {
   document.addEventListener("keydown", (e) => {
-    if (activeChoice) {
-      activeChoice.callbacks.onChoose(e.key);
-      activeChoice = null;
+    if (UI.activeChoice) {
+      UI.activeChoice.callbacks.onChoose(e.key);
+      UI.activeChoice = null;
       UI.uiCallback();
     } else {
       let command = Commands[e.key];

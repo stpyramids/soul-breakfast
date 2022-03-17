@@ -118,7 +118,8 @@ export function applySoak(dmg: number): number {
   return dmg - soak;
 }
 
-function tryReleaseSoul(): boolean {
+function tryReleaseSoul(prompt?: string, onRelease?: () => void): boolean {
+  prompt = prompt ? prompt : "Release which soul?";
   let slots = Game.player.soulSlots.generic;
   let opts: Map<string, string> = new Map();
   for (let i in slots) {
@@ -129,7 +130,7 @@ function tryReleaseSoul(): boolean {
   if (opts.size === 0) {
     msg.think("I have no souls to release.");
   } else {
-    offerChoice("Release which soul?", opts, {
+    offerChoice(prompt, opts, {
       onChoose: (key) => {
         if (opts.has(key)) {
           let slot = parseInt(key) - 1;
@@ -137,11 +138,58 @@ function tryReleaseSoul(): boolean {
           let gain = slots[slot].essence;
           slots[slot] = EmptySoul;
           gainEssence(gain);
+          if (onRelease) {
+            onRelease();
+          }
         } else {
           msg.log("Release cancelled.");
         }
       },
     });
+  }
+  return false;
+}
+
+function tryClaimSoul(c: XYContents): boolean {
+  if (c.monster) {
+    let soul = getSoul(c.monster);
+    if (soul.effects.length === 0) {
+      msg.angry("This vermin has no soul worthy of claiming.");
+      msg.tutorial("Vermin can be (d)evoured for essence.");
+    } else {
+      Game.player.energy -= 1.0;
+      if (weakMonster(c.monster)) {
+        let slots = Game.player.soulSlots.generic;
+        let claimed = false;
+        for (let i = 0; i < slots.length; i++) {
+          if (isEmptySoul(slots[i])) {
+            slots[i] = soul;
+            msg.essence("You claim the soul of %the.", D(c));
+            msg.tutorial(
+              "Claiming souls increases your maximum essence and may grant new powers."
+            );
+            claimed = true;
+            break;
+          } else if (slots[i].name === soul.name) {
+            msg.essence("You already have claimed this soul.");
+            claimed = true;
+            return false;
+          }
+        }
+        if (!claimed) {
+          tryReleaseSoul("You must release a soul to claim another.", () => {
+            tryClaimSoul(c);
+          });
+        } else {
+          killMonsterAt(c, "drain");
+          return true;
+        }
+      } else {
+        msg.angry("The wretched creature resists!");
+      }
+    }
+  } else {
+    msg.think("No soul is here to claim.");
   }
   return false;
 }
@@ -261,46 +309,7 @@ export const Commands: { [key: string]: () => boolean } = {
   // (c)laim
   c: () => {
     let c = contentsAt(Game.player.x, Game.player.y);
-    if (c.monster) {
-      let soul = getSoul(c.monster);
-      if (soul.effects.length === 0) {
-        msg.angry("This vermin has no soul worthy of claiming.");
-        msg.tutorial("Vermin can be (d)evoured for essence.");
-      } else {
-        Game.player.energy -= 1.0;
-        if (weakMonster(c.monster)) {
-          let slots = Game.player.soulSlots.generic;
-          let claimed = false;
-          for (let i = 0; i < slots.length; i++) {
-            if (isEmptySoul(slots[i])) {
-              slots[i] = soul;
-              msg.essence("You claim the soul of %the.", D(c));
-              msg.tutorial(
-                "Claiming souls increases your maximum essence and may grant new powers."
-              );
-              claimed = true;
-              break;
-            } else if (slots[i].name === soul.name) {
-              msg.essence("You already have claimed this soul.");
-              claimed = true;
-              return false;
-            }
-          }
-          if (!claimed) {
-            msg.essence("You must release a soul before claiming another.");
-            msg.tutorial("Use 'r' to release a soul.");
-          } else {
-            killMonsterAt(c, "drain");
-            return true;
-          }
-        } else {
-          msg.angry("The wretched creature resists!");
-        }
-      }
-    } else {
-      msg.think("No soul is here to claim.");
-    }
-    return false;
+    return tryClaimSoul(c);
   },
   // Pass through exit
   ">": () => {

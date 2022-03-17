@@ -18,7 +18,7 @@
         .wrapper {
             display: grid;
             grid-template-columns: 5fr 3fr;
-            grid-template-rows: min-content 6fr 2fr;
+            grid-template-rows: min-content 6fr min-content 2fr;
             align-items: stretch;
             justify-items: stretch;
             height: 100vh;
@@ -33,10 +33,48 @@
             justify-items: center;
         }
 
+        #choiceBox {
+            display: grid;
+            grid-row: 4;
+            grid-column: 1/span 2;
+            border-top: solid #666 3px;
+            grid-template-columns: 1fr;
+            grid-template-rows: min-content min-content;
+        }
+
+        #choiceBox .prompt {
+            display: grid;
+            font-size: 150%;
+            grid-row: 1;
+            grid-column: 1;
+            padding: 0.3em;
+        }
+
+        #choiceBox .opts {
+            display: flex;
+            padding: 0.3em;
+        }
+
+        #choiceBox .choice-key {
+            font-size: 150%;
+            padding: 0.3em;
+            text-align: center;
+            vertical-align: middle;
+            background: #333;
+            color: #ccc;
+        }
+
+        #choiceBox .choice-item {
+            font-size: 125%;
+            color: #ccc;
+            padding: 0.3em;
+            vertical-align: middle;
+        }
+
         #sidebar {
             display: grid;
             height: 100%;
-            grid-row: 1/span 2;
+            grid-row: 1/span 3;
             grid-column: 2;
             grid-template-rows: min-content min-content min-content min-content 1fr;
             border-left: solid #666 3px;
@@ -56,13 +94,13 @@
         
         #messages {
             display: grid;
-            grid-row: 3;
+            grid-row: 4;
             grid-column: 1/span 2;
             overflow-y: auto;
             background: #000;
             color: #ccc;
             padding: 0.3em;
-            size: 12pt;
+            font-size: 12pt;
             border-top: solid #666 3px;
         }
 
@@ -79,12 +117,12 @@
         #status {
             display: grid;
             color: #666;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 3fr 1fr;
         }
 
         .stat {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-columns: min-content auto;
             padding: 0.3em;
         }
 
@@ -92,6 +130,7 @@
             text-align: right;
             font-size: 18px;
             text-transform: uppercase;
+            padding-right: 0.3em;
         }
 
         .stat-value {
@@ -99,6 +138,10 @@
             color: #ccc;
             font-size: 18px;
             text-align: center;
+        }
+
+        #essence {
+            background: #333;
         }
 
         #whatsHere {
