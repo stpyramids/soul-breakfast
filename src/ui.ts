@@ -4,7 +4,16 @@ import { Colors } from "./colors";
 import { Commands, getPlayerSpeed } from "./commands";
 import { Game, resetGame } from "./game";
 import { Glyphs } from "./glyphs";
-import { contentsAt, recomputeFOV, findTargets, seenXYs, newMap } from "./map";
+import {
+  contentsAt,
+  recomputeFOV,
+  findTargets,
+  seenXYs,
+  newMap,
+  getMapDescription,
+  getVictim,
+  XYContents,
+} from "./map";
 import { MonsterArchetypes, AI, weakMonster } from "./monster";
 import { msg } from "./msg";
 import { renderControls } from "./ui/controls";
@@ -18,6 +27,13 @@ export const UI = {
     opts: Map<string, string>;
     callbacks: { onChoose: (key: string) => void };
   } | null,
+  state: {
+    playerEssence: 0,
+    playerMaxEssence: 0,
+    targets: [] as XYContents[],
+    mapDescription: "",
+    onGround: null as XYContents | null,
+  },
 };
 
 export type UIState = typeof UI;
@@ -170,7 +186,13 @@ export function runGame() {
 
   // Set up UI rendering
   UI.uiCallback = () => {
-    // Draw the map
+    UI.state = {
+      playerEssence: Game.player.essence,
+      playerMaxEssence: Game.player.maxEssence,
+      targets: findTargets(),
+      mapDescription: getMapDescription(),
+      onGround: getVictim(),
+    };
     drawMap(display);
     renderControls(Game, UI, logMessages);
   };

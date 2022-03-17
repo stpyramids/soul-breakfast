@@ -1,11 +1,10 @@
-import { Game, GameState } from "../game";
+import type { GameState } from "../game";
 import { render, createElement, Fragment, Component } from "preact";
-import { findTargets, getMapDescription, getVictim, XYContents } from "../map";
 import { Glyphs } from "../glyphs";
 import { getSoul, MonsterArchetypes } from "../monster";
 import { describeSoulEffects, Soul } from "../souls";
-import { maxEssence } from "../commands";
-import { UI, UIState } from "../ui";
+import type { UIState } from "../ui";
+import type { XYContents } from "../map";
 
 export function renderControls(
   game: GameState,
@@ -23,9 +22,12 @@ function Interface(props: {
   return (
     <div class="wrapper">
       <Playarea />
-      <Sidebar game={props.game} />
+      <Sidebar ui={props.ui} game={props.game} />
       <div id="mapDanger">
-        {getMapDescription() + " [Danger: " + props.game.map.danger + "]"}
+        {props.ui.state.mapDescription +
+          " [Danger: " +
+          props.game.map.danger +
+          "]"}
       </div>
       {props.ui.activeChoice ? (
         <ChoiceBox ui={props.ui} />
@@ -63,15 +65,17 @@ function ChoiceBox(props: { ui: UIState }) {
   );
 }
 
-function Sidebar(props: { game: GameState }) {
+function Sidebar(props: { ui: UIState; game: GameState }) {
   const game = props.game;
   return (
     <div id="sidebar">
       <h1>SOUL 👻 BREAK 💀 FAST</h1>
-      <StatusView game={game} />
+      <StatusView game={game} ui={props.ui} />
       <div class="sidebar-section">
         <h2>On Ground</h2>
-        <WhatsHereView here={getVictim()} />
+        {props.ui.state.onGround ? (
+          <WhatsHereView here={props.ui.state.onGround} />
+        ) : null}
       </div>
       <div class="sidebar-section">
         <h2>Souls</h2>
@@ -80,7 +84,7 @@ function Sidebar(props: { game: GameState }) {
       <div class="sidebar-section">
         <h2>Targets</h2>
         <div id="targets">
-          {findTargets().map((c) => {
+          {props.ui.state.targets.map((c) => {
             if (c.monster) {
               let arch = MonsterArchetypes[c.monster.archetype];
               let glyph = Glyphs[arch.glyph];
@@ -112,18 +116,20 @@ function Sidebar(props: { game: GameState }) {
   );
 }
 
-function StatusView(props: { game: GameState }) {
+function StatusView(props: { ui: UIState; game: GameState }) {
   let full = "rgba(0, 108, 139, 1)";
   let lost = "rgba(193, 46, 46, 1)";
   let empty = "rgba(94, 94, 94, 1)";
-  let essencePct = Math.floor((props.game.player.essence / maxEssence()) * 100);
+  let essencePct = Math.floor(
+    (props.ui.state.playerEssence / props.ui.state.playerMaxEssence) * 100
+  );
   let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
   return (
     <div id="status">
       <div class="stat">
         <div class="stat-label">Essence</div>
         <div class="stat-value" id="essence" style={gradient}>
-          {props.game.player.essence} / {maxEssence()}
+          {props.ui.state.playerEssence} / {props.ui.state.playerMaxEssence}
         </div>
       </div>
       <div class="stat">

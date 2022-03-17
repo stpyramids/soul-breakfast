@@ -27,7 +27,7 @@ export const Tiles: { [name: string]: Tile } = {
   exit: { glyph: "exit", blocks: false },
 };
 
-const DangerDescriptions = [
+const DangerDescriptions: [number, string][] = [
   [1, "cobwebbed catacomb"],
   [5, "ruined crypt"],
   [10, "murky tomb"],
@@ -36,7 +36,7 @@ const DangerDescriptions = [
   [25, "teeming necropolis"],
 ];
 
-export function getMapDescription() {
+export function getMapDescription(): string {
   for (let i = DangerDescriptions.length - 1; i >= 0; i--) {
     if (DangerDescriptions[i][0] < Game.map.danger) {
       return DangerDescriptions[i][1];
