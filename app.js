@@ -3991,9 +3991,11 @@ void main() {
     ]
   }));
   function spawnMonster(archetype) {
+    let hp = doRoll(MonsterArchetypes[archetype].hp);
     return {
       archetype,
-      hp: doRoll(MonsterArchetypes[archetype].hp),
+      hp,
+      maxHP: hp,
       energy: 1,
       dying: false
     };
@@ -4293,7 +4295,8 @@ void main() {
     }
     return dmg - soak;
   }
-  function tryReleaseSoul() {
+  function tryReleaseSoul(prompt, onRelease) {
+    prompt = prompt ? prompt : "Release which soul?";
     let slots = Game.player.soulSlots.generic;
     let opts = /* @__PURE__ */ new Map();
     for (let i2 in slots) {
@@ -4304,7 +4307,7 @@ void main() {
     if (opts.size === 0) {
       msg.think("I have no souls to release.");
     } else {
-      offerChoice("Release which soul?", opts, {
+      offerChoice(prompt, opts, {
         onChoose: (key) => {
           if (opts.has(key)) {
             let slot = parseInt(key) - 1;
@@ -4312,11 +4315,55 @@ void main() {
             let gain = slots[slot].essence;
             slots[slot] = EmptySoul;
             gainEssence(gain);
+            if (onRelease) {
+              onRelease();
+            }
           } else {
             msg.log("Release cancelled.");
           }
         }
       });
+    }
+    return false;
+  }
+  function tryClaimSoul(c2) {
+    if (c2.monster) {
+      let soul = getSoul(c2.monster);
+      if (soul.effects.length === 0) {
+        msg.angry("This vermin has no soul worthy of claiming.");
+        msg.tutorial("Vermin can be (d)evoured for essence.");
+      } else {
+        Game.player.energy -= 1;
+        if (weakMonster(c2.monster)) {
+          let slots = Game.player.soulSlots.generic;
+          let claimed = false;
+          for (let i2 = 0; i2 < slots.length; i2++) {
+            if (isEmptySoul(slots[i2])) {
+              slots[i2] = soul;
+              msg.essence("You claim the soul of %the.", D(c2));
+              msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
+              claimed = true;
+              break;
+            } else if (slots[i2].name === soul.name) {
+              msg.essence("You already have claimed this soul.");
+              claimed = true;
+              return false;
+            }
+          }
+          if (!claimed) {
+            tryReleaseSoul("You must release a soul to claim another.", () => {
+              tryClaimSoul(c2);
+            });
+          } else {
+            killMonsterAt(c2, "drain");
+            return true;
+          }
+        } else {
+          msg.angry("The wretched creature resists!");
+        }
+      }
+    } else {
+      msg.think("No soul is here to claim.");
     }
     return false;
   }
@@ -4420,44 +4467,7 @@ void main() {
     },
     c: () => {
       let c2 = contentsAt(Game.player.x, Game.player.y);
-      if (c2.monster) {
-        let soul = getSoul(c2.monster);
-        if (soul.effects.length === 0) {
-          msg.angry("This vermin has no soul worthy of claiming.");
-          msg.tutorial("Vermin can be (d)evoured for essence.");
-        } else {
-          Game.player.energy -= 1;
-          if (weakMonster(c2.monster)) {
-            let slots = Game.player.soulSlots.generic;
-            let claimed = false;
-            for (let i2 = 0; i2 < slots.length; i2++) {
-              if (isEmptySoul(slots[i2])) {
-                slots[i2] = soul;
-                msg.essence("You claim the soul of %the.", D(c2));
-                msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
-                claimed = true;
-                break;
-              } else if (slots[i2].name === soul.name) {
-                msg.essence("You already have claimed this soul.");
-                claimed = true;
-                return false;
-              }
-            }
-            if (!claimed) {
-              msg.essence("You must release a soul before claiming another.");
-              msg.tutorial("Use 'r' to release a soul.");
-            } else {
-              killMonsterAt(c2, "drain");
-              return true;
-            }
-          } else {
-            msg.angry("The wretched creature resists!");
-          }
-        }
-      } else {
-        msg.think("No soul is here to claim.");
-      }
-      return false;
+      return tryClaimSoul(c2);
     },
     ">": () => {
       let c2 = contentsAt(Game.player.x, Game.player.y);
@@ -4877,8 +4887,8 @@ void main() {
   }, _.prototype.render = d, t = [], o = typeof Promise == "function" ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, g.__r = 0, f = 0;
 
   // src/ui/controls.tsx
-  function renderControls(game, messages) {
-    S(/* @__PURE__ */ v(Interface, __spreadValues({}, { game, messages })), document.body);
+  function renderControls(game, ui, messages) {
+    S(/* @__PURE__ */ v(Interface, __spreadValues({}, { game, ui, messages })), document.body);
   }
   function Interface(props) {
     return /* @__PURE__ */ v("div", {
@@ -4887,7 +4897,9 @@ void main() {
       game: props.game
     }), /* @__PURE__ */ v("div", {
       id: "mapDanger"
-    }, getMapDescription() + " [Danger: " + props.game.map.danger + "]"), /* @__PURE__ */ v(MessageLog, {
+    }, getMapDescription() + " [Danger: " + props.game.map.danger + "]"), props.ui.activeChoice ? /* @__PURE__ */ v(ChoiceBox, {
+      ui: props.ui
+    }) : /* @__PURE__ */ v(MessageLog, {
       messages: props.messages
     }));
   }
@@ -4900,6 +4912,29 @@ void main() {
       });
     }
   };
+  function ChoiceBox(props) {
+    let choice = props.ui.activeChoice;
+    if (!choice) {
+      return null;
+    }
+    return /* @__PURE__ */ v("div", {
+      id: "choiceBox"
+    }, /* @__PURE__ */ v("div", {
+      class: "prompt"
+    }, choice.prompt), /* @__PURE__ */ v("div", {
+      class: "opts"
+    }, Array.from(choice.opts, ([key, item]) => /* @__PURE__ */ v(d, {
+      key
+    }, /* @__PURE__ */ v("div", {
+      class: "choice-key"
+    }, key), /* @__PURE__ */ v("div", {
+      class: "choice-item"
+    }, item))), /* @__PURE__ */ v("div", {
+      class: "choice-key"
+    }, "ESC"), /* @__PURE__ */ v("div", {
+      class: "choice-item"
+    }, "Cancel")));
+  }
   function Sidebar(props) {
     const game = props.game;
     return /* @__PURE__ */ v("div", {
@@ -4927,6 +4962,12 @@ void main() {
           name += " (dying)";
         } else if (arch.soul == "vermin") {
           name += " (vermin)";
+        } else if (c2.monster.hp === c2.monster.maxHP) {
+          name += " (unharmed)";
+        } else if (c2.monster.hp < c2.monster.maxHP / 2) {
+          name += " (heavily wounded)";
+        } else {
+          name += " (slightly wounded)";
         }
         let desc = arch.description;
         return /* @__PURE__ */ v("div", {
@@ -4942,6 +4983,11 @@ void main() {
     }))));
   }
   function StatusView(props) {
+    let full = "rgba(0, 108, 139, 1)";
+    let lost = "rgba(193, 46, 46, 1)";
+    let empty = "rgba(94, 94, 94, 1)";
+    let essencePct = Math.floor(props.game.player.essence / maxEssence() * 100);
+    let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
     return /* @__PURE__ */ v("div", {
       id: "status"
     }, /* @__PURE__ */ v("div", {
@@ -4950,13 +4996,9 @@ void main() {
       class: "stat-label"
     }, "Essence"), /* @__PURE__ */ v("div", {
       class: "stat-value",
-      id: "essence"
-    }, props.game.player.essence), /* @__PURE__ */ v("div", {
-      class: "stat-label"
-    }, "/"), /* @__PURE__ */ v("div", {
-      class: "stat-value",
-      id: "maxEssence"
-    }, maxEssence())), /* @__PURE__ */ v("div", {
+      id: "essence",
+      style: gradient
+    }, props.game.player.essence, " / ", maxEssence())), /* @__PURE__ */ v("div", {
       class: "stat"
     }, /* @__PURE__ */ v("div", {
       class: "stat-label"
@@ -5035,7 +5077,8 @@ void main() {
     uiCallback: () => {
     },
     logCallback: (msg2, msgType) => {
-    }
+    },
+    activeChoice: null
   };
   function tick() {
     if (UI.commandQueue.length == 0) {
@@ -5054,7 +5097,7 @@ void main() {
         break;
       }
     }
-    if (!(noop || activeChoice)) {
+    if (!(noop || UI.activeChoice)) {
       for (let i2 = 0; i2 < Game.map.w * Game.map.h; i2++) {
         if (Game.map.monsters[i2]) {
           const c2 = contentsAt(i2 % Game.map.w, Math.floor(i2 / Game.map.w));
@@ -5126,24 +5169,20 @@ void main() {
       }
     }
   }
-  var activeChoice = null;
   function offerChoice(prompt, opts, callbacks) {
-    activeChoice = { prompt, opts, callbacks };
-    let choices = "";
-    opts.forEach((v2, k2) => choices += " (" + k2 + ") " + v2);
-    msg.log(prompt + choices);
+    UI.activeChoice = { prompt, opts, callbacks };
   }
   function runGame() {
     let logMessages = [];
     Util.format.map.the = "the";
-    renderControls(Game, logMessages);
+    renderControls(Game, UI, logMessages);
     let playarea = document.getElementById("playarea");
     let display = new display_default(Game.viewport);
     let dispC = display.getContainer();
     playarea.appendChild(dispC);
     UI.uiCallback = () => {
       drawMap(display);
-      renderControls(Game, logMessages);
+      renderControls(Game, UI, logMessages);
     };
     UI.logCallback = (msg2, msgType) => {
       if (!msgType) {
@@ -5159,9 +5198,9 @@ void main() {
   }
   function handleInput() {
     document.addEventListener("keydown", (e2) => {
-      if (activeChoice) {
-        activeChoice.callbacks.onChoose(e2.key);
-        activeChoice = null;
+      if (UI.activeChoice) {
+        UI.activeChoice.callbacks.onChoose(e2.key);
+        UI.activeChoice = null;
         UI.uiCallback();
       } else {
         let command = Commands[e2.key];
