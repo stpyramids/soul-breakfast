@@ -11,6 +11,7 @@ import {
   MonsterArchetype,
 } from "./monster";
 import { msg } from "./msg";
+import { offerChoice, startNewGame } from "./ui";
 import { keysOf, doRoll } from "./utils";
 
 /// Map tiles
@@ -227,6 +228,7 @@ export function newMap(opts?: NewMapOptions) {
   }
 
   if (Game.map.danger >= Game.maxLevel) {
+    msg.break();
     msg.tutorial(
       "Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination."
     );
@@ -238,6 +240,28 @@ export function newMap(opts?: NewMapOptions) {
     );
     msg.break();
     msg.tutorial("Thanks for playing!");
+    offerChoice(
+      "Thanks for playing! You have reached the end of the currently implemented content.",
+      new Map([
+        ["q", "Start a new run"],
+        ["c", "Continue playing"],
+      ]),
+      {
+        onChoose: (key) => {
+          switch (key) {
+            case "q":
+              startNewGame();
+              return true;
+            case "c":
+              msg.tutorial(
+                "Use Q (shift-q) to restart, or just reload the page."
+              );
+              return true;
+          }
+          return false;
+        },
+      }
+    );
   }
 }
 

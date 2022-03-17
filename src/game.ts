@@ -39,8 +39,8 @@ export let Game = {
 
 export type GameState = typeof Game;
 
-let freshGame = JSON.parse(JSON.stringify(Game)) as GameState;
+let freshGame = JSON.stringify(Game);
 
 export function resetGame() {
-  Game = freshGame;
+  Game = JSON.parse(freshGame) as GameState;
 }

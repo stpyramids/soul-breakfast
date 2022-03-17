@@ -1,7 +1,13 @@
 import type { GameState } from "../game";
-import { render, createElement, Fragment, Component } from "preact";
+import {
+  render,
+  createElement,
+  Fragment,
+  Component,
+  ComponentType,
+} from "preact";
 import { Glyphs } from "../glyphs";
-import { getSoul, MonsterArchetypes } from "../monster";
+import { getSoul, MonsterArchetypes, monsterHasStatus } from "../monster";
 import { describeSoulEffects, Soul } from "../souls";
 import type { UIState } from "../ui";
 import type { XYContents } from "../map";
@@ -29,11 +35,7 @@ function Interface(props: {
           props.game.map.danger +
           "]"}
       </div>
-      {props.ui.activeChoice ? (
-        <ChoiceBox ui={props.ui} />
-      ) : (
-        <MessageLog messages={props.messages} />
-      )}
+      <MessageLog messages={props.messages} />
     </div>
   );
 }
@@ -71,54 +73,47 @@ function Sidebar(props: { ui: UIState; game: GameState }) {
     <div id="sidebar">
       <h1>SOUL 👻 BREAK 💀 FAST</h1>
       <StatusView game={game} ui={props.ui} />
-      <div class="sidebar-section">
-        <h2>On Ground</h2>
-        {props.ui.state.onGround ? (
-          <WhatsHereView here={props.ui.state.onGround} />
-        ) : null}
-      </div>
-      <div class="sidebar-section">
-        <h2>Souls</h2>
-        <SoulListView souls={game.player.soulSlots.generic} />
-      </div>
-      <div class="sidebar-section">
-        <h2>Targets</h2>
-        <div id="targets">
-          {props.ui.state.targets.map((c) => {
-            if (c.monster) {
-              let arch = MonsterArchetypes[c.monster.archetype];
-              let glyph = Glyphs[arch.glyph];
-              let name = arch.name;
-              if (c.monster.dying) {
-                name += " (dying)";
-              } else if (arch.soul == "vermin") {
-                name += " (vermin)";
-              } else if (c.monster.hp === c.monster.maxHP) {
-                name += " (unharmed)";
-              } else if (c.monster.hp < c.monster.maxHP / 2) {
-                name += " (heavily wounded)";
-              } else {
-                name += " (slightly wounded)";
-              }
-              let desc = arch.description;
-              return (
-                <div class="target-entry">
-                  <div class="target-glyph soul-glyph">{glyph}</div>
-                  <div class="target-name soul-name">{name}</div>
-                  <div class="target-thoughts">{desc}</div>
-                </div>
-              );
-            }
-          })}
-        </div>
-      </div>
+      {props.ui.state.onGround ? (
+        <SidebarSection
+          label="On Ground"
+          element={WhatsHereView}
+          here={props.ui.state.onGround}
+        />
+      ) : null}
+      <SidebarSection
+        label="Souls"
+        element={SoulListView}
+        souls={game.player.soulSlots.generic}
+      />
+      {props.ui.activeChoice ? (
+        <SidebarSection label="Choose" element={ChoiceBox} ui={props.ui} />
+      ) : (
+        <SidebarSection
+          label="Targets"
+          element={TargetsView}
+          targets={props.ui.state.targets}
+        />
+      )}
+    </div>
+  );
+}
+
+function SidebarSection<P>(
+  props: {
+    label: string;
+    element: ComponentType<P>;
+  } & P
+) {
+  return (
+    <div class="sidebar-section">
+      <h2>{props.label}</h2>
+      {createElement(props.element, props)}
     </div>
   );
 }
 
 function StatusView(props: { ui: UIState; game: GameState }) {
   let full = "rgba(0, 108, 139, 1)";
-  let lost = "rgba(193, 46, 46, 1)";
   let empty = "rgba(94, 94, 94, 1)";
   let essencePct = Math.floor(
     (props.ui.state.playerEssence / props.ui.state.playerMaxEssence) * 100
@@ -189,6 +184,39 @@ function SoulView(props: { soul: Soul }) {
       <div class="soul-name">{props.soul.name}</div>
       <div class="soul-effect">{describeSoulEffects(props.soul)}</div>
     </Fragment>
+  );
+}
+
+function TargetsView(props: { targets: XYContents[] }) {
+  return (
+    <div id="targets">
+      {props.targets.map((c) => {
+        if (c.monster) {
+          let arch = MonsterArchetypes[c.monster.archetype];
+          let glyph = Glyphs[arch.glyph];
+          let name = arch.name;
+          if (monsterHasStatus(c.monster, "dying")) {
+            name += " (dying)";
+          } else if (arch.soul == "vermin") {
+            name += " (vermin)";
+          } else if (c.monster.hp === c.monster.maxHP) {
+            name += " (unharmed)";
+          } else if (c.monster.hp < c.monster.maxHP / 2) {
+            name += " (heavily wounded)";
+          } else {
+            name += " (slightly wounded)";
+          }
+          let desc = arch.description;
+          return (
+            <div class="target-entry">
+              <div class="target-glyph soul-glyph">{glyph}</div>
+              <div class="target-name soul-name">{name}</div>
+              <div class="target-thoughts">{desc}</div>
+            </div>
+          );
+        }
+      })}
+    </div>
   );
 }
 

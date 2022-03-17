@@ -144,6 +144,7 @@ function tryReleaseSoul(prompt?: string, onRelease?: () => void): boolean {
         } else {
           msg.log("Release cancelled.");
         }
+        return true;
       },
     });
   }
@@ -372,6 +373,7 @@ export const Commands: { [key: string]: () => boolean } = {
           if (key == "y") {
             startNewGame();
           }
+          return true;
         },
       }
     );
@@ -391,11 +393,12 @@ export const Commands: { [key: string]: () => boolean } = {
             switch (key) {
               case "w":
                 newMap({ danger: 50 });
-                break;
+                return true;
               case "d":
                 console.log(Game);
-                break;
+                return true;
             }
+            return true;
           },
         }
       );
@@ -459,7 +462,8 @@ export function damageMonsterAt(
         msg.tutorial(
           "Enter a dying creature's tile to (d)evour or (c)laim their soul."
         );
-        m.dying = true;
+        m.statuses.push({ type: "dying", timer: Math.floor(m.maxHP / 2) });
+        m.hp = 0;
       }
     }
   }

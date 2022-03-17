@@ -1,7 +1,7 @@
 import * as ROT from "rot-js";
 
 import { Colors } from "./colors";
-import { Commands, getPlayerSpeed } from "./commands";
+import { Commands, getPlayerSpeed, maxEssence } from "./commands";
 import { Game, resetGame } from "./game";
 import { Glyphs } from "./glyphs";
 import {
@@ -14,19 +14,27 @@ import {
   getVictim,
   XYContents,
 } from "./map";
-import { MonsterArchetypes, AI, weakMonster } from "./monster";
+import {
+  MonsterArchetypes,
+  AI,
+  weakMonster,
+  monsterHasStatus,
+} from "./monster";
 import { msg } from "./msg";
 import { renderControls } from "./ui/controls";
+
+type Choice = {
+  prompt: string;
+  opts: Map<string, string>;
+  callbacks: { onChoose: (key: string) => boolean };
+};
 
 export const UI = {
   commandQueue: [] as Array<keyof typeof Commands>,
   uiCallback: () => {},
   logCallback: (msg: string, msgType: string | undefined) => {},
-  activeChoice: null as {
-    prompt: string;
-    opts: Map<string, string>;
-    callbacks: { onChoose: (key: string) => void };
-  } | null,
+  activeChoice: null as Choice | null,
+  nextChoice: null as Choice | null,
   state: {
     playerEssence: 0,
     playerMaxEssence: 0,
@@ -64,7 +72,7 @@ function tick() {
         // This is all pretty stupid
         const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
         const m = c.monster!;
-        if (!m.dying) {
+        if (m.hp > 0) {
           const arch = MonsterArchetypes[m.archetype];
           const ai = AI[arch.ai];
           m.energy += arch.speed;
@@ -144,7 +152,7 @@ function drawMap(display: ROT.Display) {
         y - sy,
         Glyphs[arch.glyph],
         Colors[arch.color],
-        c.monster.dying
+        monsterHasStatus(c.monster, "dying")
           ? Colors.dying
           : isTarget
           ? Colors.target
@@ -163,9 +171,13 @@ function drawMap(display: ROT.Display) {
 export function offerChoice(
   prompt: string,
   opts: Map<string, string>,
-  callbacks: { onChoose: (key: string) => void }
+  callbacks: { onChoose: (key: string) => boolean }
 ) {
-  UI.activeChoice = { prompt, opts, callbacks };
+  if (UI.activeChoice) {
+    UI.nextChoice = { prompt, opts, callbacks };
+  } else {
+    UI.activeChoice = { prompt, opts, callbacks };
+  }
 }
 
 // Initializes the game state and begins rendering to a ROT.js canvas.
@@ -188,7 +200,7 @@ export function runGame() {
   UI.uiCallback = () => {
     UI.state = {
       playerEssence: Game.player.essence,
-      playerMaxEssence: Game.player.maxEssence,
+      playerMaxEssence: maxEssence(),
       targets: findTargets(),
       mapDescription: getMapDescription(),
       onGround: getVictim(),
@@ -209,16 +221,33 @@ export function runGame() {
   startNewGame();
 }
 
+const KeyAliases: { [key: string]: string } = {
+  ArrowUp: "k",
+  ArrowDown: "j",
+  ArrowLeft: "h",
+  ArrowRight: "l",
+};
+
 function handleInput() {
   document.addEventListener("keydown", (e) => {
+    let key = e.key;
     if (UI.activeChoice) {
-      UI.activeChoice.callbacks.onChoose(e.key);
-      UI.activeChoice = null;
+      if (UI.activeChoice.callbacks.onChoose(key)) {
+        UI.activeChoice = UI.nextChoice;
+        UI.nextChoice = null;
+      }
       UI.uiCallback();
     } else {
-      let command = Commands[e.key];
+      let alias = KeyAliases[key];
+      if (alias) {
+        key = alias;
+      }
+      if (e.shiftKey) {
+        key = key.toUpperCase();
+      }
+      let command = Commands[key];
       if (command !== undefined) {
-        UI.commandQueue.push(e.key);
+        UI.commandQueue.push(key);
         setTimeout(tick, 0);
       }
     }

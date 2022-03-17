@@ -594,12 +594,23 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
 
 export type ArchetypeID = string;
 
+export type MonsterStatusType = "dying" | "slow";
+export type MonsterStatus =
+  | {
+      type: "dying";
+      timer: number;
+    }
+  | {
+      type: "slow";
+      timer: number;
+    };
+
 export type Monster = {
   archetype: ArchetypeID;
   hp: number;
   maxHP: number;
   energy: number;
-  dying: boolean;
+  statuses: MonsterStatus[];
 };
 
 export function spawnMonster(archetype: ArchetypeID): Monster {
@@ -609,12 +620,19 @@ export function spawnMonster(archetype: ArchetypeID): Monster {
     hp: hp,
     maxHP: hp,
     energy: 1.0,
-    dying: false,
+    statuses: [],
   };
 }
 
+export function monsterHasStatus(
+  m: Monster,
+  status: MonsterStatusType
+): boolean {
+  return !!m.statuses.find((s) => s.type === status);
+}
+
 export function weakMonster(m: Monster): boolean {
-  return m.hp <= 1 || m.dying;
+  return m.hp <= 1 || monsterHasStatus(m, "dying");
 }
 
 export function getSoul(m: Monster): Soul {
