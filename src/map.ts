@@ -142,6 +142,9 @@ export function newMap(opts?: NewMapOptions) {
       ...opts,
     };
   }
+  if (Game.map.danger < 1) {
+    Game.map.danger = 1;
+  }
 
   // Fill in an empty map
   Game.map.tiles.fill(Tiles.rock, 0, Game.map.h * Game.map.w);
@@ -169,11 +172,18 @@ export function newMap(opts?: NewMapOptions) {
 
   // Place monsters and exits in other rooms
   const eligibleMonsters: { [key: ArchetypeID]: number } = {};
-  for (let key in MonsterArchetypes) {
-    if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
-      eligibleMonsters[key] =
-        Game.map.danger -
-        Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+  if (Game.map.danger === 1) {
+    // Ensure that the entry level is easy but not all vermin
+    eligibleMonsters["gnat swarm"] = 2;
+    eligibleMonsters["maggot heap"] = 2;
+    eligibleMonsters["dusty rat"] = 1;
+  } else {
+    for (let key in MonsterArchetypes) {
+      if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
+        eligibleMonsters[key] =
+          Game.map.danger -
+          Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+      }
     }
   }
 

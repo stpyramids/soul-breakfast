@@ -62,7 +62,7 @@ export function getWand(): {
   let projectile = WandEffects.bolt as ProjectileEffect;
   let damage = WandEffects.weakMana as DamageEffect;
   let status = null as StatusEffect | null;
-  let cost = 2;
+  let cost = 1;
 
   for (let soul of Game.player.soulSlots.generic) {
     for (let effect of soul.effects) {
@@ -450,7 +450,7 @@ export function damageMonsterAt(
         msg.tutorial(
           "Enter a dying creature's tile to (d)evour or (c)laim their soul."
         );
-        m.statuses.push({ type: "dying", timer: 5 + Math.floor(m.maxHP / 2) });
+        m.statuses.push({ type: "dying", timer: 7 + Math.floor(m.maxHP / 2) });
         m.hp = 0;
       }
     }
