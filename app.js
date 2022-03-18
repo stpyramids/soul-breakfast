@@ -1405,14 +1405,14 @@ void main() {
 
   // node_modules/rot-js/lib/fov/discrete-shadowcasting.js
   var DiscreteShadowcasting = class extends FOV {
-    compute(x2, y2, R, callback) {
+    compute(x2, y2, R2, callback) {
       callback(x2, y2, 0, 1);
       if (!this._lightPasses(x2, y2)) {
         return;
       }
       let DATA = [];
       let A, B, cx, cy, blocks;
-      for (let r2 = 1; r2 <= R; r2++) {
+      for (let r2 = 1; r2 <= R2; r2++) {
         let neighbors = this._getCircle(x2, y2, r2);
         let angle = 360 / neighbors.length;
         for (let i2 = 0; i2 < neighbors.length; i2++) {
@@ -1485,14 +1485,14 @@ void main() {
 
   // node_modules/rot-js/lib/fov/precise-shadowcasting.js
   var PreciseShadowcasting = class extends FOV {
-    compute(x2, y2, R, callback) {
+    compute(x2, y2, R2, callback) {
       callback(x2, y2, 0, 1);
       if (!this._lightPasses(x2, y2)) {
         return;
       }
       let SHADOWS = [];
       let cx, cy, blocks, A1, A2, visibility;
-      for (let r2 = 1; r2 <= R; r2++) {
+      for (let r2 = 1; r2 <= R2; r2++) {
         let neighbors = this._getCircle(x2, y2, r2);
         let neighborCount = neighbors.length;
         for (let i2 = 0; i2 < neighborCount; i2++) {
@@ -1599,30 +1599,30 @@ void main() {
     [1, 0, 0, 1]
   ];
   var RecursiveShadowcasting = class extends FOV {
-    compute(x2, y2, R, callback) {
+    compute(x2, y2, R2, callback) {
       callback(x2, y2, 0, 1);
       for (let i2 = 0; i2 < OCTANTS.length; i2++) {
-        this._renderOctant(x2, y2, OCTANTS[i2], R, callback);
+        this._renderOctant(x2, y2, OCTANTS[i2], R2, callback);
       }
     }
-    compute180(x2, y2, R, dir, callback) {
+    compute180(x2, y2, R2, dir, callback) {
       callback(x2, y2, 0, 1);
       let previousOctant = (dir - 1 + 8) % 8;
       let nextPreviousOctant = (dir - 2 + 8) % 8;
       let nextOctant = (dir + 1 + 8) % 8;
-      this._renderOctant(x2, y2, OCTANTS[nextPreviousOctant], R, callback);
-      this._renderOctant(x2, y2, OCTANTS[previousOctant], R, callback);
-      this._renderOctant(x2, y2, OCTANTS[dir], R, callback);
-      this._renderOctant(x2, y2, OCTANTS[nextOctant], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[nextPreviousOctant], R2, callback);
+      this._renderOctant(x2, y2, OCTANTS[previousOctant], R2, callback);
+      this._renderOctant(x2, y2, OCTANTS[dir], R2, callback);
+      this._renderOctant(x2, y2, OCTANTS[nextOctant], R2, callback);
     }
-    compute90(x2, y2, R, dir, callback) {
+    compute90(x2, y2, R2, dir, callback) {
       callback(x2, y2, 0, 1);
       let previousOctant = (dir - 1 + 8) % 8;
-      this._renderOctant(x2, y2, OCTANTS[dir], R, callback);
-      this._renderOctant(x2, y2, OCTANTS[previousOctant], R, callback);
+      this._renderOctant(x2, y2, OCTANTS[dir], R2, callback);
+      this._renderOctant(x2, y2, OCTANTS[previousOctant], R2, callback);
     }
-    _renderOctant(x2, y2, octant, R, callback) {
-      this._castVisibility(x2, y2, 1, 1, 0, R + 1, octant[0], octant[1], octant[2], octant[3], callback);
+    _renderOctant(x2, y2, octant, R2, callback) {
+      this._castVisibility(x2, y2, 1, 1, 0, R2 + 1, octant[0], octant[1], octant[2], octant[3], callback);
     }
     _castVisibility(startX, startY, row, visSlopeStart, visSlopeEnd, radius, xx, xy, yx, yy, callback) {
       if (visSlopeStart < visSlopeEnd) {
@@ -2764,16 +2764,16 @@ void main() {
   };
 
   // node_modules/rot-js/lib/map/ellermaze.js
-  function addToList(i2, L2, R) {
-    R[L2[i2 + 1]] = R[i2];
-    L2[R[i2]] = L2[i2 + 1];
-    R[i2] = i2 + 1;
+  function addToList(i2, L2, R2) {
+    R2[L2[i2 + 1]] = R2[i2];
+    L2[R2[i2]] = L2[i2 + 1];
+    R2[i2] = i2 + 1;
     L2[i2 + 1] = i2;
   }
-  function removeFromList(i2, L2, R) {
-    R[L2[i2]] = R[i2];
-    L2[R[i2]] = L2[i2];
-    R[i2] = i2;
+  function removeFromList(i2, L2, R2) {
+    R2[L2[i2]] = R2[i2];
+    L2[R2[i2]] = L2[i2];
+    R2[i2] = i2;
     L2[i2] = i2;
   }
   var EllerMaze = class extends Map2 {
@@ -2782,10 +2782,10 @@ void main() {
       let w2 = Math.ceil((this._width - 2) / 2);
       let rand = 9 / 24;
       let L2 = [];
-      let R = [];
+      let R2 = [];
       for (let i2 = 0; i2 < w2; i2++) {
         L2.push(i2);
-        R.push(i2);
+        R2.push(i2);
       }
       L2.push(w2 - 1);
       let j2;
@@ -2795,11 +2795,11 @@ void main() {
           let y2 = j2;
           map[x2][y2] = 0;
           if (i2 != L2[i2 + 1] && rng_default.getUniform() > rand) {
-            addToList(i2, L2, R);
+            addToList(i2, L2, R2);
             map[x2 + 1][y2] = 0;
           }
           if (i2 != L2[i2] && rng_default.getUniform() > rand) {
-            removeFromList(i2, L2, R);
+            removeFromList(i2, L2, R2);
           } else {
             map[x2][y2 + 1] = 0;
           }
@@ -2810,10 +2810,10 @@ void main() {
         let y2 = j2;
         map[x2][y2] = 0;
         if (i2 != L2[i2 + 1] && (i2 == L2[i2] || rng_default.getUniform() > rand)) {
-          addToList(i2, L2, R);
+          addToList(i2, L2, R2);
           map[x2 + 1][y2] = 0;
         }
-        removeFromList(i2, L2, R);
+        removeFromList(i2, L2, R2);
       }
       for (let i2 = 0; i2 < this._width; i2++) {
         for (let j3 = 0; j3 < this._height; j3++) {
@@ -3378,6 +3378,7 @@ void main() {
   function asRoll(n2, sides, mod2) {
     return { n: n2, sides, mod: mod2 };
   }
+  var R = asRoll;
   function doRoll(roll) {
     let n2 = 0;
     for (let i2 = 0; i2 < roll.n; i2 += 1) {
@@ -3587,16 +3588,14 @@ void main() {
       let extra = Math.abs(Game.player.essence);
       Game.player.essence = 0;
       let soulChecked = false;
-      let soulBroken = false;
       if (wasZero) {
         for (let slotGroup of keysOf(Game.player.soulSlots)) {
           let slots = Game.player.soulSlots[slotGroup];
           for (let i2 = 0; i2 < slots.length; i2++) {
             if (!isEmptySoul(slots[i2])) {
               soulChecked = true;
-              let roll = asRoll(1, slots[i2].essence, 1);
+              let roll = R(1, slots[i2].essence, 1);
               if (doRoll(roll) < extra) {
-                soulBroken = true;
                 msg.angry("No!");
                 msg.essence("The %s soul breaks free!", slots[i2].name);
                 slots[i2] = EmptySoul;
@@ -3606,7 +3605,7 @@ void main() {
           }
         }
         if (!soulChecked) {
-          let blowback = doRoll(asRoll(1, extra, -3));
+          let blowback = doRoll(R(1, extra, -3));
           if (blowback > 0) {
             msg.angry("I cannot hold together! I must flee!");
             let newDanger = Game.map.danger - rng_default.getUniformInt(1, blowback);
@@ -3629,8 +3628,8 @@ void main() {
       attackFrom: (c2) => {
         msg.combat("%The %s you!", D(c2), verb);
         let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].danger : 1;
-        if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
           let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
           let dmg = doRoll(dmgRoll);
           doDamage(dmg);
@@ -3644,8 +3643,8 @@ void main() {
       attackFrom: (c2) => {
         msg.combat("%The %s you!", D(c2), verb);
         let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].danger : 1;
-        if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
           let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
           let dmg = doRoll(dmgRoll);
           doDamage(dmg);
@@ -3659,97 +3658,119 @@ void main() {
       attackFrom: (c2) => {
       }
     },
-    bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
-    touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
-    slice: meleeAttack("slices at", asRoll(1, 8, 4)),
-    gaze: rangedAttack("gazes at", asRoll(1, 4, 0)),
-    abjure: rangedAttack("abjures", asRoll(1, 4, 2))
+    bite: meleeAttack("snaps at", R(1, 4, 0)),
+    touch: meleeAttack("reaches into", R(1, 4, 2)),
+    slice: meleeAttack("slices at", R(1, 8, 4)),
+    gaze: rangedAttack("gazes at", R(1, 4, 0)),
+    abjure: rangedAttack("abjures", R(1, 4, 2))
   };
   var SoulFactories = {
     vermin: (a2) => ({
       glyph: a2.glyph,
-      essence: Math.floor((a2.danger + 1) / 2),
+      essence: a2.essence,
       name: a2.name,
       effects: []
     }),
     maxEssence: (a2) => ({
       glyph: a2.glyph,
-      essence: a2.danger,
+      essence: a2.essence,
       name: a2.name,
-      effects: [{ type: "stat bonus", stat: "max essence", power: a2.danger }]
+      effects: [{ type: "stat bonus", stat: "max essence", power: a2.essence }]
     }),
     extraDamage: (a2) => ({
       glyph: a2.glyph,
-      essence: a2.danger,
+      essence: a2.essence,
       name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a2.danger / 2) + 1
+          power: Math.floor(a2.essence / 2) + 1
         },
-        { type: "damage", damage: asRoll(Math.floor(a2.danger / 2), 4, 1) }
+        { type: "damage", damage: R(Math.floor(a2.essence / 2), 4, 1) }
       ]
     }),
     slow: (a2) => ({
       glyph: a2.glyph,
-      essence: a2.danger,
+      essence: a2.essence,
       name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a2.danger / 2) + 1
+          power: Math.floor(a2.essence / 2) + 1
         },
-        { type: "status", status: "slow", power: Math.floor(a2.danger / 2) + 1 }
+        { type: "status", status: "slow", power: Math.floor(a2.essence / 2) + 1 }
       ]
     }),
     sight: (a2) => ({
       glyph: a2.glyph,
-      essence: a2.danger,
+      essence: a2.essence,
       name: a2.name,
       effects: [
-        { type: "stat bonus", stat: "max essence", power: a2.danger },
+        { type: "stat bonus", stat: "max essence", power: a2.essence },
         {
           type: "stat bonus",
           stat: "sight",
-          power: Math.floor(a2.danger / 2) + 1
+          power: Math.floor(a2.essence / 2) + 1
         }
       ]
     }),
     speed: (a2) => ({
       glyph: a2.glyph,
       type: "ring",
-      essence: a2.danger,
+      essence: a2.essence,
       name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a2.danger * 0.8)
+          power: Math.floor(a2.essence * 0.8)
         },
         {
           type: "stat bonus",
           stat: "speed",
-          power: 0.05 * Math.floor(a2.danger / 2)
+          power: 0.05 * Math.floor(a2.essence / 2)
         }
       ]
     }),
     soak: (a2) => ({
       glyph: a2.glyph,
       type: "ring",
-      essence: a2.danger,
+      essence: a2.essence,
       name: a2.name,
       effects: [
         {
           type: "stat bonus",
           stat: "max essence",
-          power: Math.floor(a2.danger / 2) + 1
+          power: Math.floor(a2.essence / 2) + 1
         },
         {
           type: "soak damage",
-          power: Math.floor(a2.danger / 5)
+          power: Math.floor(a2.essence / 5)
         }
+      ]
+    }),
+    megalich: (a2) => ({
+      glyph: a2.glyph,
+      essence: 9999,
+      name: "MEGA-LICH 3000!",
+      effects: [
+        {
+          type: "stat bonus",
+          stat: "max essence",
+          power: 200
+        },
+        {
+          type: "soak damage",
+          power: 500
+        },
+        {
+          type: "stat bonus",
+          stat: "speed",
+          power: 10
+        },
+        { type: "damage", damage: R(10, 100, 50) }
       ]
     })
   };
@@ -3760,14 +3781,13 @@ void main() {
     }
     return archs;
   }
-  var MonsterArchetypes = __spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, expandProto({
+  var MonsterArchetypes = __spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues(__spreadValues({}, expandProto({
     base: {
       name: "maggot heap",
       description: "A writhing mass of sickly pale grubs, clinging to a few scraps of moldering flesh for sustenance... and now they sustain me.",
-      danger: 1,
+      essence: 1,
       glyph: "worm",
       color: "vermin",
-      appearing: asRoll(1, 4, 3),
       hp: verminHP,
       speed: 0.2,
       ai: "passive",
@@ -3779,20 +3799,19 @@ void main() {
         name: "gnat swarm",
         description: "Harmless pests, birthed from some forgotten corpse. They would have irritated me in life. Now they are my bread.",
         glyph: "insect",
-        appearing: asRoll(2, 4, 0),
         ai: "wander"
       },
       {
         name: "luminous grub",
         description: "A fat worm with a glowing aura. It must have learned to feed on ambient essence, which is now mine for the taking.",
-        danger: 5,
+        essence: 3,
         glyph: "worm",
         color: "vermin"
       },
       {
         name: "soul butterfly",
         description: "This strange insect leaves trails of essence behind its wings. A beautiful aberration, but also delicious.",
-        danger: 8,
+        essence: 5,
         glyph: "insect",
         color: "vermin",
         speed: 0.4,
@@ -3801,7 +3820,7 @@ void main() {
       {
         name: "torpid ghost",
         description: "A pathetic lost soul that has been ensnared here and reduced to a nearly sessile state.",
-        danger: 10,
+        essence: 10,
         glyph: "ghost",
         color: "vermin",
         speed: 0.1,
@@ -3812,11 +3831,10 @@ void main() {
     base: {
       name: "dusty rat",
       description: "A skinny, worn creature, barely alive, but with just enough of a soul remaining to remove intact.",
-      danger: 2,
+      essence: 2,
       glyph: "rodent",
       color: "danger0",
-      appearing: asRoll(1, 2, 1),
-      hp: asRoll(1, 4, 1),
+      hp: R(1, 4, 1),
       speed: 0.5,
       ai: "nipper",
       attack: "bite",
@@ -3826,9 +3844,9 @@ void main() {
       {
         name: "hungry rat",
         description: "A brown-hided rat that gnaws old bones for food. It seems to think my skull is its next meal.",
-        danger: 6,
+        essence: 6,
         color: "danger5",
-        hp: asRoll(2, 4, 1),
+        hp: R(2, 4, 1),
         ai: "charge"
       }
     ]
@@ -3836,11 +3854,10 @@ void main() {
     base: {
       name: "crypt spider",
       description: "A cobwebbed arachnid that feeds on gnats and maggots, and in turn is fed upon by me.",
-      danger: 3,
+      essence: 3,
       glyph: "spider",
       color: "danger0",
-      appearing: asRoll(1, 2, 0),
-      hp: asRoll(1, 2, 2),
+      hp: R(1, 2, 2),
       speed: 0.8,
       ai: "nipper",
       attack: "bite",
@@ -3850,15 +3867,15 @@ void main() {
       {
         name: "wolf spider",
         description: "This furry gray arachnid is the size of my skull and intent on defending its hunting grounds. But they are my hunting grounds, now.",
-        danger: 7,
+        essence: 7,
         color: "danger5",
-        hp: asRoll(1, 4, 2),
+        hp: R(1, 4, 2),
         ai: "charge"
       },
       {
         name: "ambush spider",
         description: "An obnoxious creature that springs out to attack!",
-        danger: 15,
+        essence: 15,
         color: "danger15",
         ai: "charge",
         speed: 0.9,
@@ -3869,11 +3886,10 @@ void main() {
     base: {
       name: "little ghost",
       description: "A weak spirit, barely clinging to the mortal world. I wandered for decades in a state like this.",
-      danger: 4,
+      essence: 4,
       glyph: "ghost",
       color: "danger0",
-      appearing: asRoll(1, 1, 0),
-      hp: asRoll(2, 4, 0),
+      hp: R(2, 4, 0),
       speed: 0.25,
       ai: "charge",
       attack: "touch",
@@ -3883,17 +3899,17 @@ void main() {
       {
         name: "weeping ghost",
         description: "This decrepit spirit moans and mewls in a manner that would turn my stomach, if I still had one. Its suffering shall soon be over.",
-        danger: 9,
+        essence: 9,
         color: "danger5",
-        hp: asRoll(2, 8, 2),
+        hp: R(2, 8, 2),
         speed: 0.5
       },
       {
         name: "howling ghost",
         description: "A vigorous spirit, for once! Its yawping does grate, but I have a cure for that.",
-        danger: 12,
+        essence: 12,
         color: "danger10",
-        hp: asRoll(2, 5, 2),
+        hp: R(2, 5, 2),
         speed: 0.9,
         soul: "speed"
       }
@@ -3902,11 +3918,10 @@ void main() {
     base: {
       name: "bleary eye",
       description: "The gummy, sluglike body of this repulsive creature clings fast to surfaces and moves exceedingly slowly, but its gaze pierces the veil and disrupts my essence.",
-      danger: 5,
+      essence: 5,
       glyph: "eyeball",
       color: "danger5",
-      appearing: asRoll(1, 2, 1),
-      hp: asRoll(2, 4, 0),
+      hp: R(2, 4, 0),
       speed: 0.25,
       ai: "stationary",
       attack: "gaze",
@@ -3916,16 +3931,15 @@ void main() {
       {
         name: "peering eye",
         description: "This disgusting creature will pay for its insolent gaze!",
-        danger: 10,
+        essence: 10,
         color: "danger10",
-        appearing: asRoll(1, 1, 0),
-        hp: asRoll(3, 4, 0),
+        hp: R(3, 4, 0),
         speed: 0.5
       },
       {
         name: "gimlet eye",
         description: "These remind me of the steely, courageous gaze of someone I once knew. Just like then, I'm going to tear its soul to shreds.",
-        danger: 17,
+        essence: 15,
         color: "danger15"
       }
     ]
@@ -3933,11 +3947,10 @@ void main() {
     base: {
       name: "soul sucker",
       description: "A giant, bloated mosquito, glowing with essence. Another result of the luminous grubs? When I am restored, I should build a laboratory to study this phenomenon.",
-      danger: 15,
+      essence: 15,
       glyph: "insect",
       color: "danger15",
-      appearing: asRoll(2, 2, 2),
-      hp: asRoll(2, 2, 2),
+      hp: R(2, 2, 2),
       speed: 1,
       ai: "nipper",
       attack: "bite",
@@ -3948,11 +3961,10 @@ void main() {
     base: {
       name: "do-gooder",
       description: "Ha! If my captors are reduced to such a feeble state, armed with weapons little better than a child's toy, my restoration will be swift indeed.",
-      danger: 7,
+      essence: 7,
       glyph: "player",
       color: "danger5",
-      appearing: asRoll(1, 2, 0),
-      hp: asRoll(2, 6, 4),
+      hp: R(2, 6, 4),
       speed: 0.6,
       ai: "charge",
       attack: "slice",
@@ -3962,10 +3974,9 @@ void main() {
       {
         name: "acolyte",
         description: "This child has read a book or two and learned enough to be dangerous, but I am a much harsher tutor than any they have ever known.",
-        danger: 12,
-        color: "danger10",
-        appearing: asRoll(1, 2, 0),
-        hp: asRoll(2, 4, 2),
+        essence: 8,
+        color: "danger5",
+        hp: R(2, 4, 2),
         attack: "abjure",
         speed: 0.5,
         soul: "extraDamage"
@@ -3973,23 +3984,136 @@ void main() {
       {
         name: "warrior",
         description: "A muscular oaf, but able enough to swing a sword. This merits caution.",
-        danger: 16,
-        color: "danger15",
-        appearing: asRoll(2, 1, 0),
-        hp: asRoll(3, 6, 4),
+        essence: 14,
+        color: "danger10",
+        hp: R(3, 6, 4),
         soul: "soak"
       },
       {
         name: "priest",
         description: "Ah, a god-speaker. No doubt sent here to soothe the restless dead. I have a better solution.",
-        danger: 20,
+        essence: 15,
         color: "danger20",
-        hp: asRoll(3, 6, 4),
+        hp: R(3, 6, 4),
         speed: 0.5,
         attack: "abjure"
       }
     ]
+  })), expandProto({
+    base: {
+      name: "MegaLich 3000",
+      description: "As I once was, and shall be again.",
+      essence: 9999,
+      glyph: "player",
+      color: "danger20",
+      hp: R(100, 10, 100),
+      speed: 10,
+      ai: "charge",
+      attack: "slice",
+      soul: "megalich"
+    },
+    variants: []
   }));
+  function solo(arch, roll, danger) {
+    return {
+      appearing: [[arch, roll]],
+      danger
+    };
+  }
+  var MonsterFormations = [
+    solo("maggot heap", R(1, 4, 3), 1),
+    solo("gnat swarm", R(2, 4, 0), 1),
+    solo("luminous grub", R(1, 3, 1), 5),
+    solo("soul butterfly", R(1, 3, 1), 10),
+    solo("torpid ghost", R(1, 1, 0), 10),
+    solo("dusty rat", R(1, 3, 0), 1),
+    solo("crypt spider", R(1, 2, 0), 3),
+    solo("little ghost", R(1, 1, 0), 4),
+    solo("bleary eye", R(1, 1, 0), 5),
+    {
+      appearing: [
+        ["dusty rat", R(2, 2, 1)],
+        ["hungry rat", R(1, 3, 0)]
+      ],
+      danger: 7
+    },
+    solo("wolf spider", R(1, 1, 0), 8),
+    solo("weeping ghost", R(1, 1, 0), 10),
+    solo("peering eye", R(1, 1, 0), 12),
+    solo("howling ghost", R(1, 1, 0), 12),
+    {
+      appearing: [
+        ["little ghost", R(2, 2, 1)],
+        ["weeping ghost", R(1, 3, 0)],
+        ["howling ghost", R(1, 1, 0)],
+        ["torpid ghost", R(1, 4, 1)]
+      ],
+      danger: 12
+    },
+    solo("gimlet eye", R(1, 1, 0), 15),
+    solo("ambush spider", R(1, 1, 0), 15),
+    solo("howling ghost", R(1, 3, 1), 17),
+    {
+      appearing: [
+        ["dusty rat", R(2, 2, 1)],
+        ["hungry rat", R(1, 3, 0)]
+      ],
+      danger: 7
+    },
+    solo("wolf spider", R(1, 1, 0), 8),
+    solo("weeping ghost", R(1, 1, 0), 10),
+    solo("peering eye", R(1, 1, 0), 12),
+    solo("howling ghost", R(1, 1, 0), 12),
+    {
+      appearing: [
+        ["luminous grub", R(2, 2, 2)],
+        ["soul butterfly", R(2, 3, 1)],
+        ["soul sucker", R(1, 2, 0)]
+      ],
+      danger: 15
+    },
+    solo("soul sucker", R(2, 2, 2), 17),
+    {
+      appearing: [
+        ["do-gooder", R(1, 2, 0)],
+        ["acolyte", R(1, 2, -1)]
+      ],
+      danger: 9
+    },
+    {
+      appearing: [
+        ["warrior", R(1, 1, 0)],
+        ["acolyte", R(1, 1, 0)]
+      ],
+      danger: 12
+    },
+    {
+      appearing: [
+        ["do-gooder", R(2, 2, 0)],
+        ["warrior", R(1, 2, 0)]
+      ],
+      danger: 15
+    },
+    {
+      appearing: [["warrior", R(2, 2, 1)]],
+      danger: 20
+    },
+    {
+      appearing: [
+        ["warrior", R(1, 2, 0)],
+        ["priest", R(1, 1, 0)]
+      ],
+      danger: 20
+    },
+    {
+      appearing: [
+        ["do-gooder", R(2, 2, 0)],
+        ["warrior", R(1, 2, 0)],
+        ["priest", R(1, 1, 0)]
+      ],
+      danger: 25
+    }
+  ];
   var DeathMessages = {
     drain: "%The crumbles into dust.",
     force: "%The is blown to pieces.",
@@ -4168,18 +4292,11 @@ void main() {
     const [px, py] = startRoom.getCenter();
     Game.player.x = px;
     Game.player.y = py;
-    const eligibleMonsters = {};
-    if (Game.map.danger === 1) {
-      eligibleMonsters["gnat swarm"] = 2;
-      eligibleMonsters["maggot heap"] = 2;
-      eligibleMonsters["dusty rat"] = 1;
-    } else {
-      for (let key in MonsterArchetypes) {
-        if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
-          eligibleMonsters[key] = Game.map.danger - Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
-        }
-      }
-    }
+    const formations = MonsterFormations.filter((f2) => f2.danger <= Game.map.danger + 2);
+    const formDist = formations.reduce((d2, form, i2) => {
+      d2[i2] = Game.map.danger - Math.abs(Game.map.danger - form.danger) / 2;
+      return d2;
+    }, {});
     let exits = rng_default.shuffle([
       Game.map.danger > 1 ? Math.floor(Game.map.danger / 2) : 1,
       Game.map.danger,
@@ -4208,16 +4325,24 @@ void main() {
         Game.map.exits.push([ex, ey, exit]);
         Game.map.tiles[ex + ey * Game.map.w] = Tiles.exit;
       }
-      const mArch = rng_default.getWeightedValue(eligibleMonsters);
-      let appearing = doRoll(MonsterArchetypes[mArch].appearing);
-      while (appearing > 0) {
-        let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
-        let my = rng_default.getUniformInt(room.getTop(), room.getBottom());
-        let c2 = contentsAt(mx, my);
-        if (!c2.blocked) {
-          Game.map.monsters[mx + my * Game.map.w] = spawnMonster(mArch);
+      let capacity = Math.floor(0.5 * (room.getRight() - room.getLeft()) * (room.getBottom() - room.getTop()));
+      let groups = rng_default.getUniformInt(0, 3);
+      while (capacity > 0 && groups > 0) {
+        let form = formations[parseInt(rng_default.getWeightedValue(formDist))];
+        for (let [arch, roll] of form.appearing) {
+          let appearing = doRoll(roll);
+          while (appearing > 0) {
+            let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
+            let my = rng_default.getUniformInt(room.getTop(), room.getBottom());
+            let c2 = contentsAt(mx, my);
+            if (!c2.blocked) {
+              Game.map.monsters[mx + my * Game.map.w] = spawnMonster(arch);
+            }
+            capacity--;
+            appearing--;
+          }
         }
-        appearing -= 1;
+        groups--;
       }
     }
     for (let corridor of map.getCorridors()) {
@@ -4514,7 +4639,7 @@ void main() {
           } else if (claimed === "claimed") {
             msg.essence("You claim the soul of %the.", D(c2));
             msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
-            killMonsterAt2(c2, "drain");
+            killMonsterAt(c2, "drain");
             return true;
           }
         } else {
@@ -4614,7 +4739,7 @@ void main() {
           let soul = getSoul(c2.monster);
           msg.essence("You devour the essence of %the.", D(c2));
           gainEssence(soul.essence);
-          killMonsterAt2(c2, "drain");
+          killMonsterAt(c2, "drain");
         } else {
           msg.angry("The wretched creature resists!");
         }
@@ -4704,7 +4829,7 @@ void main() {
       };
     }
   }
-  function killMonsterAt2(c2, death) {
+  function killMonsterAt(c2, death) {
     if (c2.monster) {
       killMonster(c2.monster, death);
     }
@@ -4725,7 +4850,7 @@ void main() {
         }
       } else {
         if (wasDying) {
-          killMonsterAt2(c2, "force");
+          killMonsterAt(c2, "force");
         } else {
           msg.combat("%The collapses!", D(c2));
           msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
@@ -4751,27 +4876,34 @@ void main() {
         break;
       }
     }
-    if (!(noop || ui.activeChoice)) {
-      game.map.monsters.forEach((m2, i2) => {
-        if (m2) {
-          const c2 = contentsAt(i2 % game.map.w, Math.floor(i2 / game.map.w));
-          monsterStatusTick(m2);
-          if (m2.deathCause) {
-            msg.combat(DeathMessages[m2.deathCause], D(c2));
-            game.map.monsters[i2] = null;
-          } else {
-            if (!monsterHasStatus(m2, "dying")) {
-              const arch = MonsterArchetypes[m2.archetype];
-              const ai = AI[arch.ai];
-              m2.energy += monsterSpeed(m2);
-              while (m2.energy >= 1) {
-                m2.energy -= ai(c2);
+    game.map.monsters.forEach((m2, i2) => {
+      if (m2 && m2.deathCause) {
+        const c2 = contentsAt(i2 % game.map.w, Math.floor(i2 / game.map.w));
+        msg.combat(DeathMessages[m2.deathCause], D(c2));
+        game.map.monsters[i2] = null;
+      }
+    });
+    if (game.player.energy < 1) {
+      if (!(noop || ui.activeChoice)) {
+        game.map.monsters.forEach((m2, i2) => {
+          if (m2) {
+            const c2 = contentsAt(i2 % game.map.w, Math.floor(i2 / game.map.w));
+            monsterStatusTick(m2);
+            if (m2.deathCause) {
+              msg.combat(DeathMessages[m2.deathCause], D(c2));
+              game.map.monsters[i2] = null;
+            } else {
+              if (!monsterHasStatus(m2, "dying")) {
+                const arch = MonsterArchetypes[m2.archetype];
+                const ai = AI[arch.ai];
+                m2.energy += monsterSpeed(m2);
+                while (m2.energy >= 1) {
+                  m2.energy -= ai(c2);
+                }
               }
             }
           }
-        }
-      });
-      if (game.player.energy < 1) {
+        });
         game.turns += 1;
         game.player.energy += getPlayerSpeed();
       }
