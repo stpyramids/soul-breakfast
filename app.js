@@ -4149,6 +4149,9 @@ void main() {
     if (opts) {
       Game.map = __spreadValues(__spreadValues({}, Game.map), opts);
     }
+    if (Game.map.danger < 1) {
+      Game.map.danger = 1;
+    }
     Game.map.tiles.fill(Tiles.rock, 0, Game.map.h * Game.map.w);
     Game.map.monsters.fill(null, 0, Game.map.w * Game.map.h);
     Game.map.memory.fill([null, null], 0, Game.map.w * Game.map.h);
@@ -4166,9 +4169,15 @@ void main() {
     Game.player.x = px;
     Game.player.y = py;
     const eligibleMonsters = {};
-    for (let key in MonsterArchetypes) {
-      if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
-        eligibleMonsters[key] = Game.map.danger - Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+    if (Game.map.danger === 1) {
+      eligibleMonsters["gnat swarm"] = 2;
+      eligibleMonsters["maggot heap"] = 2;
+      eligibleMonsters["dusty rat"] = 1;
+    } else {
+      for (let key in MonsterArchetypes) {
+        if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
+          eligibleMonsters[key] = Game.map.danger - Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+        }
       }
     }
     let exits = rng_default.shuffle([
@@ -4387,7 +4396,7 @@ void main() {
     let projectile = WandEffects.bolt;
     let damage = WandEffects.weakMana;
     let status = null;
-    let cost = 2;
+    let cost = 1;
     for (let soul of Game.player.soulSlots.generic) {
       for (let effect of soul.effects) {
         switch (effect.type) {
@@ -4720,7 +4729,7 @@ void main() {
         } else {
           msg.combat("%The collapses!", D(c2));
           msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
-          m2.statuses.push({ type: "dying", timer: 5 + Math.floor(m2.maxHP / 2) });
+          m2.statuses.push({ type: "dying", timer: 7 + Math.floor(m2.maxHP / 2) });
           m2.hp = 0;
         }
       }
