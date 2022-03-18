@@ -35,9 +35,6 @@
 
         #choiceBox {
             display: grid;
-            grid-row: 4;
-            grid-column: 1/span 2;
-            border-top: solid #666 3px;
             grid-template-columns: 1fr;
             grid-template-rows: min-content min-content;
         }
@@ -51,8 +48,9 @@
         }
 
         #choiceBox .opts {
-            display: flex;
+            display: grid;
             padding: 0.3em;
+            grid-template-columns: max-content max-content;
         }
 
         #choiceBox .choice-key {

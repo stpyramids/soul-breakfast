@@ -3472,9 +3472,9 @@ void main() {
     },
     monsterSouls: {}
   };
-  var freshGame = JSON.parse(JSON.stringify(Game));
+  var freshGame = JSON.stringify(Game);
   function resetGame() {
-    Game = freshGame;
+    Game = JSON.parse(freshGame);
   }
 
   // src/msg.ts
@@ -3990,6 +3990,11 @@ void main() {
       }
     ]
   }));
+  var DeathMessages = {
+    drain: "%The crumbles into dust.",
+    force: "%The is blown to pieces.",
+    bleedout: "The soul of %the departs."
+  };
   function spawnMonster(archetype) {
     let hp = doRoll(MonsterArchetypes[archetype].hp);
     return {
@@ -3997,11 +4002,54 @@ void main() {
       hp,
       maxHP: hp,
       energy: 1,
-      dying: false
+      statuses: []
     };
   }
+  function killMonster(m2, cause) {
+    if (!m2.deathCause) {
+      m2.deathCause = cause;
+    }
+  }
+  function monsterHasStatus(m2, status) {
+    return !!m2.statuses.find((s2) => s2.type === status);
+  }
+  function inflictStatus(m2, s2) {
+    m2.statuses = m2.statuses.filter((s3) => s3.type !== s3.type);
+    m2.statuses.push(s2);
+  }
+  function cureStatus(m2, st) {
+    m2.statuses = m2.statuses.filter((s2) => s2.type !== st);
+  }
+  function monsterStatusTick(m2) {
+    for (let st of m2.statuses) {
+      switch (st.type) {
+        case "dying":
+          st.timer--;
+          if (st.timer <= 0) {
+            killMonster(m2, "bleedout");
+          }
+          break;
+        case "slow":
+          st.timer--;
+          if (st.timer <= 0) {
+            cureStatus(m2, "slow");
+          }
+          break;
+      }
+    }
+  }
+  function monsterSpeed(m2) {
+    let speed = MonsterArchetypes[m2.archetype].speed;
+    if (monsterHasStatus(m2, "slow")) {
+      speed /= 2;
+    }
+    return speed;
+  }
   function weakMonster(m2) {
-    return m2.hp <= 1 || m2.dying;
+    return m2.hp <= 1 || monsterHasStatus(m2, "dying");
+  }
+  function makeSoul(arch) {
+    return SoulFactories[arch.soul](arch);
   }
   function getSoul(m2) {
     let soul = Game.monsterSouls[m2.archetype];
@@ -4009,15 +4057,11 @@ void main() {
       return soul;
     } else {
       let arch = MonsterArchetypes[m2.archetype];
-      soul = SoulFactories[arch.soul](arch);
+      soul = makeSoul(arch);
       Game.monsterSouls[m2.archetype] = soul;
       return soul;
     }
   }
-  var DeathMessages = {
-    drain: "%The crumbles into dust.",
-    force: "%The is blown to pieces."
-  };
 
   // src/map.ts
   var Tiles = {
@@ -4172,12 +4216,30 @@ void main() {
         Game.map.tiles[x2 + y2 * Game.map.w] = Tiles.floor;
       });
     }
+    recomputeFOV();
     if (Game.map.danger >= Game.maxLevel) {
+      msg.break();
       msg.tutorial("Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination.");
       msg.break();
       msg.tutorial("You reached danger level %s in %s turns.", Game.map.danger, Game.turns);
       msg.break();
       msg.tutorial("Thanks for playing!");
+      offerChoice("Thanks for playing! You have reached the end of the currently implemented content.", /* @__PURE__ */ new Map([
+        ["q", "Start a new run"],
+        ["c", "Continue playing"]
+      ]), {
+        onChoose: (key) => {
+          switch (key) {
+            case "q":
+              startNewGame();
+              return true;
+            case "c":
+              msg.tutorial("Use Q (shift-q) to restart, or just reload the page.");
+              return true;
+          }
+          return false;
+        }
+      });
     }
   }
   function tileAt(x2, y2) {
@@ -4219,6 +4281,91 @@ void main() {
   }
   function getVictim() {
     return contentsAt(Game.player.x, Game.player.y);
+  }
+
+  // src/glyphs.ts
+  var Glyphs = {
+    none: " ",
+    player: "@",
+    exit: ">",
+    wall: "#",
+    floor: ".",
+    rock: ".",
+    insect: "i",
+    worm: "w",
+    rodent: "r",
+    spider: "s",
+    ghost: "g",
+    eyeball: "e"
+  };
+
+  // src/wizard.ts
+  function wizard() {
+    offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
+      ["d", "Dump game state to console"],
+      ["e", "Fill essence"],
+      ["s", "Get soul"],
+      ["w", "Teleport to danger level 50"],
+      [">", "Descend 5 levels"]
+    ]), {
+      onChoose: (key) => {
+        switch (key) {
+          case "w":
+            newMap({ danger: 50 });
+            return true;
+          case "d":
+            console.log(Game);
+            return true;
+          case "e":
+            Game.player.essence = maxEssence();
+            return true;
+          case "s":
+            wizardSoul();
+            return true;
+          case ">":
+            newMap({ danger: Game.map.danger + 5 });
+            return true;
+        }
+        return true;
+      }
+    });
+  }
+  function wizardSoul() {
+    let byLetter = Object.keys(MonsterArchetypes).reduce((m2, name) => {
+      let k2 = Glyphs[MonsterArchetypes[name].glyph];
+      let l2 = m2.get(k2);
+      if (l2) {
+        l2.push(name);
+      } else {
+        m2.set(k2, [name]);
+      }
+      return m2;
+    }, /* @__PURE__ */ new Map());
+    let opts = new Map(Array.from(byLetter).map(([l2, names]) => [
+      l2,
+      names[0] + "... (" + names.length + ")"
+    ]));
+    offerChoice("Claim what soul?", opts, {
+      onChoose: (k2) => {
+        let archs = byLetter.get(k2);
+        if (archs !== void 0) {
+          let opts2 = new Map(archs.map((v2, i2) => [(i2 + 1).toString(), v2]));
+          offerChoice("Claim what soul?", opts2, {
+            onChoose: (k3) => {
+              let i2 = parseInt(k3);
+              if (i2 > 0) {
+                let arch = archs[i2 - 1];
+                if (arch) {
+                  doClaimSoul(makeSoul(MonsterArchetypes[arch]));
+                }
+              }
+              return true;
+            }
+          });
+        }
+        return true;
+      }
+    });
   }
 
   // src/commands.ts
@@ -4321,10 +4468,23 @@ void main() {
           } else {
             msg.log("Release cancelled.");
           }
+          return true;
         }
       });
     }
     return false;
+  }
+  function doClaimSoul(soul) {
+    let slots = Game.player.soulSlots.generic;
+    for (let i2 = 0; i2 < slots.length; i2++) {
+      if (isEmptySoul(slots[i2])) {
+        slots[i2] = soul;
+        return "claimed";
+      } else if (slots[i2].name === soul.name) {
+        return "dupe";
+      }
+    }
+    return "full";
   }
   function tryClaimSoul(c2) {
     if (c2.monster) {
@@ -4335,27 +4495,17 @@ void main() {
       } else {
         Game.player.energy -= 1;
         if (weakMonster(c2.monster)) {
-          let slots = Game.player.soulSlots.generic;
-          let claimed = false;
-          for (let i2 = 0; i2 < slots.length; i2++) {
-            if (isEmptySoul(slots[i2])) {
-              slots[i2] = soul;
-              msg.essence("You claim the soul of %the.", D(c2));
-              msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
-              claimed = true;
-              break;
-            } else if (slots[i2].name === soul.name) {
-              msg.essence("You already have claimed this soul.");
-              claimed = true;
-              return false;
-            }
-          }
-          if (!claimed) {
+          let claimed = doClaimSoul(soul);
+          if (claimed === "full") {
             tryReleaseSoul("You must release a soul to claim another.", () => {
               tryClaimSoul(c2);
             });
-          } else {
-            killMonsterAt(c2, "drain");
+          } else if (claimed === "dupe") {
+            msg.essence("You already have claimed this soul.");
+          } else if (claimed === "claimed") {
+            msg.essence("You claim the soul of %the.", D(c2));
+            msg.tutorial("Claiming souls increases your maximum essence and may grant new powers.");
+            killMonsterAt2(c2, "drain");
             return true;
           }
         } else {
@@ -4455,7 +4605,7 @@ void main() {
           let soul = getSoul(c2.monster);
           msg.essence("You devour the essence of %the.", D(c2));
           gainEssence(soul.essence);
-          killMonsterAt(c2, "drain");
+          killMonsterAt2(c2, "drain");
         } else {
           msg.angry("The wretched creature resists!");
         }
@@ -4519,27 +4669,14 @@ void main() {
           if (key == "y") {
             startNewGame();
           }
+          return true;
         }
       });
       return false;
     },
     W: () => {
       if (document.location.hash == "#wizard") {
-        offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
-          ["w", "Teleport to danger level 50"],
-          ["d", "Dump game state to console"]
-        ]), {
-          onChoose: (key) => {
-            switch (key) {
-              case "w":
-                newMap({ danger: 50 });
-                break;
-              case "d":
-                console.log(Game);
-                break;
-            }
-          }
-        });
+        wizard();
       }
       return false;
     }
@@ -4558,11 +4695,9 @@ void main() {
       };
     }
   }
-  function killMonsterAt(c2, death) {
+  function killMonsterAt2(c2, death) {
     if (c2.monster) {
-      c2.monster.hp = 0;
-      msg.combat(DeathMessages[death], D(c2));
-      Game.map.monsters[c2.x + c2.y * Game.map.w] = null;
+      killMonster(c2.monster, death);
     }
   }
   function damageMonsterAt(c2, damage, status) {
@@ -4571,41 +4706,73 @@ void main() {
       let wasDying = weakMonster(m2);
       m2.hp -= doRoll(damage.damage);
       if (m2.hp > 1) {
-        msg.combat("You see %the %s!", D(c2), m2.hp == 1 ? "stagger" : "shudder");
+        msg.combat("%The %s!", D(c2), m2.hp == 1 ? "staggers" : "shudders");
         if (status) {
           switch (status.status) {
             case "slow":
+              inflictStatus(m2, { type: "slow", timer: status.power });
               msg.combat("%The slows down!", D(c2));
-              m2.energy = -status.power;
           }
         }
       } else {
         if (wasDying) {
-          killMonsterAt(c2, "force");
+          killMonsterAt2(c2, "force");
         } else {
-          msg.combat("You see %the collapse!", D(c2));
+          msg.combat("%The collapses!", D(c2));
           msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
-          m2.dying = true;
+          m2.statuses.push({ type: "dying", timer: 5 + Math.floor(m2.maxHP / 2) });
+          m2.hp = 0;
         }
       }
     }
   }
 
-  // src/glyphs.ts
-  var Glyphs = {
-    none: " ",
-    player: "@",
-    exit: ">",
-    wall: "#",
-    floor: ".",
-    rock: ".",
-    insect: "i",
-    worm: "w",
-    rodent: "r",
-    spider: "s",
-    ghost: "g",
-    eyeball: "e"
-  };
+  // src/tick.ts
+  function tick(game, ui) {
+    if (ui.commandQueue.length == 0) {
+      return;
+    }
+    let noop = false;
+    while (game.player.energy >= 1) {
+      let nextCommand = ui.commandQueue.shift();
+      if (nextCommand) {
+        noop = !Commands[nextCommand]();
+        ui.uiCallback();
+      } else {
+        break;
+      }
+    }
+    if (!(noop || ui.activeChoice)) {
+      game.map.monsters.forEach((m2, i2) => {
+        if (m2) {
+          const c2 = contentsAt(i2 % game.map.w, Math.floor(i2 / game.map.w));
+          monsterStatusTick(m2);
+          if (m2.deathCause) {
+            msg.combat(DeathMessages[m2.deathCause], D(c2));
+            game.map.monsters[i2] = null;
+          } else {
+            if (!monsterHasStatus(m2, "dying")) {
+              const arch = MonsterArchetypes[m2.archetype];
+              const ai = AI[arch.ai];
+              m2.energy += monsterSpeed(m2);
+              while (m2.energy >= 1) {
+                m2.energy -= ai(c2);
+              }
+            }
+          }
+        }
+      });
+      if (game.player.energy < 1) {
+        game.turns += 1;
+        game.player.energy += getPlayerSpeed();
+      }
+    }
+    recomputeFOV();
+    ui.uiCallback();
+    if (ui.commandQueue.length > 0) {
+      tick(game, ui);
+    }
+  }
 
   // node_modules/preact/dist/preact.module.js
   var n;
@@ -4894,12 +5061,11 @@ void main() {
     return /* @__PURE__ */ v("div", {
       class: "wrapper"
     }, /* @__PURE__ */ v(Playarea, null), /* @__PURE__ */ v(Sidebar, {
+      ui: props.ui,
       game: props.game
     }), /* @__PURE__ */ v("div", {
       id: "mapDanger"
-    }, getMapDescription() + " [Danger: " + props.game.map.danger + "]"), props.ui.activeChoice ? /* @__PURE__ */ v(ChoiceBox, {
-      ui: props.ui
-    }) : /* @__PURE__ */ v(MessageLog, {
+    }, props.ui.state.mapDescription + " [Danger: " + props.game.map.danger + "]"), /* @__PURE__ */ v(MessageLog, {
       messages: props.messages
     }));
   }
@@ -4940,53 +5106,35 @@ void main() {
     return /* @__PURE__ */ v("div", {
       id: "sidebar"
     }, /* @__PURE__ */ v("h1", null, "SOUL \u{1F47B} BREAK \u{1F480} FAST"), /* @__PURE__ */ v(StatusView, {
-      game
-    }), /* @__PURE__ */ v("div", {
-      class: "sidebar-section"
-    }, /* @__PURE__ */ v("h2", null, "On Ground"), /* @__PURE__ */ v(WhatsHereView, {
-      here: getVictim()
-    })), /* @__PURE__ */ v("div", {
-      class: "sidebar-section"
-    }, /* @__PURE__ */ v("h2", null, "Souls"), /* @__PURE__ */ v(SoulListView, {
+      game,
+      ui: props.ui
+    }), props.ui.state.onGround ? /* @__PURE__ */ v(SidebarSection, {
+      label: "On Ground",
+      element: WhatsHereView,
+      here: props.ui.state.onGround
+    }) : null, /* @__PURE__ */ v(SidebarSection, {
+      label: "Souls",
+      element: SoulListView,
       souls: game.player.soulSlots.generic
-    })), /* @__PURE__ */ v("div", {
+    }), props.ui.activeChoice ? /* @__PURE__ */ v(SidebarSection, {
+      label: "Choose",
+      element: ChoiceBox,
+      ui: props.ui
+    }) : /* @__PURE__ */ v(SidebarSection, {
+      label: "Targets",
+      element: TargetsView,
+      targets: props.ui.state.targets
+    }));
+  }
+  function SidebarSection(props) {
+    return /* @__PURE__ */ v("div", {
       class: "sidebar-section"
-    }, /* @__PURE__ */ v("h2", null, "Targets"), /* @__PURE__ */ v("div", {
-      id: "targets"
-    }, findTargets().map((c2) => {
-      if (c2.monster) {
-        let arch = MonsterArchetypes[c2.monster.archetype];
-        let glyph = Glyphs[arch.glyph];
-        let name = arch.name;
-        if (c2.monster.dying) {
-          name += " (dying)";
-        } else if (arch.soul == "vermin") {
-          name += " (vermin)";
-        } else if (c2.monster.hp === c2.monster.maxHP) {
-          name += " (unharmed)";
-        } else if (c2.monster.hp < c2.monster.maxHP / 2) {
-          name += " (heavily wounded)";
-        } else {
-          name += " (slightly wounded)";
-        }
-        let desc = arch.description;
-        return /* @__PURE__ */ v("div", {
-          class: "target-entry"
-        }, /* @__PURE__ */ v("div", {
-          class: "target-glyph soul-glyph"
-        }, glyph), /* @__PURE__ */ v("div", {
-          class: "target-name soul-name"
-        }, name), /* @__PURE__ */ v("div", {
-          class: "target-thoughts"
-        }, desc));
-      }
-    }))));
+    }, /* @__PURE__ */ v("h2", null, props.label), v(props.element, props));
   }
   function StatusView(props) {
     let full = "rgba(0, 108, 139, 1)";
-    let lost = "rgba(193, 46, 46, 1)";
     let empty = "rgba(94, 94, 94, 1)";
-    let essencePct = Math.floor(props.game.player.essence / maxEssence() * 100);
+    let essencePct = Math.floor(props.ui.state.playerEssence / props.ui.state.playerMaxEssence * 100);
     let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
     return /* @__PURE__ */ v("div", {
       id: "status"
@@ -4998,7 +5146,7 @@ void main() {
       class: "stat-value",
       id: "essence",
       style: gradient
-    }, props.game.player.essence, " / ", maxEssence())), /* @__PURE__ */ v("div", {
+    }, props.ui.state.playerEssence, " / ", props.ui.state.playerMaxEssence)), /* @__PURE__ */ v("div", {
       class: "stat"
     }, /* @__PURE__ */ v("div", {
       class: "stat-label"
@@ -5055,6 +5203,45 @@ void main() {
       class: "soul-effect"
     }, describeSoulEffects(props.soul)));
   }
+  function TargetsView(props) {
+    return /* @__PURE__ */ v("div", {
+      id: "targets"
+    }, props.targets.map((c2) => {
+      if (c2.monster) {
+        let arch = MonsterArchetypes[c2.monster.archetype];
+        let glyph = Glyphs[arch.glyph];
+        let name = arch.name;
+        let statuses = [];
+        if (monsterHasStatus(c2.monster, "dying")) {
+          statuses.push("dying");
+        } else {
+          if (arch.soul == "vermin") {
+            statuses.push("vermin");
+          } else if (c2.monster.hp === c2.monster.maxHP) {
+            statuses.push("unharmed");
+          } else if (c2.monster.hp < c2.monster.maxHP / 2) {
+            statuses.push("heavily wounded");
+          } else {
+            statuses.push("slightly wounded");
+          }
+          c2.monster.statuses.forEach((s2) => {
+            statuses.push(s2.type);
+          });
+        }
+        name += " (" + statuses.join(", ") + ")";
+        let desc = arch.description;
+        return /* @__PURE__ */ v("div", {
+          class: "target-entry"
+        }, /* @__PURE__ */ v("div", {
+          class: "target-glyph soul-glyph"
+        }, glyph), /* @__PURE__ */ v("div", {
+          class: "target-name soul-name"
+        }, name), /* @__PURE__ */ v("div", {
+          class: "target-thoughts"
+        }, desc));
+      }
+    }));
+  }
   function MessageLog(props) {
     let entries = props.messages.map((msgs, i2) => {
       let log = msgs.map(([msg2, msgType], i3) => /* @__PURE__ */ v("span", {
@@ -5078,50 +5265,16 @@ void main() {
     },
     logCallback: (msg2, msgType) => {
     },
-    activeChoice: null
+    activeChoice: null,
+    nextChoice: null,
+    state: {
+      playerEssence: 0,
+      playerMaxEssence: 0,
+      targets: [],
+      mapDescription: "",
+      onGround: null
+    }
   };
-  function tick() {
-    if (UI.commandQueue.length == 0) {
-      return;
-    }
-    let noop = false;
-    while (Game.player.energy >= 1) {
-      let nextCommand = UI.commandQueue.shift();
-      if (nextCommand) {
-        noop = !Commands[nextCommand]();
-        if (!noop) {
-          Game.turns += 1;
-        }
-        UI.uiCallback();
-      } else {
-        break;
-      }
-    }
-    if (!(noop || UI.activeChoice)) {
-      for (let i2 = 0; i2 < Game.map.w * Game.map.h; i2++) {
-        if (Game.map.monsters[i2]) {
-          const c2 = contentsAt(i2 % Game.map.w, Math.floor(i2 / Game.map.w));
-          const m2 = c2.monster;
-          if (!m2.dying) {
-            const arch = MonsterArchetypes[m2.archetype];
-            const ai = AI[arch.ai];
-            m2.energy += arch.speed;
-            while (m2.energy >= 1) {
-              m2.energy -= ai(c2);
-            }
-          }
-        }
-      }
-      if (Game.player.energy < 1) {
-        Game.player.energy += getPlayerSpeed();
-      }
-    }
-    recomputeFOV();
-    UI.uiCallback();
-    if (UI.commandQueue.length > 0) {
-      tick();
-    }
-  }
   function drawMap(display) {
     display.clear();
     let sx = Game.player.x - Game.viewport.width / 2;
@@ -5161,7 +5314,7 @@ void main() {
         display.draw(x2 - sx, y2 - sy, Glyphs[Game.player.glyph], "#ccc", bg);
       } else if (c2.monster) {
         let arch = MonsterArchetypes[c2.monster.archetype];
-        display.draw(x2 - sx, y2 - sy, Glyphs[arch.glyph], Colors[arch.color], c2.monster.dying ? Colors.dying : isTarget ? Colors.target : weakMonster(c2.monster) ? Colors.weak : Colors.critterBG);
+        display.draw(x2 - sx, y2 - sy, Glyphs[arch.glyph], Colors[arch.color], monsterHasStatus(c2.monster, "dying") ? Colors.dying : isTarget ? Colors.target : weakMonster(c2.monster) ? Colors.weak : Colors.critterBG);
       } else if (c2.tile) {
         display.draw(x2 - sx, y2 - sy, Glyphs[c2.tile.glyph], "#999", bg);
       } else {
@@ -5170,7 +5323,11 @@ void main() {
     }
   }
   function offerChoice(prompt, opts, callbacks) {
-    UI.activeChoice = { prompt, opts, callbacks };
+    if (UI.activeChoice) {
+      UI.nextChoice = { prompt, opts, callbacks };
+    } else {
+      UI.activeChoice = { prompt, opts, callbacks };
+    }
   }
   function runGame() {
     let logMessages = [];
@@ -5181,6 +5338,13 @@ void main() {
     let dispC = display.getContainer();
     playarea.appendChild(dispC);
     UI.uiCallback = () => {
+      UI.state = {
+        playerEssence: Game.player.essence,
+        playerMaxEssence: maxEssence(),
+        targets: findTargets(),
+        mapDescription: getMapDescription(),
+        onGround: getVictim()
+      };
       drawMap(display);
       renderControls(Game, UI, logMessages);
     };
@@ -5196,17 +5360,36 @@ void main() {
     handleInput();
     startNewGame();
   }
+  var KeyAliases = {
+    ArrowUp: "k",
+    ArrowDown: "j",
+    ArrowLeft: "h",
+    ArrowRight: "l"
+  };
   function handleInput() {
     document.addEventListener("keydown", (e2) => {
+      let key = e2.key;
+      if (key === "Shift") {
+        return;
+      }
       if (UI.activeChoice) {
-        UI.activeChoice.callbacks.onChoose(e2.key);
-        UI.activeChoice = null;
+        if (UI.activeChoice.callbacks.onChoose(key)) {
+          UI.activeChoice = UI.nextChoice;
+          UI.nextChoice = null;
+        }
         UI.uiCallback();
       } else {
-        let command = Commands[e2.key];
+        let alias = KeyAliases[key];
+        if (alias) {
+          key = alias;
+        }
+        if (e2.shiftKey) {
+          key = key.toUpperCase();
+        }
+        let command = Commands[key];
         if (command !== void 0) {
-          UI.commandQueue.push(e2.key);
-          setTimeout(tick, 0);
+          UI.commandQueue.push(key);
+          setTimeout(() => tick(Game, UI), 0);
         }
       }
     });
