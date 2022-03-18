@@ -227,6 +227,8 @@ export function newMap(opts?: NewMapOptions) {
     });
   }
 
+  recomputeFOV();
+
   if (Game.map.danger >= Game.maxLevel) {
     msg.break();
     msg.tutorial(

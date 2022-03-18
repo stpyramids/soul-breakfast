@@ -1,6 +1,7 @@
 /// Game commands
 
 import { Game } from "./game";
+import { Glyphs } from "./glyphs";
 import {
   canSeeThreat,
   contentsAt,
@@ -14,6 +15,9 @@ import {
   DeathMessages,
   getSoul,
   weakMonster,
+  killMonster,
+  makeSoul,
+  inflictStatus,
 } from "./monster";
 import { msg } from "./msg";
 import {
@@ -25,9 +29,11 @@ import {
   StatBonus,
   EmptySoul,
   isEmptySoul,
+  Soul,
 } from "./souls";
 import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
+import { wizard } from "./wizard";
 
 export function maxEssence(): number {
   return Game.player.maxEssence + getStatBonus("max essence");
@@ -151,6 +157,19 @@ function tryReleaseSoul(prompt?: string, onRelease?: () => void): boolean {
   return false;
 }
 
+export function doClaimSoul(soul: Soul): "claimed" | "dupe" | "full" {
+  let slots = Game.player.soulSlots.generic;
+  for (let i = 0; i < slots.length; i++) {
+    if (isEmptySoul(slots[i])) {
+      slots[i] = soul;
+      return "claimed";
+    } else if (slots[i].name === soul.name) {
+      return "dupe";
+    }
+  }
+  return "full";
+}
+
 function tryClaimSoul(c: XYContents): boolean {
   if (c.monster) {
     let soul = getSoul(c.monster);
@@ -160,28 +179,18 @@ function tryClaimSoul(c: XYContents): boolean {
     } else {
       Game.player.energy -= 1.0;
       if (weakMonster(c.monster)) {
-        let slots = Game.player.soulSlots.generic;
-        let claimed = false;
-        for (let i = 0; i < slots.length; i++) {
-          if (isEmptySoul(slots[i])) {
-            slots[i] = soul;
-            msg.essence("You claim the soul of %the.", D(c));
-            msg.tutorial(
-              "Claiming souls increases your maximum essence and may grant new powers."
-            );
-            claimed = true;
-            break;
-          } else if (slots[i].name === soul.name) {
-            msg.essence("You already have claimed this soul.");
-            claimed = true;
-            return false;
-          }
-        }
-        if (!claimed) {
+        let claimed = doClaimSoul(soul);
+        if (claimed === "full") {
           tryReleaseSoul("You must release a soul to claim another.", () => {
             tryClaimSoul(c);
           });
-        } else {
+        } else if (claimed === "dupe") {
+          msg.essence("You already have claimed this soul.");
+        } else if (claimed === "claimed") {
+          msg.essence("You claim the soul of %the.", D(c));
+          msg.tutorial(
+            "Claiming souls increases your maximum essence and may grant new powers."
+          );
           killMonsterAt(c, "drain");
           return true;
         }
@@ -382,26 +391,7 @@ export const Commands: { [key: string]: () => boolean } = {
   // Wizard commands
   W: () => {
     if (document.location.hash == "#wizard") {
-      offerChoice(
-        "WIZARD MODE",
-        new Map([
-          ["w", "Teleport to danger level 50"],
-          ["d", "Dump game state to console"],
-        ]),
-        {
-          onChoose: (key) => {
-            switch (key) {
-              case "w":
-                newMap({ danger: 50 });
-                return true;
-              case "d":
-                console.log(Game);
-                return true;
-            }
-            return true;
-          },
-        }
-      );
+      wizard();
     }
     return false;
   },
@@ -429,9 +419,7 @@ export function D(c: XYContents): Describer {
 
 export function killMonsterAt(c: XYContents, death: DeathType) {
   if (c.monster) {
-    c.monster.hp = 0;
-    msg.combat(DeathMessages[death], D(c));
-    Game.map.monsters[c.x + c.y * Game.map.w] = null;
+    killMonster(c.monster, death);
   }
 }
 
@@ -446,23 +434,23 @@ export function damageMonsterAt(
     m.hp -= doRoll(damage.damage);
     if (m.hp > 1) {
       // todo cooler messages
-      msg.combat("You see %the %s!", D(c), m.hp == 1 ? "stagger" : "shudder");
+      msg.combat("%The %s!", D(c), m.hp == 1 ? "staggers" : "shudders");
       if (status) {
         switch (status.status) {
           case "slow":
+            inflictStatus(m, { type: "slow", timer: status.power });
             msg.combat("%The slows down!", D(c));
-            m.energy = -status.power; // todo, but this isn't bad
         }
       }
     } else {
       if (wasDying) {
         killMonsterAt(c, "force"); // todo
       } else {
-        msg.combat("You see %the collapse!", D(c));
+        msg.combat("%The collapses!", D(c));
         msg.tutorial(
           "Enter a dying creature's tile to (d)evour or (c)laim their soul."
         );
-        m.statuses.push({ type: "dying", timer: Math.floor(m.maxHP / 2) });
+        m.statuses.push({ type: "dying", timer: 5 + Math.floor(m.maxHP / 2) });
         m.hp = 0;
       }
     }

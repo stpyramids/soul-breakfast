@@ -195,17 +195,24 @@ function TargetsView(props: { targets: XYContents[] }) {
           let arch = MonsterArchetypes[c.monster.archetype];
           let glyph = Glyphs[arch.glyph];
           let name = arch.name;
+          let statuses = [];
           if (monsterHasStatus(c.monster, "dying")) {
-            name += " (dying)";
-          } else if (arch.soul == "vermin") {
-            name += " (vermin)";
-          } else if (c.monster.hp === c.monster.maxHP) {
-            name += " (unharmed)";
-          } else if (c.monster.hp < c.monster.maxHP / 2) {
-            name += " (heavily wounded)";
+            statuses.push("dying");
           } else {
-            name += " (slightly wounded)";
+            if (arch.soul == "vermin") {
+              statuses.push("vermin");
+            } else if (c.monster.hp === c.monster.maxHP) {
+              statuses.push("unharmed");
+            } else if (c.monster.hp < c.monster.maxHP / 2) {
+              statuses.push("heavily wounded");
+            } else {
+              statuses.push("slightly wounded");
+            }
+            c.monster.statuses.forEach((s) => {
+              statuses.push(s.type);
+            });
           }
+          name += " (" + statuses.join(", ") + ")";
           let desc = arch.description;
           return (
             <div class="target-entry">

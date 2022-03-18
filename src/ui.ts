@@ -1,7 +1,7 @@
 import * as ROT from "rot-js";
 
 import { Colors } from "./colors";
-import { Commands, getPlayerSpeed, maxEssence } from "./commands";
+import { Commands, D, getPlayerSpeed, maxEssence } from "./commands";
 import { Game, resetGame } from "./game";
 import { Glyphs } from "./glyphs";
 import {
@@ -19,8 +19,11 @@ import {
   AI,
   weakMonster,
   monsterHasStatus,
+  monsterStatusTick,
+  DeathMessages,
 } from "./monster";
 import { msg } from "./msg";
+import { tick } from "./tick";
 import { renderControls } from "./ui/controls";
 
 type Choice = {
@@ -45,56 +48,6 @@ export const UI = {
 };
 
 export type UIState = typeof UI;
-
-function tick() {
-  if (UI.commandQueue.length == 0) {
-    return;
-  }
-
-  let noop = false;
-  while (Game.player.energy >= 1.0) {
-    let nextCommand = UI.commandQueue.shift();
-    if (nextCommand) {
-      noop = !Commands[nextCommand]();
-      if (!noop) {
-        Game.turns += 1;
-      }
-      UI.uiCallback();
-    } else {
-      break;
-    }
-  }
-
-  // Don't let UI act when game is 'paused'
-  if (!(noop || UI.activeChoice)) {
-    for (let i = 0; i < Game.map.w * Game.map.h; i++) {
-      if (Game.map.monsters[i]) {
-        // This is all pretty stupid
-        const c = contentsAt(i % Game.map.w, Math.floor(i / Game.map.w));
-        const m = c.monster!;
-        if (m.hp > 0) {
-          const arch = MonsterArchetypes[m.archetype];
-          const ai = AI[arch.ai];
-          m.energy += arch.speed;
-          while (m.energy >= 1.0) {
-            m.energy -= ai(c);
-          }
-        }
-      }
-    }
-
-    if (Game.player.energy < 1.0) {
-      Game.player.energy += getPlayerSpeed();
-    }
-  }
-
-  recomputeFOV();
-  UI.uiCallback();
-
-  if (UI.commandQueue.length > 0) {
-    tick();
-  }
-}
 
 /// Graphics
 
@@ -231,6 +184,9 @@ const KeyAliases: { [key: string]: string } = {
 function handleInput() {
   document.addEventListener("keydown", (e) => {
     let key = e.key;
+    if (key === "Shift") {
+      return;
+    }
     if (UI.activeChoice) {
       if (UI.activeChoice.callbacks.onChoose(key)) {
         UI.activeChoice = UI.nextChoice;
@@ -248,7 +204,7 @@ function handleInput() {
       let command = Commands[key];
       if (command !== undefined) {
         UI.commandQueue.push(key);
-        setTimeout(tick, 0);
+        setTimeout(() => tick(Game, UI), 0);
       }
     }
   });

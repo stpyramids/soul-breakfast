@@ -2,7 +2,7 @@
 
 import * as ROT from "rot-js";
 import { Colors } from "./colors";
-import { applySoak, D } from "./commands";
+import { applySoak, D, killMonsterAt } from "./commands";
 import { Game } from "./game";
 import { GlyphID } from "./glyphs";
 import {
@@ -605,12 +605,21 @@ export type MonsterStatus =
       timer: number;
     };
 
+export const DeathMessages = {
+  drain: "%The crumbles into dust.",
+  force: "%The is blown to pieces.",
+  bleedout: "The soul of %the departs.",
+};
+
+export type DeathType = keyof typeof DeathMessages;
+
 export type Monster = {
   archetype: ArchetypeID;
   hp: number;
   maxHP: number;
   energy: number;
   statuses: MonsterStatus[];
+  deathCause?: DeathType;
 };
 
 export function spawnMonster(archetype: ArchetypeID): Monster {
@@ -624,6 +633,12 @@ export function spawnMonster(archetype: ArchetypeID): Monster {
   };
 }
 
+export function killMonster(m: Monster, cause: DeathType) {
+  if (!m.deathCause) {
+    m.deathCause = cause;
+  }
+}
+
 export function monsterHasStatus(
   m: Monster,
   status: MonsterStatusType
@@ -631,8 +646,49 @@ export function monsterHasStatus(
   return !!m.statuses.find((s) => s.type === status);
 }
 
+export function inflictStatus(m: Monster, s: MonsterStatus) {
+  // For now, all statuses just reapply -- no stacking
+  m.statuses = m.statuses.filter((s) => s.type !== s.type);
+  m.statuses.push(s);
+}
+
+export function cureStatus(m: Monster, st: MonsterStatusType) {
+  m.statuses = m.statuses.filter((s) => s.type !== st);
+}
+
+export function monsterStatusTick(m: Monster) {
+  for (let st of m.statuses) {
+    switch (st.type) {
+      case "dying":
+        st.timer--;
+        if (st.timer <= 0) {
+          killMonster(m, "bleedout");
+        }
+        break;
+      case "slow":
+        st.timer--;
+        if (st.timer <= 0) {
+          cureStatus(m, "slow");
+        }
+        break;
+    }
+  }
+}
+
+export function monsterSpeed(m: Monster): number {
+  let speed = MonsterArchetypes[m.archetype].speed;
+  if (monsterHasStatus(m, "slow")) {
+    speed /= 2;
+  }
+  return speed;
+}
+
 export function weakMonster(m: Monster): boolean {
   return m.hp <= 1 || monsterHasStatus(m, "dying");
+}
+
+export function makeSoul(arch: MonsterArchetype): Soul {
+  return SoulFactories[arch.soul](arch);
 }
 
 export function getSoul(m: Monster): Soul {
@@ -641,15 +697,8 @@ export function getSoul(m: Monster): Soul {
     return soul;
   } else {
     let arch = MonsterArchetypes[m.archetype];
-    soul = SoulFactories[arch.soul](arch);
+    soul = makeSoul(arch);
     Game.monsterSouls[m.archetype] = soul;
     return soul;
   }
 }
-
-export const DeathMessages: { [type: string]: string } = {
-  drain: "%The crumbles into dust.",
-  force: "%The is blown to pieces.",
-};
-
-export type DeathType = keyof typeof DeathMessages;
