@@ -2,7 +2,7 @@
 
 import * as ROT from "rot-js";
 import { Colors } from "./colors";
-import { applySoak, D, killMonsterAt } from "./commands";
+import { applySoak, D } from "./commands";
 import { Game } from "./game";
 import { GlyphID } from "./glyphs";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./map";
 import { msg } from "./msg";
 import { EmptySoul, Soul, isEmptySoul } from "./souls";
-import { keysOf, asRoll, doRoll, Roll } from "./utils";
+import { keysOf, R, doRoll, Roll } from "./utils";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
 const verminHP: Roll = { n: 1, sides: 1, mod: 0 };
@@ -117,16 +117,14 @@ export function doDamage(dmg: number) {
     let extra = Math.abs(Game.player.essence);
     Game.player.essence = 0;
     let soulChecked = false;
-    let soulBroken = false;
     if (wasZero) {
       for (let slotGroup of keysOf(Game.player.soulSlots)) {
         let slots = Game.player.soulSlots[slotGroup];
         for (let i = 0; i < slots.length; i++) {
           if (!isEmptySoul(slots[i])) {
             soulChecked = true;
-            let roll = asRoll(1, slots[i].essence, 1);
+            let roll = R(1, slots[i].essence, 1);
             if (doRoll(roll) < extra) {
-              soulBroken = true;
               msg.angry("No!");
               msg.essence("The %s soul breaks free!", slots[i].name);
               slots[i] = EmptySoul;
@@ -136,7 +134,7 @@ export function doDamage(dmg: number) {
         }
       }
       if (!soulChecked) {
-        let blowback = doRoll(asRoll(1, extra, -3));
+        let blowback = doRoll(R(1, extra, -3));
         if (blowback > 0) {
           msg.angry("I cannot hold together! I must flee!");
           let newDanger = Game.map.danger - ROT.RNG.getUniformInt(1, blowback);
@@ -168,9 +166,9 @@ export function meleeAttack(verb: string, damage: Roll): Attack {
     attackFrom: (c) => {
       msg.combat("%The %s you!", D(c), verb);
       let m = c.monster;
-      let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+      let danger = m ? MonsterArchetypes[m.archetype].essence : 1;
       // TODO combat parameters
-      if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
+      if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
         // damage dice scale up with danger
         let dmgRoll = { ...damage, n: damage.n + Math.floor(danger / 5) };
         let dmg = doRoll(dmgRoll);
@@ -186,9 +184,9 @@ export function rangedAttack(verb: string, damage: Roll): Attack {
     attackFrom: (c) => {
       msg.combat("%The %s you!", D(c), verb);
       let m = c.monster;
-      let danger = m ? MonsterArchetypes[m.archetype].danger : 1;
+      let danger = m ? MonsterArchetypes[m.archetype].essence : 1;
       // TODO combat parameters
-      if (doRoll(asRoll(1, 100, 0)) > 90 - danger * 2) {
+      if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
         // damage dice scale up with danger
         let dmgRoll = { ...damage, n: damage.n + Math.floor(danger / 5) };
         let dmg = doRoll(dmgRoll);
@@ -204,20 +202,19 @@ export const Attacks: { [id: string]: Attack } = {
     canReachFrom: (c) => false,
     attackFrom: (c) => {},
   },
-  bite: meleeAttack("snaps at", asRoll(1, 4, 0)),
-  touch: meleeAttack("reaches into", asRoll(1, 4, 2)),
-  slice: meleeAttack("slices at", asRoll(1, 8, 4)),
-  gaze: rangedAttack("gazes at", asRoll(1, 4, 0)),
-  abjure: rangedAttack("abjures", asRoll(1, 4, 2)),
+  bite: meleeAttack("snaps at", R(1, 4, 0)),
+  touch: meleeAttack("reaches into", R(1, 4, 2)),
+  slice: meleeAttack("slices at", R(1, 8, 4)),
+  gaze: rangedAttack("gazes at", R(1, 4, 0)),
+  abjure: rangedAttack("abjures", R(1, 4, 2)),
 };
 
 export type MonsterArchetype = {
   name: string;
   description: string;
-  danger: number;
+  essence: number;
   glyph: GlyphID;
   color: keyof typeof Colors;
-  appearing: Roll;
   hp: Roll;
   speed: number;
   ai: keyof typeof AI;
@@ -230,88 +227,111 @@ export type SoulFactory = (arch: MonsterArchetype) => Soul;
 export const SoulFactories: { [id: string]: SoulFactory } = {
   vermin: (a) => ({
     glyph: a.glyph,
-    essence: Math.floor((a.danger + 1) / 2),
+    essence: a.essence,
     name: a.name,
     effects: [],
   }),
   maxEssence: (a) => ({
     glyph: a.glyph,
-    essence: a.danger,
+    essence: a.essence,
     name: a.name,
-    effects: [{ type: "stat bonus", stat: "max essence", power: a.danger }],
+    effects: [{ type: "stat bonus", stat: "max essence", power: a.essence }],
   }),
   extraDamage: (a) => ({
     glyph: a.glyph,
-    essence: a.danger,
+    essence: a.essence,
     name: a.name,
     effects: [
       {
         type: "stat bonus",
         stat: "max essence",
-        power: Math.floor(a.danger / 2) + 1,
+        power: Math.floor(a.essence / 2) + 1,
       },
-      { type: "damage", damage: asRoll(Math.floor(a.danger / 2), 4, 1) },
+      { type: "damage", damage: R(Math.floor(a.essence / 2), 4, 1) },
     ],
   }),
   slow: (a) => ({
     glyph: a.glyph,
-    essence: a.danger,
+    essence: a.essence,
     name: a.name,
     effects: [
       {
         type: "stat bonus",
         stat: "max essence",
-        power: Math.floor(a.danger / 2) + 1,
+        power: Math.floor(a.essence / 2) + 1,
       },
-      { type: "status", status: "slow", power: Math.floor(a.danger / 2) + 1 },
+      { type: "status", status: "slow", power: Math.floor(a.essence / 2) + 1 },
     ],
   }),
   sight: (a) => ({
     glyph: a.glyph,
-    essence: a.danger,
+    essence: a.essence,
     name: a.name,
     effects: [
-      { type: "stat bonus", stat: "max essence", power: a.danger },
+      { type: "stat bonus", stat: "max essence", power: a.essence },
       {
         type: "stat bonus",
         stat: "sight",
-        power: Math.floor(a.danger / 2) + 1,
+        power: Math.floor(a.essence / 2) + 1,
       },
     ],
   }),
   speed: (a) => ({
     glyph: a.glyph,
     type: "ring",
-    essence: a.danger,
+    essence: a.essence,
     name: a.name,
     effects: [
       {
         type: "stat bonus",
         stat: "max essence",
-        power: Math.floor(a.danger * 0.8),
+        power: Math.floor(a.essence * 0.8),
       },
       {
         type: "stat bonus",
         stat: "speed",
-        power: 0.05 * Math.floor(a.danger / 2),
+        power: 0.05 * Math.floor(a.essence / 2),
       },
     ],
   }),
   soak: (a) => ({
     glyph: a.glyph,
     type: "ring",
-    essence: a.danger,
+    essence: a.essence,
     name: a.name,
     effects: [
       {
         type: "stat bonus",
         stat: "max essence",
-        power: Math.floor(a.danger / 2) + 1,
+        power: Math.floor(a.essence / 2) + 1,
       },
       {
         type: "soak damage",
-        power: Math.floor(a.danger / 5),
+        power: Math.floor(a.essence / 5),
       },
+    ],
+  }),
+  // Debug mode super-soul
+  megalich: (a) => ({
+    glyph: a.glyph,
+    essence: 9999,
+    name: "MEGA-LICH 3000!",
+    effects: [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: 200,
+      },
+      {
+        type: "soak damage",
+        power: 500,
+      },
+      {
+        type: "stat bonus",
+        stat: "speed",
+        power: 10.0,
+      },
+      { type: "damage", damage: R(10, 100, 50) },
     ],
   }),
 };
@@ -338,10 +358,9 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "maggot heap",
       description:
         "A writhing mass of sickly pale grubs, clinging to a few scraps of moldering flesh for sustenance... and now they sustain me.",
-      danger: 1,
+      essence: 1,
       glyph: "worm",
       color: "vermin",
-      appearing: asRoll(1, 4, 3),
       hp: verminHP,
       speed: 0.2,
       ai: "passive",
@@ -354,14 +373,13 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         description:
           "Harmless pests, birthed from some forgotten corpse. They would have irritated me in life. Now they are my bread.",
         glyph: "insect",
-        appearing: asRoll(2, 4, 0),
         ai: "wander",
       },
       {
         name: "luminous grub",
         description:
           "A fat worm with a glowing aura. It must have learned to feed on ambient essence, which is now mine for the taking.",
-        danger: 5,
+        essence: 3,
         glyph: "worm",
         color: "vermin",
       },
@@ -369,7 +387,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "soul butterfly",
         description:
           "This strange insect leaves trails of essence behind its wings. A beautiful aberration, but also delicious.",
-        danger: 8,
+        essence: 5,
         glyph: "insect",
         color: "vermin",
         speed: 0.4,
@@ -379,7 +397,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "torpid ghost",
         description:
           "A pathetic lost soul that has been ensnared here and reduced to a nearly sessile state.",
-        danger: 10,
+        essence: 10,
         glyph: "ghost",
         color: "vermin",
         speed: 0.1,
@@ -392,11 +410,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "dusty rat",
       description:
         "A skinny, worn creature, barely alive, but with just enough of a soul remaining to remove intact.",
-      danger: 2,
+      essence: 2,
       glyph: "rodent",
       color: "danger0",
-      appearing: asRoll(1, 2, 1),
-      hp: asRoll(1, 4, 1),
+      hp: R(1, 4, 1),
       speed: 0.5,
       ai: "nipper",
       attack: "bite",
@@ -407,9 +424,9 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "hungry rat",
         description:
           "A brown-hided rat that gnaws old bones for food. It seems to think my skull is its next meal.",
-        danger: 6,
+        essence: 6,
         color: "danger5",
-        hp: asRoll(2, 4, 1),
+        hp: R(2, 4, 1),
         ai: "charge",
       },
     ],
@@ -419,11 +436,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "crypt spider",
       description:
         "A cobwebbed arachnid that feeds on gnats and maggots, and in turn is fed upon by me.",
-      danger: 3,
+      essence: 3,
       glyph: "spider",
       color: "danger0",
-      appearing: asRoll(1, 2, 0),
-      hp: asRoll(1, 2, 2),
+      hp: R(1, 2, 2),
       speed: 0.8,
       ai: "nipper",
       attack: "bite",
@@ -434,15 +450,15 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "wolf spider",
         description:
           "This furry gray arachnid is the size of my skull and intent on defending its hunting grounds. But they are my hunting grounds, now.",
-        danger: 7,
+        essence: 7,
         color: "danger5",
-        hp: asRoll(1, 4, 2),
+        hp: R(1, 4, 2),
         ai: "charge",
       },
       {
         name: "ambush spider",
         description: "An obnoxious creature that springs out to attack!",
-        danger: 15,
+        essence: 15,
         color: "danger15",
         // TODO they should have a double-move
         ai: "charge",
@@ -456,11 +472,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "little ghost",
       description:
         "A weak spirit, barely clinging to the mortal world. I wandered for decades in a state like this.",
-      danger: 4,
+      essence: 4,
       glyph: "ghost",
       color: "danger0",
-      appearing: asRoll(1, 1, 0),
-      hp: asRoll(2, 4, 0),
+      hp: R(2, 4, 0),
       speed: 0.25,
       ai: "charge",
       attack: "touch",
@@ -471,18 +486,18 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "weeping ghost",
         description:
           "This decrepit spirit moans and mewls in a manner that would turn my stomach, if I still had one. Its suffering shall soon be over.",
-        danger: 9,
+        essence: 9,
         color: "danger5",
-        hp: asRoll(2, 8, 2),
+        hp: R(2, 8, 2),
         speed: 0.5,
       },
       {
         name: "howling ghost",
         description:
           "A vigorous spirit, for once! Its yawping does grate, but I have a cure for that.",
-        danger: 12,
+        essence: 12,
         color: "danger10",
-        hp: asRoll(2, 5, 2),
+        hp: R(2, 5, 2),
         speed: 0.9,
         soul: "speed",
       },
@@ -493,11 +508,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "bleary eye",
       description:
         "The gummy, sluglike body of this repulsive creature clings fast to surfaces and moves exceedingly slowly, but its gaze pierces the veil and disrupts my essence.",
-      danger: 5,
+      essence: 5,
       glyph: "eyeball",
       color: "danger5",
-      appearing: asRoll(1, 2, 1),
-      hp: asRoll(2, 4, 0),
+      hp: R(2, 4, 0),
       speed: 0.25,
       ai: "stationary",
       attack: "gaze",
@@ -507,17 +521,16 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       {
         name: "peering eye",
         description: "This disgusting creature will pay for its insolent gaze!",
-        danger: 10,
+        essence: 10,
         color: "danger10",
-        appearing: asRoll(1, 1, 0),
-        hp: asRoll(3, 4, 0),
+        hp: R(3, 4, 0),
         speed: 0.5,
       },
       {
         name: "gimlet eye",
         description:
           "These remind me of the steely, courageous gaze of someone I once knew. Just like then, I'm going to tear its soul to shreds.",
-        danger: 17,
+        essence: 15,
         color: "danger15",
         // TODO esp
       },
@@ -528,11 +541,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "soul sucker",
       description:
         "A giant, bloated mosquito, glowing with essence. Another result of the luminous grubs? When I am restored, I should build a laboratory to study this phenomenon.",
-      danger: 15,
+      essence: 15,
       glyph: "insect",
       color: "danger15",
-      appearing: asRoll(2, 2, 2),
-      hp: asRoll(2, 2, 2),
+      hp: R(2, 2, 2),
       speed: 1.0,
       ai: "nipper",
       attack: "bite",
@@ -545,11 +557,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       name: "do-gooder",
       description:
         "Ha! If my captors are reduced to such a feeble state, armed with weapons little better than a child's toy, my restoration will be swift indeed.",
-      danger: 7,
+      essence: 7,
       glyph: "player",
       color: "danger5",
-      appearing: asRoll(1, 2, 0),
-      hp: asRoll(2, 6, 4),
+      hp: R(2, 6, 4),
       speed: 0.6,
       ai: "charge",
       attack: "slice",
@@ -560,10 +571,9 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "acolyte",
         description:
           "This child has read a book or two and learned enough to be dangerous, but I am a much harsher tutor than any they have ever known.",
-        danger: 12,
-        color: "danger10",
-        appearing: asRoll(1, 2, 0),
-        hp: asRoll(2, 4, 2),
+        essence: 8,
+        color: "danger5",
+        hp: R(2, 4, 2),
         attack: "abjure",
         speed: 0.5,
         soul: "extraDamage",
@@ -572,27 +582,152 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "warrior",
         description:
           "A muscular oaf, but able enough to swing a sword. This merits caution.",
-        danger: 16,
-        color: "danger15",
-        appearing: asRoll(2, 1, 0),
-        hp: asRoll(3, 6, 4),
+        essence: 14,
+        color: "danger10",
+        hp: R(3, 6, 4),
         soul: "soak",
       },
       {
         name: "priest",
         description:
           "Ah, a god-speaker. No doubt sent here to soothe the restless dead. I have a better solution.",
-        danger: 20,
+        essence: 15,
         color: "danger20",
-        hp: asRoll(3, 6, 4),
+        hp: R(3, 6, 4),
         speed: 0.5,
         attack: "abjure",
       },
     ],
   }),
+  ...expandProto({
+    base: {
+      name: "MegaLich 3000",
+      description: "As I once was, and shall be again.",
+      essence: 9999,
+      glyph: "player",
+      color: "danger20",
+      hp: R(100, 10, 100),
+      speed: 10.0,
+      ai: "charge",
+      attack: "slice",
+      soul: "megalich",
+    },
+    variants: [],
+  }),
 };
 
 export type ArchetypeID = string;
+
+export type MonsterFormation = {
+  danger: number;
+  appearing: [ArchetypeID, Roll][];
+};
+
+function solo(arch: ArchetypeID, roll: Roll, danger: number): MonsterFormation {
+  return {
+    appearing: [[arch, roll]],
+    danger,
+  };
+}
+
+export const MonsterFormations: MonsterFormation[] = [
+  /// Vermin groups
+  solo("maggot heap", R(1, 4, 3), 1),
+  solo("gnat swarm", R(2, 4, 0), 1),
+  solo("luminous grub", R(1, 3, 1), 5),
+  solo("soul butterfly", R(1, 3, 1), 10),
+  solo("torpid ghost", R(1, 1, 0), 10),
+  /// Monster groups
+  solo("dusty rat", R(1, 3, 0), 1),
+  solo("crypt spider", R(1, 2, 0), 3),
+  solo("little ghost", R(1, 1, 0), 4),
+  solo("bleary eye", R(1, 1, 0), 5),
+  {
+    appearing: [
+      ["dusty rat", R(2, 2, 1)],
+      ["hungry rat", R(1, 3, 0)],
+    ],
+    danger: 7,
+  },
+  solo("wolf spider", R(1, 1, 0), 8),
+  solo("weeping ghost", R(1, 1, 0), 10),
+  solo("peering eye", R(1, 1, 0), 12),
+  solo("howling ghost", R(1, 1, 0), 12),
+  {
+    appearing: [
+      ["little ghost", R(2, 2, 1)],
+      ["weeping ghost", R(1, 3, 0)],
+      ["howling ghost", R(1, 1, 0)],
+      ["torpid ghost", R(1, 4, 1)],
+    ],
+    danger: 12,
+  },
+  solo("gimlet eye", R(1, 1, 0), 15),
+  solo("ambush spider", R(1, 1, 0), 15),
+  solo("howling ghost", R(1, 3, 1), 17),
+  {
+    appearing: [
+      ["dusty rat", R(2, 2, 1)],
+      ["hungry rat", R(1, 3, 0)],
+    ],
+    danger: 7,
+  },
+  solo("wolf spider", R(1, 1, 0), 8),
+  solo("weeping ghost", R(1, 1, 0), 10),
+  solo("peering eye", R(1, 1, 0), 12),
+  solo("howling ghost", R(1, 1, 0), 12),
+  {
+    appearing: [
+      ["luminous grub", R(2, 2, 2)],
+      ["soul butterfly", R(2, 3, 1)],
+      ["soul sucker", R(1, 2, 0)],
+    ],
+    danger: 15,
+  },
+  solo("soul sucker", R(2, 2, 2), 17),
+
+  /// Do-gooder parties
+  {
+    appearing: [
+      ["do-gooder", R(1, 2, 0)],
+      ["acolyte", R(1, 2, -1)],
+    ],
+    danger: 9,
+  },
+  {
+    appearing: [
+      ["warrior", R(1, 1, 0)],
+      ["acolyte", R(1, 1, 0)],
+    ],
+    danger: 12,
+  },
+  {
+    appearing: [
+      ["do-gooder", R(2, 2, 0)],
+      ["warrior", R(1, 2, 0)],
+    ],
+    danger: 15,
+  },
+  {
+    appearing: [["warrior", R(2, 2, 1)]],
+    danger: 20,
+  },
+  {
+    appearing: [
+      ["warrior", R(1, 2, 0)],
+      ["priest", R(1, 1, 0)],
+    ],
+    danger: 20,
+  },
+  {
+    appearing: [
+      ["do-gooder", R(2, 2, 0)],
+      ["warrior", R(1, 2, 0)],
+      ["priest", R(1, 1, 0)],
+    ],
+    danger: 25,
+  },
+];
 
 export type MonsterStatusType = "dying" | "slow";
 export type MonsterStatus =

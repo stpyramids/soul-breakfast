@@ -19,6 +19,8 @@ export function asRoll(n: number, sides: number, mod: number): Roll {
   return { n, sides, mod };
 }
 
+export const R = asRoll;
+
 export function doRoll(roll: Roll): number {
   let n = 0;
   for (let i = 0; i < roll.n; i += 1) {

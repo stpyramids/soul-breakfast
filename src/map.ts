@@ -9,6 +9,7 @@ import {
   Monster,
   weakMonster,
   MonsterArchetype,
+  MonsterFormations,
 } from "./monster";
 import { msg } from "./msg";
 import { offerChoice, startNewGame } from "./ui";
@@ -171,6 +172,15 @@ export function newMap(opts?: NewMapOptions) {
   Game.player.y = py;
 
   // Place monsters and exits in other rooms
+  const formations = MonsterFormations.filter(
+    (f) => f.danger <= Game.map.danger + 2
+  );
+  const formDist = formations.reduce((d, form, i) => {
+    d[i] = Game.map.danger - Math.abs(Game.map.danger - form.danger) / 2;
+    return d;
+  }, {} as { [key: number]: number });
+
+  /*
   const eligibleMonsters: { [key: ArchetypeID]: number } = {};
   if (Game.map.danger === 1) {
     // Ensure that the entry level is easy but not all vermin
@@ -179,14 +189,14 @@ export function newMap(opts?: NewMapOptions) {
     eligibleMonsters["dusty rat"] = 1;
   } else {
     for (let key in MonsterArchetypes) {
-      if (MonsterArchetypes[key].danger <= Game.map.danger + 2) {
+      if (MonsterArchetypes[key].essence <= Game.map.danger + 2) {
         eligibleMonsters[key] =
           Game.map.danger -
-          Math.abs(Game.map.danger - MonsterArchetypes[key].danger);
+          Math.abs(Game.map.danger - MonsterArchetypes[key].essence);
       }
     }
   }
-
+*/
   // todo this sucks
   let exits = ROT.RNG.shuffle([
     Game.map.danger > 1 ? Math.floor(Game.map.danger / 2) : 1,
@@ -217,6 +227,31 @@ export function newMap(opts?: NewMapOptions) {
       Game.map.exits.push([ex, ey, exit]);
       Game.map.tiles[ex + ey * Game.map.w] = Tiles.exit;
     }
+    // New monster placement logic. Calculate a capacity for each room and try to fill it.
+    let capacity = Math.floor(
+      0.5 *
+        (room.getRight() - room.getLeft()) *
+        (room.getBottom() - room.getTop())
+    );
+    let groups = ROT.RNG.getUniformInt(0, 3);
+    while (capacity > 0 && groups > 0) {
+      let form = formations[parseInt(ROT.RNG.getWeightedValue(formDist)!)];
+      for (let [arch, roll] of form.appearing) {
+        let appearing = doRoll(roll);
+        while (appearing > 0) {
+          let mx = ROT.RNG.getUniformInt(room.getLeft(), room.getRight());
+          let my = ROT.RNG.getUniformInt(room.getTop(), room.getBottom());
+          let c = contentsAt(mx, my);
+          if (!c.blocked) {
+            Game.map.monsters[mx + my * Game.map.w] = spawnMonster(arch);
+          }
+          capacity--;
+          appearing--;
+        }
+      }
+      groups--;
+    }
+    /*
     const mArch = ROT.RNG.getWeightedValue(eligibleMonsters)!;
     let appearing = doRoll(MonsterArchetypes[mArch].appearing);
     while (appearing > 0) {
@@ -228,6 +263,7 @@ export function newMap(opts?: NewMapOptions) {
       }
       appearing -= 1;
     }
+    */
   }
 
   // Create corridors
