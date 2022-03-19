@@ -936,10 +936,10 @@ void main() {
     const SRC_COLORS = 256;
     const DST_COLORS = 6;
     const COLOR_RATIO = DST_COLORS / SRC_COLORS;
-    let rgb = fromString(color);
-    let r2 = Math.floor(rgb[0] * COLOR_RATIO);
-    let g2 = Math.floor(rgb[1] * COLOR_RATIO);
-    let b2 = Math.floor(rgb[2] * COLOR_RATIO);
+    let rgb2 = fromString(color);
+    let r2 = Math.floor(rgb2[0] * COLOR_RATIO);
+    let g2 = Math.floor(rgb2[1] * COLOR_RATIO);
+    let b2 = Math.floor(rgb2[2] * COLOR_RATIO);
     return r2 * 36 + g2 * 6 + b2 * 1 + 16;
   }
   var Term = class extends Backend {
@@ -3357,19 +3357,30 @@ void main() {
 
   // src/colors.ts
   var Colors = {
-    void: "#000",
-    target: "#139",
-    dying: "#411",
-    weak: "#211",
-    critterBG: "#111",
-    vermin: "#aaa",
-    danger0: "#7c5335",
-    danger5: "#9d893b",
-    danger10: "#439d3b",
-    danger15: "#3b9d8e",
-    danger20: "#9d3b43",
-    danger25: "#923b9d"
+    void: [0, 0, 0],
+    target: [17, 51, 153],
+    dying: [68, 17, 17],
+    weak: [34, 17, 17],
+    critterBG: [17, 17, 17],
+    vermin: [170, 170, 170],
+    danger0: [124, 83, 53],
+    danger5: [157, 137, 59],
+    danger10: [67, 157, 59],
+    danger15: [59, 157, 142],
+    danger20: [157, 59, 67],
+    danger25: [146, 59, 157],
+    terrain: [190, 190, 190],
+    floor: [127, 127, 127],
+    player: [255, 255, 255]
   };
+  function rgb(color) {
+    let c2 = Colors[color];
+    return `rgb(${c2[0]},${c2[1]},${c2[2]})`;
+  }
+  function rgba(color, alpha) {
+    let c2 = Colors[color];
+    return `rgba(${c2[0]},${c2[1]},${c2[2]},${alpha})`;
+  }
 
   // src/utils.ts
   function keysOf(obj) {
@@ -3443,10 +3454,6 @@ void main() {
   // src/game.ts
   var Game = {
     turns: 0,
-    viewport: {
-      width: 30,
-      height: 30
-    },
     player: {
       x: 10,
       y: 10,
@@ -3962,7 +3969,7 @@ void main() {
       name: "do-gooder",
       description: "Ha! If my captors are reduced to such a feeble state, armed with weapons little better than a child's toy, my restoration will be swift indeed.",
       essence: 7,
-      glyph: "player",
+      glyph: "do-gooder",
       color: "danger5",
       hp: R(2, 6, 4),
       speed: 0.6,
@@ -4430,7 +4437,8 @@ void main() {
     rodent: "r",
     spider: "s",
     ghost: "g",
-    eyeball: "e"
+    eyeball: "e",
+    "do-gooder": "h"
   };
 
   // src/wizard.ts
@@ -4809,7 +4817,7 @@ void main() {
       return false;
     },
     W: () => {
-      if (document.location.hash == "#wizard") {
+      if (document.location.hash.includes("wizard")) {
         wizard();
       }
       return false;
@@ -5414,20 +5422,38 @@ void main() {
       targets: [],
       mapDescription: "",
       onGround: null
+    },
+    doTiles: document.location.hash.includes("tiles"),
+    viewport: {
+      width: 30,
+      height: 30
     }
   };
+  function bgColor(color) {
+    return rgb(color);
+  }
+  function fgColor(color, alpha) {
+    if (alpha === void 0) {
+      alpha = 1;
+    }
+    if (UI.doTiles) {
+      return rgba(color, alpha);
+    } else {
+      return rgb(color);
+    }
+  }
   function drawMap(display) {
     display.clear();
-    let sx = Game.player.x - Game.viewport.width / 2;
-    let sy = Game.player.y - Game.viewport.height / 2;
+    let sx = Game.player.x - UI.viewport.width / 2;
+    let sy = Game.player.y - UI.viewport.height / 2;
     if (sx < 0) {
       sx = 0;
     }
     if (sy < 0) {
       sy = 0;
     }
-    for (let ix = 0; ix < Game.viewport.width; ix += 1) {
-      for (let iy = 0; iy < Game.viewport.height; iy += 1) {
+    for (let ix = 0; ix < UI.viewport.width; ix += 1) {
+      for (let iy = 0; iy < UI.viewport.height; iy += 1) {
         let mem = Game.map.memory[sx + ix + (sy + iy) * Game.map.w];
         if (mem) {
           let [mtile, mmons] = mem;
@@ -5449,15 +5475,15 @@ void main() {
       }
       let c2 = contentsAt(x2, y2);
       let isTarget = !!targets.find((c3) => c3.x === x2 && c3.y === y2);
-      let bg = isTarget ? Colors.target : Colors.void;
+      let bg = isTarget ? bgColor("target") : bgColor("void");
       Game.map.memory[x2 + y2 * Game.map.w] = c2.memory;
       if (c2.player) {
-        display.draw(x2 - sx, y2 - sy, Glyphs[Game.player.glyph], "#ccc", bg);
+        display.draw(x2 - sx, y2 - sy, Glyphs[Game.player.glyph], fgColor("player"), bg);
       } else if (c2.monster) {
         let arch = MonsterArchetypes[c2.monster.archetype];
-        display.draw(x2 - sx, y2 - sy, Glyphs[arch.glyph], Colors[arch.color], monsterHasStatus(c2.monster, "dying") ? Colors.dying : isTarget ? Colors.target : weakMonster(c2.monster) ? Colors.weak : Colors.critterBG);
+        display.draw(x2 - sx, y2 - sy, Glyphs[arch.glyph], fgColor(arch.color, 0.75), bgColor(monsterHasStatus(c2.monster, "dying") ? "dying" : isTarget ? "target" : weakMonster(c2.monster) ? "weak" : "critterBG"));
       } else if (c2.tile) {
-        display.draw(x2 - sx, y2 - sy, Glyphs[c2.tile.glyph], "#999", bg);
+        display.draw(x2 - sx, y2 - sy, Glyphs[c2.tile.glyph], fgColor(c2.tile.blocks ? "terrain" : "floor", 0.75), bg);
       } else {
         display.draw(x2 - sx, y2 - sy, Glyphs.rock, "#000", bg);
       }
@@ -5475,7 +5501,39 @@ void main() {
     Util.format.map.the = "the";
     renderControls(Game, UI, logMessages);
     let playarea = document.getElementById("playarea");
-    let display = new display_default(Game.viewport);
+    let options = __spreadValues({}, UI.viewport);
+    if (UI.doTiles) {
+      let tileSet = document.createElement("img");
+      tileSet.src = "sprites.png";
+      let T2 = (x2, y2) => [
+        x2 * 32,
+        y2 * 32
+      ];
+      UI.viewport.width /= 2;
+      UI.viewport.height /= 2;
+      options = __spreadProps(__spreadValues({}, UI.viewport), {
+        tileWidth: 32,
+        tileHeight: 32,
+        tileSet,
+        tileColorize: true,
+        tileMap: {
+          [Glyphs.player]: T2(0, 0),
+          [Glyphs.worm]: T2(1, 0),
+          [Glyphs.insect]: T2(2, 0),
+          [Glyphs.wall]: T2(3, 0),
+          [Glyphs.exit]: T2(4, 0),
+          [Glyphs.floor]: T2(5, 0),
+          [Glyphs.none]: T2(6, 0),
+          [Glyphs.rodent]: T2(0, 1),
+          [Glyphs.spider]: T2(1, 1),
+          [Glyphs.ghost]: T2(2, 1),
+          [Glyphs.eyeball]: T2(3, 1),
+          [Glyphs["do-gooder"]]: T2(4, 1)
+        },
+        layout: "tile"
+      });
+    }
+    let display = new display_default(options);
     let dispC = display.getContainer();
     playarea.appendChild(dispC);
     UI.uiCallback = () => {
