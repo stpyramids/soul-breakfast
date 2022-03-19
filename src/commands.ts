@@ -390,7 +390,7 @@ export const Commands: { [key: string]: () => boolean } = {
   },
   // Wizard commands
   W: () => {
-    if (document.location.hash == "#wizard") {
+    if (document.location.hash.includes("wizard")) {
       wizard();
     }
     return false;

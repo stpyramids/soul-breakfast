@@ -558,7 +558,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       description:
         "Ha! If my captors are reduced to such a feeble state, armed with weapons little better than a child's toy, my restoration will be swift indeed.",
       essence: 7,
-      glyph: "player",
+      glyph: "do-gooder",
       color: "danger5",
       hp: R(2, 6, 4),
       speed: 0.6,

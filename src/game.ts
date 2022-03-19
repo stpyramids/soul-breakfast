@@ -6,10 +6,6 @@ import { EmptySoul } from "./souls";
 
 export let Game = {
   turns: 0,
-  viewport: {
-    width: 30,
-    height: 30,
-  },
   player: {
     x: 10,
     y: 10,

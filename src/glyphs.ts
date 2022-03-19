@@ -11,6 +11,7 @@ export const Glyphs = {
   spider: "s",
   ghost: "g",
   eyeball: "e",
+  "do-gooder": "h",
 };
 
 export type GlyphID = keyof typeof Glyphs;
