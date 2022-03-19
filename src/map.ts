@@ -328,8 +328,8 @@ export function contentsAt(x: number, y: number): XYContents {
     if (esp) {
       let dx = Math.abs(Game.player.x - x);
       let dy = Math.abs(Game.player.y - y);
-      if (dx < esp.power || dy < esp.power) {
-        // todo
+      let dist = Math.floor(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)));
+      if (dist <= esp.power) {
         sensedDanger = MonsterArchetypes[archetype!].essence;
       }
     }

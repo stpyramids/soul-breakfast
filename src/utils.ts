@@ -15,8 +15,8 @@ export type Roll = {
   mod: number;
 };
 
-export function asRoll(n: number, sides: number, mod: number): Roll {
-  return { n, sides, mod };
+export function asRoll(n: number, sides: number, mod?: number): Roll {
+  return { n, sides, mod: mod ? mod : 0 };
 }
 
 export const R = asRoll;
@@ -30,8 +30,12 @@ export function doRoll(roll: Roll): number {
   return v;
 }
 
+export function Rnd(n: number, sides: number, mod?: number): number {
+  return doRoll(asRoll(n, sides, mod));
+}
+
 export function describeRoll(roll: Roll): string {
-  return roll.n + "d" + roll.sides + "+" + roll.mod;
+  return roll.n + "d" + roll.sides + (roll.mod > 0 ? "+" + roll.mod : "");
 }
 
 export function roll100(under: number): boolean {

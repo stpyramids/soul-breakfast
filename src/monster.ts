@@ -12,8 +12,8 @@ import {
   newMap,
 } from "./map";
 import { msg } from "./msg";
-import { EmptySoul, Soul, isEmptySoul } from "./souls";
-import { keysOf, R, doRoll, Roll, roll100 } from "./utils";
+import { EmptySoul, Soul, isEmptySoul, SoulEffect } from "./souls";
+import { keysOf, R, doRoll, Roll, roll100, Rnd } from "./utils";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
 const verminHP: Roll = { n: 1, sides: 1, mod: 0 };
@@ -223,125 +223,100 @@ export type MonsterArchetype = {
 
 export type SoulFactory = (arch: MonsterArchetype) => Soul;
 
-export const SoulFactories: { [id: string]: SoulFactory } = {
-  vermin: (a) => ({
+function mkSoulF(
+  effects: (arch: MonsterArchetype) => (SoulEffect | null)[]
+): SoulFactory {
+  return (a) => ({
     token: [a.glyph, a.color],
     essence: a.essence,
     name: a.name,
-    effects: [],
-  }),
-  maxEssence: (a) => ({
-    token: [a.glyph, a.color],
-    essence: a.essence,
-    name: a.name,
-    effects: [{ type: "stat bonus", stat: "max essence", power: a.essence }],
-  }),
-  extraDamage: (a) => ({
-    token: [a.glyph, a.color],
-    essence: a.essence,
-    name: a.name,
-    effects: [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a.essence / 2) + 1,
-      },
-      { type: "damage", damage: R(Math.floor(a.essence / 2), 4, 1) },
-    ],
-  }),
-  slow: (a) => ({
-    token: [a.glyph, a.color],
-    essence: a.essence,
-    name: a.name,
-    effects: [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a.essence / 2) + 1,
-      },
-      { type: "status", status: "slow", power: Math.floor(a.essence / 2) + 1 },
-    ],
-  }),
-  sight: (a) => ({
-    token: [a.glyph, a.color],
-    essence: a.essence,
-    name: a.name,
-    effects: [
-      { type: "stat bonus", stat: "max essence", power: a.essence },
-      roll100(20 + a.essence)
-        ? {
-            type: "danger sense",
-            power: Math.floor(a.essence / 4) + 1,
-          }
-        : {
-            type: "stat bonus",
-            stat: "sight",
-            power: Math.floor(a.essence / 2) + 1,
-          },
-    ],
-  }),
-  speed: (a) => ({
-    token: [a.glyph, a.color],
-    type: "ring",
-    essence: a.essence,
-    name: a.name,
-    effects: [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a.essence * 0.8),
-      },
-      {
-        type: "stat bonus",
-        stat: "speed",
-        power: 0.05 * Math.floor(a.essence / 2),
-      },
-    ],
-  }),
-  soak: (a) => ({
-    token: [a.glyph, a.color],
-    type: "ring",
-    essence: a.essence,
-    name: a.name,
-    effects: [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a.essence / 2) + 1,
-      },
-      {
-        type: "soak damage",
-        power: Math.floor(a.essence / 5),
-      },
-    ],
-  }),
+    effects: effects(a).filter((f) => f) as SoulEffect[],
+  });
+}
+export const SoulFactories = {
+  vermin: mkSoulF((a) => []),
+  maxEssence: mkSoulF((a) => [
+    { type: "stat bonus", stat: "max essence", power: a.essence },
+  ]),
+  extraDamage: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence / 2) + 1,
+    },
+    { type: "damage", damage: R(Math.floor(a.essence / 2), 4, Rnd(1, 4)) },
+  ]),
+  slow: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence / 2) + 1,
+    },
+    {
+      type: "status",
+      status: "slow",
+      power: Math.floor(a.essence / 2) + Rnd(1, 3),
+    },
+  ]),
+  sight: mkSoulF((a) => [
+    { type: "stat bonus", stat: "max essence", power: a.essence },
+    roll100(20 + a.essence)
+      ? {
+          type: "danger sense",
+          power: Math.floor(a.essence / 8) + 2,
+        }
+      : null,
+    {
+      type: "stat bonus",
+      stat: "sight",
+      power: Math.floor(a.essence / 2) + 1,
+    },
+  ]),
+  speed: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence * 0.8),
+    },
+    {
+      type: "stat bonus",
+      stat: "speed",
+      power: 0.05 * (Math.floor(a.essence / 2) + Rnd(1, 3)),
+    },
+  ]),
+  soak: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence / 2) + 1,
+    },
+    {
+      type: "soak damage",
+      power: Math.floor(a.essence / Rnd(1, 2, 3)),
+    },
+  ]),
   // Debug mode super-soul
-  megalich: (a) => ({
-    token: [a.glyph, a.color],
-    essence: 9999,
-    name: "MEGA-LICH 3000!",
-    effects: [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: 200,
-      },
-      {
-        type: "soak damage",
-        power: 500,
-      },
-      {
-        type: "stat bonus",
-        stat: "speed",
-        power: 10.0,
-      },
-      { type: "damage", damage: R(10, 100, 50) },
-      {
-        type: "danger sense",
-        power: 20,
-      },
-    ],
-  }),
+  megalich: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: 200,
+    },
+    {
+      type: "soak damage",
+      power: 500,
+    },
+    {
+      type: "stat bonus",
+      stat: "speed",
+      power: 10.0,
+    },
+    { type: "damage", damage: R(10, 100, 50) },
+    {
+      type: "danger sense",
+      power: 20,
+    },
+  ]),
 };
 
 type MonsterProto = {
@@ -831,7 +806,8 @@ export function weakMonster(m: Monster): boolean {
 }
 
 export function makeSoul(arch: MonsterArchetype): Soul {
-  return SoulFactories[arch.soul](arch);
+  let f = SoulFactories[arch.soul];
+  return f(arch);
 }
 
 export function getSoul(m: Monster): Soul {
