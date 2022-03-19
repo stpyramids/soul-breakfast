@@ -6,7 +6,7 @@ import {
   Component,
   ComponentType,
 } from "preact";
-import { Glyphs } from "../glyphs";
+import { glyphChar, rgb, tokenChar, tokenRGB } from "../token";
 import { getSoul, MonsterArchetypes, monsterHasStatus } from "../monster";
 import { describeSoulEffects, Soul } from "../souls";
 import type { UIState } from "../ui";
@@ -88,11 +88,24 @@ function Sidebar(props: { ui: UIState; game: GameState }) {
       {props.ui.activeChoice ? (
         <SidebarSection label="Choose" element={ChoiceBox} ui={props.ui} />
       ) : (
-        <SidebarSection
-          label="Targets"
-          element={TargetsView}
-          targets={props.ui.state.targets}
-        />
+        <>
+          {props.ui.state.targets.length > 0 ? (
+            <SidebarSection
+              label="Targets"
+              element={TargetsView}
+              targets={props.ui.state.targets}
+              brief={false}
+            />
+          ) : null}
+          {props.ui.state.visible.length > 0 ? (
+            <SidebarSection
+              label="In View"
+              element={TargetsView}
+              targets={props.ui.state.visible}
+              brief={true}
+            />
+          ) : null}
+        </>
       )}
     </div>
   );
@@ -144,11 +157,11 @@ export function WhatsHereView(props: { here: XYContents }) {
   let desc = "";
   if (here.monster) {
     let soul = getSoul(here.monster);
-    glyph = Glyphs[soul.glyph];
+    glyph = tokenChar(soul.token);
     what = soul.name;
     desc = describeSoulEffects(soul);
   } else if (here.tile) {
-    glyph = Glyphs[here.tile.glyph];
+    glyph = glyphChar(here.tile.glyph);
     what = here.tile.glyph;
     if (here.exitDanger) {
       desc = "Danger: " + here.exitDanger;
@@ -180,51 +193,94 @@ function SoulListView(props: { souls: Array<Soul> }) {
 function SoulView(props: { soul: Soul }) {
   return (
     <Fragment key={props.soul.name}>
-      <div class="soul-glyph">{Glyphs[props.soul.glyph]}</div>
+      <div class="soul-glyph" style={"color: " + tokenRGB(props.soul.token)}>
+        {tokenChar(props.soul.token)}
+      </div>
       <div class="soul-name">{props.soul.name}</div>
       <div class="soul-effect">{describeSoulEffects(props.soul)}</div>
     </Fragment>
   );
 }
 
-function TargetsView(props: { targets: XYContents[] }) {
+function TargetsView(props: { targets: XYContents[]; brief: boolean }) {
+  let items = props.targets.map(targetToItem);
+  let groups: { [k: string]: TargetItem[] } = {};
+  for (let i of items) {
+    if (i) {
+      if (!groups[i.name]) {
+        groups[i.name] = [i];
+      } else {
+        groups[i.name].push(i);
+      }
+    }
+  }
+  let grouped = Object.values(groups).map((is) => ({
+    ...is[0],
+    name: is[0].name + (is.length > 1 ? " x" + is.length : ""),
+  }));
   return (
     <div id="targets">
-      {props.targets.map((c) => {
-        if (c.monster) {
-          let arch = MonsterArchetypes[c.monster.archetype];
-          let glyph = Glyphs[arch.glyph];
-          let name = arch.name;
-          let statuses = [];
-          if (monsterHasStatus(c.monster, "dying")) {
-            statuses.push("dying");
-          } else {
-            if (arch.soul == "vermin") {
-              statuses.push("vermin");
-            } else if (c.monster.hp === c.monster.maxHP) {
-              statuses.push("unharmed");
-            } else if (c.monster.hp < c.monster.maxHP / 2) {
-              statuses.push("heavily wounded");
-            } else {
-              statuses.push("slightly wounded");
-            }
-            c.monster.statuses.forEach((s) => {
-              statuses.push(s.type);
-            });
-          }
-          name += " (" + statuses.join(", ") + ")";
-          let desc = arch.description;
-          return (
-            <div class="target-entry">
-              <div class="target-glyph soul-glyph">{glyph}</div>
-              <div class="target-name soul-name">{name}</div>
-              <div class="target-thoughts">{desc}</div>
-            </div>
-          );
-        }
-      })}
+      {grouped.map((i) => (
+        <TargetItem item={i} brief={props.brief} />
+      ))}
     </div>
   );
+}
+
+type TargetItem = {
+  name: string;
+  glyph: string;
+  color: string;
+  thoughts: string;
+};
+
+function targetToItem(c: XYContents): TargetItem | null {
+  if (c.monster) {
+    let arch = MonsterArchetypes[c.monster.archetype];
+    let glyph = glyphChar(arch.glyph);
+    let color = rgb(arch.color);
+    let name = arch.name;
+    let statuses = [];
+    if (monsterHasStatus(c.monster, "dying")) {
+      statuses.push("dying");
+    } else {
+      if (arch.soul == "vermin") {
+        statuses.push("vermin");
+      } else if (c.monster.hp === c.monster.maxHP) {
+        statuses.push("unharmed");
+      } else if (c.monster.hp < c.monster.maxHP / 2) {
+        statuses.push("heavily wounded");
+      } else {
+        statuses.push("slightly wounded");
+      }
+      c.monster.statuses.forEach((s) => {
+        statuses.push(s.type);
+      });
+    }
+    name += " (" + statuses.join(", ") + ")";
+    let thoughts = arch.description;
+    return {
+      name,
+      glyph,
+      color,
+      thoughts,
+    };
+  } else {
+    return null;
+  }
+}
+
+function TargetItem(props: { item: TargetItem; brief: boolean }) {
+  let t = props.item;
+  return t ? (
+    <div class="target-entry">
+      <div class="target-glyph soul-glyph" style={"color: " + t.color}>
+        {t.glyph}
+      </div>
+      <div class="target-name soul-name">{t.name}</div>
+      {props.brief ? null : <div class="target-thoughts">{t.thoughts}</div>}
+    </div>
+  ) : null;
 }
 
 function MessageLog(props: { messages: [string, string][][] }) {

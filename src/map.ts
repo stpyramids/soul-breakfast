@@ -1,19 +1,17 @@
 import * as ROT from "rot-js";
 import { getPlayerVision, getWand } from "./commands";
 import { Game } from "./game";
-import { GlyphID } from "./glyphs";
+import { GlyphID } from "./token";
 import {
-  MonsterArchetypes,
   ArchetypeID,
   spawnMonster,
   Monster,
   weakMonster,
-  MonsterArchetype,
   MonsterFormations,
 } from "./monster";
 import { msg } from "./msg";
 import { offerChoice, startNewGame } from "./ui";
-import { keysOf, doRoll } from "./utils";
+import { doRoll } from "./utils";
 
 /// Map tiles
 
@@ -90,32 +88,33 @@ export function canSeeThreat(): boolean {
   return false;
 }
 
+export function monstersByDistance(): Array<[number, XYContents]> {
+  let monstersByDistance: Array<[number, XYContents]> = [];
+  for (let [x, y] of seenXYs) {
+    if (x == Game.player.x && y == Game.player.y) {
+      continue;
+    }
+    let c = contentsAt(x, y);
+    if (c.monster) {
+      let dist = Math.sqrt(
+        Math.pow(Math.abs(Game.player.x - x), 2) +
+          Math.pow(Math.abs(Game.player.y - y), 2)
+      );
+      monstersByDistance.push([dist, c]);
+    }
+  }
+  monstersByDistance.sort(([a, _v], [b, _v2]) => a - b);
+  return monstersByDistance;
+}
+
 export function findTargets(): Array<XYContents> {
   let targets: Array<XYContents> = [];
   let targetEffect = getWand().targeting;
   switch (targetEffect.targeting) {
     case "seek closest":
-      let monstersByDistance: Array<[number, XYContents]> = [];
-      for (let [x, y] of seenXYs) {
-        if (x == Game.player.x && y == Game.player.y) {
-          continue;
-        }
-        let c = contentsAt(x, y);
-        if (c.monster) {
-          let dist = Math.sqrt(
-            Math.pow(Math.abs(Game.player.x - x), 2) +
-              Math.pow(Math.abs(Game.player.y - y), 2)
-          );
-          monstersByDistance.push([dist, c]);
-        }
-      }
-      monstersByDistance.sort(([a, _v], [b, _v2]) => a - b);
-      for (
-        let i = 0;
-        i < targetEffect.count && i < monstersByDistance.length;
-        i++
-      ) {
-        targets.push(monstersByDistance[i][1]);
+      let monsters = monstersByDistance();
+      for (let i = 0; i < targetEffect.count && i < monsters.length; i++) {
+        targets.push(monsters[i][1]);
       }
   }
   return targets;
@@ -180,23 +179,6 @@ export function newMap(opts?: NewMapOptions) {
     return d;
   }, {} as { [key: number]: number });
 
-  /*
-  const eligibleMonsters: { [key: ArchetypeID]: number } = {};
-  if (Game.map.danger === 1) {
-    // Ensure that the entry level is easy but not all vermin
-    eligibleMonsters["gnat swarm"] = 2;
-    eligibleMonsters["maggot heap"] = 2;
-    eligibleMonsters["dusty rat"] = 1;
-  } else {
-    for (let key in MonsterArchetypes) {
-      if (MonsterArchetypes[key].essence <= Game.map.danger + 2) {
-        eligibleMonsters[key] =
-          Game.map.danger -
-          Math.abs(Game.map.danger - MonsterArchetypes[key].essence);
-      }
-    }
-  }
-*/
   // todo this sucks
   let exits = ROT.RNG.shuffle([
     Game.map.danger > 1 ? Math.floor(Game.map.danger / 2) : 1,
@@ -251,19 +233,6 @@ export function newMap(opts?: NewMapOptions) {
       }
       groups--;
     }
-    /*
-    const mArch = ROT.RNG.getWeightedValue(eligibleMonsters)!;
-    let appearing = doRoll(MonsterArchetypes[mArch].appearing);
-    while (appearing > 0) {
-      let mx = ROT.RNG.getUniformInt(room.getLeft(), room.getRight());
-      let my = ROT.RNG.getUniformInt(room.getTop(), room.getBottom());
-      let c = contentsAt(mx, my);
-      if (!c.blocked) {
-        Game.map.monsters[mx + my * Game.map.w] = spawnMonster(mArch);
-      }
-      appearing -= 1;
-    }
-    */
   }
 
   // Create corridors

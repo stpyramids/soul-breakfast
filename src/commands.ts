@@ -1,7 +1,6 @@
 /// Game commands
 
 import { Game } from "./game";
-import { Glyphs } from "./glyphs";
 import {
   canSeeThreat,
   contentsAt,

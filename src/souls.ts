@@ -1,4 +1,4 @@
-import { GlyphID } from "./glyphs";
+import { GlyphID, Token } from "./token";
 import { Roll, asRoll, describeRoll } from "./utils";
 
 export type Status = "slow";
@@ -59,14 +59,14 @@ export type SoulEffect = RingEffect | WandEffect | GenericEffect;
 // TODO: instead of separate soul types, a single soul can have effects
 // of various types
 export type Soul = {
-  glyph: GlyphID;
+  token: Token;
   name: string;
   essence: number;
   effects: Array<SoulEffect>;
 };
 
 export const EmptySoul: Soul = {
-  glyph: "none",
+  token: ["none", "void"],
   name: "-",
   essence: 0,
   effects: [],

@@ -1,8 +1,8 @@
 import { doClaimSoul, maxEssence } from "./commands";
 import { Game } from "./game";
-import { Glyphs } from "./glyphs";
 import { newMap } from "./map";
 import { MonsterArchetypes, makeSoul } from "./monster";
+import { glyphChar } from "./token";
 import { offerChoice } from "./ui";
 
 export function wizard() {
@@ -42,7 +42,7 @@ export function wizard() {
 
 function wizardSoul() {
   let byLetter = Object.keys(MonsterArchetypes).reduce((m, name) => {
-    let k = Glyphs[MonsterArchetypes[name].glyph];
+    let k = glyphChar(MonsterArchetypes[name].glyph);
     let l = m.get(k);
     if (l) {
       l.push(name);

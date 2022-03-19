@@ -1,10 +1,9 @@
 /// Monster data
 
 import * as ROT from "rot-js";
-import { Colors } from "./colors";
+import { ColorID, GlyphID, Token } from "./token";
 import { applySoak, D } from "./commands";
 import { Game } from "./game";
-import { GlyphID } from "./glyphs";
 import {
   XYContents,
   contentsAt,
@@ -214,7 +213,7 @@ export type MonsterArchetype = {
   description: string;
   essence: number;
   glyph: GlyphID;
-  color: keyof typeof Colors;
+  color: ColorID;
   hp: Roll;
   speed: number;
   ai: keyof typeof AI;
@@ -226,19 +225,19 @@ export type SoulFactory = (arch: MonsterArchetype) => Soul;
 
 export const SoulFactories: { [id: string]: SoulFactory } = {
   vermin: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     essence: a.essence,
     name: a.name,
     effects: [],
   }),
   maxEssence: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     essence: a.essence,
     name: a.name,
     effects: [{ type: "stat bonus", stat: "max essence", power: a.essence }],
   }),
   extraDamage: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     essence: a.essence,
     name: a.name,
     effects: [
@@ -251,7 +250,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     ],
   }),
   slow: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     essence: a.essence,
     name: a.name,
     effects: [
@@ -264,7 +263,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     ],
   }),
   sight: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     essence: a.essence,
     name: a.name,
     effects: [
@@ -277,7 +276,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     ],
   }),
   speed: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     type: "ring",
     essence: a.essence,
     name: a.name,
@@ -295,7 +294,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     ],
   }),
   soak: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     type: "ring",
     essence: a.essence,
     name: a.name,
@@ -313,7 +312,7 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
   }),
   // Debug mode super-soul
   megalich: (a) => ({
-    glyph: a.glyph,
+    token: [a.glyph, a.color],
     essence: 9999,
     name: "MEGA-LICH 3000!",
     effects: [

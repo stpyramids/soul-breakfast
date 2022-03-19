@@ -1,9 +1,8 @@
 import * as ROT from "rot-js";
 
-import { Colors, rgb, rgba } from "./colors";
+import { ColorID, glyphChar, rgb, rgba } from "./token";
 import { Commands, maxEssence } from "./commands";
 import { Game, resetGame } from "./game";
-import { Glyphs } from "./glyphs";
 import {
   contentsAt,
   recomputeFOV,
@@ -13,6 +12,7 @@ import {
   getMapDescription,
   getVictim,
   XYContents,
+  monstersByDistance,
 } from "./map";
 import { MonsterArchetypes, weakMonster, monsterHasStatus } from "./monster";
 import { msg } from "./msg";
@@ -35,6 +35,7 @@ export const UI = {
     playerEssence: 0,
     playerMaxEssence: 0,
     targets: [] as XYContents[],
+    visible: [] as XYContents[],
     mapDescription: "",
     onGround: null as XYContents | null,
   },
@@ -49,11 +50,11 @@ export type UIState = typeof UI;
 
 /// Graphics
 
-function bgColor(color: keyof typeof Colors): string {
+function bgColor(color: ColorID): string {
   return rgb(color);
 }
 
-function fgColor(color: keyof typeof Colors, alpha?: number): string {
+function fgColor(color: ColorID, alpha?: number): string {
   if (alpha === undefined) {
     alpha = 1.0;
   }
@@ -85,12 +86,12 @@ function drawMap(display: ROT.Display) {
           display.draw(
             ix,
             iy,
-            Glyphs[MonsterArchetypes[mmons].glyph],
+            glyphChar(MonsterArchetypes[mmons].glyph),
             "#666",
             "#000"
           );
         } else if (mtile) {
-          display.draw(ix, iy, Glyphs[mtile.glyph], "#666", "#000");
+          display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
         }
       }
     }
@@ -112,7 +113,7 @@ function drawMap(display: ROT.Display) {
       display.draw(
         x - sx,
         y - sy,
-        Glyphs[Game.player.glyph],
+        glyphChar(Game.player.glyph),
         fgColor("player"),
         bg
       );
@@ -121,7 +122,7 @@ function drawMap(display: ROT.Display) {
       display.draw(
         x - sx,
         y - sy,
-        Glyphs[arch.glyph],
+        glyphChar(arch.glyph),
         fgColor(arch.color, 0.75),
         bgColor(
           monsterHasStatus(c.monster, "dying")
@@ -137,12 +138,12 @@ function drawMap(display: ROT.Display) {
       display.draw(
         x - sx,
         y - sy,
-        Glyphs[c.tile.glyph],
+        glyphChar(c.tile.glyph),
         fgColor(c.tile.blocks ? "terrain" : "floor", 0.75),
         bg
       );
     } else {
-      display.draw(x - sx, y - sy, Glyphs.rock, "#000", bg);
+      display.draw(x - sx, y - sy, glyphChar("rock"), "#000", bg);
     }
   }
 }
@@ -189,18 +190,18 @@ export function runGame() {
       tileSet: tileSet,
       tileColorize: true,
       tileMap: {
-        [Glyphs.player]: T(0, 0),
-        [Glyphs.worm]: T(1, 0),
-        [Glyphs.insect]: T(2, 0),
-        [Glyphs.wall]: T(3, 0),
-        [Glyphs.exit]: T(4, 0),
-        [Glyphs.floor]: T(5, 0),
-        [Glyphs.none]: T(6, 0),
-        [Glyphs.rodent]: T(0, 1),
-        [Glyphs.spider]: T(1, 1),
-        [Glyphs.ghost]: T(2, 1),
-        [Glyphs.eyeball]: T(3, 1),
-        [Glyphs["do-gooder"]]: T(4, 1),
+        [glyphChar("player")]: T(0, 0),
+        [glyphChar("worm")]: T(1, 0),
+        [glyphChar("insect")]: T(2, 0),
+        [glyphChar("wall")]: T(3, 0),
+        [glyphChar("exit")]: T(4, 0),
+        [glyphChar("floor")]: T(5, 0),
+        [glyphChar("none")]: T(6, 0),
+        [glyphChar("rodent")]: T(0, 1),
+        [glyphChar("spider")]: T(1, 1),
+        [glyphChar("ghost")]: T(2, 1),
+        [glyphChar("eyeball")]: T(3, 1),
+        [glyphChar("do-gooder")]: T(4, 1),
       },
       layout: "tile",
     };
@@ -215,6 +216,7 @@ export function runGame() {
       playerEssence: Game.player.essence,
       playerMaxEssence: maxEssence(),
       targets: findTargets(),
+      visible: monstersByDistance().map((n) => n[1]),
       mapDescription: getMapDescription(),
       onGround: getVictim(),
     };

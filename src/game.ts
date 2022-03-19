@@ -1,4 +1,4 @@
-import { GlyphID } from "./glyphs";
+import { GlyphID } from "./token";
 import { Tile, RememberedCell } from "./map";
 import { Monster } from "./monster";
 import type { Soul } from "./souls";
