@@ -3355,7 +3355,7 @@ void main() {
   // node_modules/rot-js/lib/index.js
   var Util = util_exports;
 
-  // src/colors.ts
+  // src/token.ts
   var Colors = {
     void: [0, 0, 0],
     target: [17, 51, 153],
@@ -3380,6 +3380,30 @@ void main() {
   function rgba(color, alpha) {
     let c2 = Colors[color];
     return `rgba(${c2[0]},${c2[1]},${c2[2]},${alpha})`;
+  }
+  var Glyphs = {
+    none: " ",
+    player: "@",
+    exit: ">",
+    wall: "#",
+    floor: ".",
+    rock: ".",
+    insect: "i",
+    worm: "w",
+    rodent: "r",
+    spider: "s",
+    ghost: "g",
+    eyeball: "e",
+    "do-gooder": "h"
+  };
+  function glyphChar(glyph) {
+    return Glyphs[glyph];
+  }
+  function tokenChar(token) {
+    return glyphChar(token[0]);
+  }
+  function tokenRGB(token) {
+    return rgb(token[1]);
   }
 
   // src/utils.ts
@@ -3409,7 +3433,7 @@ void main() {
     weakMana: { type: "damage", damage: asRoll(1, 4, 0) }
   };
   var EmptySoul = {
-    glyph: "none",
+    token: ["none", "void"],
     name: "-",
     essence: 0,
     effects: []
@@ -3673,19 +3697,19 @@ void main() {
   };
   var SoulFactories = {
     vermin: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       essence: a2.essence,
       name: a2.name,
       effects: []
     }),
     maxEssence: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       essence: a2.essence,
       name: a2.name,
       effects: [{ type: "stat bonus", stat: "max essence", power: a2.essence }]
     }),
     extraDamage: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       essence: a2.essence,
       name: a2.name,
       effects: [
@@ -3698,7 +3722,7 @@ void main() {
       ]
     }),
     slow: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       essence: a2.essence,
       name: a2.name,
       effects: [
@@ -3711,7 +3735,7 @@ void main() {
       ]
     }),
     sight: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       essence: a2.essence,
       name: a2.name,
       effects: [
@@ -3724,7 +3748,7 @@ void main() {
       ]
     }),
     speed: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       type: "ring",
       essence: a2.essence,
       name: a2.name,
@@ -3742,7 +3766,7 @@ void main() {
       ]
     }),
     soak: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       type: "ring",
       essence: a2.essence,
       name: a2.name,
@@ -3759,7 +3783,7 @@ void main() {
       ]
     }),
     megalich: (a2) => ({
-      glyph: a2.glyph,
+      token: [a2.glyph, a2.color],
       essence: 9999,
       name: "MEGA-LICH 3000!",
       effects: [
@@ -4249,25 +4273,29 @@ void main() {
     }
     return false;
   }
+  function monstersByDistance() {
+    let monstersByDistance2 = [];
+    for (let [x2, y2] of seenXYs) {
+      if (x2 == Game.player.x && y2 == Game.player.y) {
+        continue;
+      }
+      let c2 = contentsAt(x2, y2);
+      if (c2.monster) {
+        let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x2), 2) + Math.pow(Math.abs(Game.player.y - y2), 2));
+        monstersByDistance2.push([dist, c2]);
+      }
+    }
+    monstersByDistance2.sort(([a2, _v], [b2, _v2]) => a2 - b2);
+    return monstersByDistance2;
+  }
   function findTargets() {
     let targets = [];
     let targetEffect = getWand().targeting;
     switch (targetEffect.targeting) {
       case "seek closest":
-        let monstersByDistance = [];
-        for (let [x2, y2] of seenXYs) {
-          if (x2 == Game.player.x && y2 == Game.player.y) {
-            continue;
-          }
-          let c2 = contentsAt(x2, y2);
-          if (c2.monster) {
-            let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x2), 2) + Math.pow(Math.abs(Game.player.y - y2), 2));
-            monstersByDistance.push([dist, c2]);
-          }
-        }
-        monstersByDistance.sort(([a2, _v], [b2, _v2]) => a2 - b2);
-        for (let i2 = 0; i2 < targetEffect.count && i2 < monstersByDistance.length; i2++) {
-          targets.push(monstersByDistance[i2][1]);
+        let monsters = monstersByDistance();
+        for (let i2 = 0; i2 < targetEffect.count && i2 < monsters.length; i2++) {
+          targets.push(monsters[i2][1]);
         }
     }
     return targets;
@@ -4424,23 +4452,6 @@ void main() {
     return contentsAt(Game.player.x, Game.player.y);
   }
 
-  // src/glyphs.ts
-  var Glyphs = {
-    none: " ",
-    player: "@",
-    exit: ">",
-    wall: "#",
-    floor: ".",
-    rock: ".",
-    insect: "i",
-    worm: "w",
-    rodent: "r",
-    spider: "s",
-    ghost: "g",
-    eyeball: "e",
-    "do-gooder": "h"
-  };
-
   // src/wizard.ts
   function wizard() {
     offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
@@ -4474,7 +4485,7 @@ void main() {
   }
   function wizardSoul() {
     let byLetter = Object.keys(MonsterArchetypes).reduce((m2, name) => {
-      let k2 = Glyphs[MonsterArchetypes[name].glyph];
+      let k2 = glyphChar(MonsterArchetypes[name].glyph);
       let l2 = m2.get(k2);
       if (l2) {
         l2.push(name);
@@ -5269,11 +5280,17 @@ void main() {
       label: "Choose",
       element: ChoiceBox,
       ui: props.ui
-    }) : /* @__PURE__ */ v(SidebarSection, {
+    }) : /* @__PURE__ */ v(d, null, props.ui.state.targets.length > 0 ? /* @__PURE__ */ v(SidebarSection, {
       label: "Targets",
       element: TargetsView,
-      targets: props.ui.state.targets
-    }));
+      targets: props.ui.state.targets,
+      brief: false
+    }) : null, props.ui.state.visible.length > 0 ? /* @__PURE__ */ v(SidebarSection, {
+      label: "In View",
+      element: TargetsView,
+      targets: props.ui.state.visible,
+      brief: true
+    }) : null));
   }
   function SidebarSection(props) {
     return /* @__PURE__ */ v("div", {
@@ -5311,11 +5328,11 @@ void main() {
     let desc = "";
     if (here.monster) {
       let soul = getSoul(here.monster);
-      glyph = Glyphs[soul.glyph];
+      glyph = tokenChar(soul.token);
       what = soul.name;
       desc = describeSoulEffects(soul);
     } else if (here.tile) {
-      glyph = Glyphs[here.tile.glyph];
+      glyph = glyphChar(here.tile.glyph);
       what = here.tile.glyph;
       if (here.exitDanger) {
         desc = "Danger: " + here.exitDanger;
@@ -5345,51 +5362,83 @@ void main() {
     return /* @__PURE__ */ v(d, {
       key: props.soul.name
     }, /* @__PURE__ */ v("div", {
-      class: "soul-glyph"
-    }, Glyphs[props.soul.glyph]), /* @__PURE__ */ v("div", {
+      class: "soul-glyph",
+      style: "color: " + tokenRGB(props.soul.token)
+    }, tokenChar(props.soul.token)), /* @__PURE__ */ v("div", {
       class: "soul-name"
     }, props.soul.name), /* @__PURE__ */ v("div", {
       class: "soul-effect"
     }, describeSoulEffects(props.soul)));
   }
   function TargetsView(props) {
+    let items = props.targets.map(targetToItem);
+    let groups = {};
+    for (let i2 of items) {
+      if (i2) {
+        if (!groups[i2.name]) {
+          groups[i2.name] = [i2];
+        } else {
+          groups[i2.name].push(i2);
+        }
+      }
+    }
+    let grouped = Object.values(groups).map((is) => __spreadProps(__spreadValues({}, is[0]), {
+      name: is[0].name + (is.length > 1 ? " x" + is.length : "")
+    }));
     return /* @__PURE__ */ v("div", {
       id: "targets"
-    }, props.targets.map((c2) => {
-      if (c2.monster) {
-        let arch = MonsterArchetypes[c2.monster.archetype];
-        let glyph = Glyphs[arch.glyph];
-        let name = arch.name;
-        let statuses = [];
-        if (monsterHasStatus(c2.monster, "dying")) {
-          statuses.push("dying");
+    }, grouped.map((i2) => /* @__PURE__ */ v(TargetItem, {
+      item: i2,
+      brief: props.brief
+    })));
+  }
+  function targetToItem(c2) {
+    if (c2.monster) {
+      let arch = MonsterArchetypes[c2.monster.archetype];
+      let glyph = glyphChar(arch.glyph);
+      let color = rgb(arch.color);
+      let name = arch.name;
+      let statuses = [];
+      if (monsterHasStatus(c2.monster, "dying")) {
+        statuses.push("dying");
+      } else {
+        if (arch.soul == "vermin") {
+          statuses.push("vermin");
+        } else if (c2.monster.hp === c2.monster.maxHP) {
+          statuses.push("unharmed");
+        } else if (c2.monster.hp < c2.monster.maxHP / 2) {
+          statuses.push("heavily wounded");
         } else {
-          if (arch.soul == "vermin") {
-            statuses.push("vermin");
-          } else if (c2.monster.hp === c2.monster.maxHP) {
-            statuses.push("unharmed");
-          } else if (c2.monster.hp < c2.monster.maxHP / 2) {
-            statuses.push("heavily wounded");
-          } else {
-            statuses.push("slightly wounded");
-          }
-          c2.monster.statuses.forEach((s2) => {
-            statuses.push(s2.type);
-          });
+          statuses.push("slightly wounded");
         }
-        name += " (" + statuses.join(", ") + ")";
-        let desc = arch.description;
-        return /* @__PURE__ */ v("div", {
-          class: "target-entry"
-        }, /* @__PURE__ */ v("div", {
-          class: "target-glyph soul-glyph"
-        }, glyph), /* @__PURE__ */ v("div", {
-          class: "target-name soul-name"
-        }, name), /* @__PURE__ */ v("div", {
-          class: "target-thoughts"
-        }, desc));
+        c2.monster.statuses.forEach((s2) => {
+          statuses.push(s2.type);
+        });
       }
-    }));
+      name += " (" + statuses.join(", ") + ")";
+      let thoughts = arch.description;
+      return {
+        name,
+        glyph,
+        color,
+        thoughts
+      };
+    } else {
+      return null;
+    }
+  }
+  function TargetItem(props) {
+    let t2 = props.item;
+    return t2 ? /* @__PURE__ */ v("div", {
+      class: "target-entry"
+    }, /* @__PURE__ */ v("div", {
+      class: "target-glyph soul-glyph",
+      style: "color: " + t2.color
+    }, t2.glyph), /* @__PURE__ */ v("div", {
+      class: "target-name soul-name"
+    }, t2.name), props.brief ? null : /* @__PURE__ */ v("div", {
+      class: "target-thoughts"
+    }, t2.thoughts)) : null;
   }
   function MessageLog(props) {
     let entries = props.messages.map((msgs, i2) => {
@@ -5420,6 +5469,7 @@ void main() {
       playerEssence: 0,
       playerMaxEssence: 0,
       targets: [],
+      visible: [],
       mapDescription: "",
       onGround: null
     },
@@ -5458,9 +5508,9 @@ void main() {
         if (mem) {
           let [mtile, mmons] = mem;
           if (mmons) {
-            display.draw(ix, iy, Glyphs[MonsterArchetypes[mmons].glyph], "#666", "#000");
+            display.draw(ix, iy, glyphChar(MonsterArchetypes[mmons].glyph), "#666", "#000");
           } else if (mtile) {
-            display.draw(ix, iy, Glyphs[mtile.glyph], "#666", "#000");
+            display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
           }
         }
       }
@@ -5478,14 +5528,14 @@ void main() {
       let bg = isTarget ? bgColor("target") : bgColor("void");
       Game.map.memory[x2 + y2 * Game.map.w] = c2.memory;
       if (c2.player) {
-        display.draw(x2 - sx, y2 - sy, Glyphs[Game.player.glyph], fgColor("player"), bg);
+        display.draw(x2 - sx, y2 - sy, glyphChar(Game.player.glyph), fgColor("player"), bg);
       } else if (c2.monster) {
         let arch = MonsterArchetypes[c2.monster.archetype];
-        display.draw(x2 - sx, y2 - sy, Glyphs[arch.glyph], fgColor(arch.color, 0.75), bgColor(monsterHasStatus(c2.monster, "dying") ? "dying" : isTarget ? "target" : weakMonster(c2.monster) ? "weak" : "critterBG"));
+        display.draw(x2 - sx, y2 - sy, glyphChar(arch.glyph), fgColor(arch.color, 0.75), bgColor(monsterHasStatus(c2.monster, "dying") ? "dying" : isTarget ? "target" : weakMonster(c2.monster) ? "weak" : "critterBG"));
       } else if (c2.tile) {
-        display.draw(x2 - sx, y2 - sy, Glyphs[c2.tile.glyph], fgColor(c2.tile.blocks ? "terrain" : "floor", 0.75), bg);
+        display.draw(x2 - sx, y2 - sy, glyphChar(c2.tile.glyph), fgColor(c2.tile.blocks ? "terrain" : "floor", 0.75), bg);
       } else {
-        display.draw(x2 - sx, y2 - sy, Glyphs.rock, "#000", bg);
+        display.draw(x2 - sx, y2 - sy, glyphChar("rock"), "#000", bg);
       }
     }
   }
@@ -5517,18 +5567,18 @@ void main() {
         tileSet,
         tileColorize: true,
         tileMap: {
-          [Glyphs.player]: T2(0, 0),
-          [Glyphs.worm]: T2(1, 0),
-          [Glyphs.insect]: T2(2, 0),
-          [Glyphs.wall]: T2(3, 0),
-          [Glyphs.exit]: T2(4, 0),
-          [Glyphs.floor]: T2(5, 0),
-          [Glyphs.none]: T2(6, 0),
-          [Glyphs.rodent]: T2(0, 1),
-          [Glyphs.spider]: T2(1, 1),
-          [Glyphs.ghost]: T2(2, 1),
-          [Glyphs.eyeball]: T2(3, 1),
-          [Glyphs["do-gooder"]]: T2(4, 1)
+          [glyphChar("player")]: T2(0, 0),
+          [glyphChar("worm")]: T2(1, 0),
+          [glyphChar("insect")]: T2(2, 0),
+          [glyphChar("wall")]: T2(3, 0),
+          [glyphChar("exit")]: T2(4, 0),
+          [glyphChar("floor")]: T2(5, 0),
+          [glyphChar("none")]: T2(6, 0),
+          [glyphChar("rodent")]: T2(0, 1),
+          [glyphChar("spider")]: T2(1, 1),
+          [glyphChar("ghost")]: T2(2, 1),
+          [glyphChar("eyeball")]: T2(3, 1),
+          [glyphChar("do-gooder")]: T2(4, 1)
         },
         layout: "tile"
       });
@@ -5541,6 +5591,7 @@ void main() {
         playerEssence: Game.player.essence,
         playerMaxEssence: maxEssence(),
         targets: findTargets(),
+        visible: monstersByDistance().map((n2) => n2[1]),
         mapDescription: getMapDescription(),
         onGround: getVictim()
       };
