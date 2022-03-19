@@ -48,8 +48,13 @@ export type SoakDamageEffect = {
   power: number;
 };
 
+export type DangerSenseEffect = {
+  type: "danger sense";
+  power: number;
+};
+
 export type RingEffect = SoakDamageEffect;
-export type GenericEffect = StatBonusEffect;
+export type GenericEffect = StatBonusEffect | DangerSenseEffect;
 export type SoulEffect = RingEffect | WandEffect | GenericEffect;
 
 // TODO:
@@ -93,6 +98,8 @@ function describeSoulEffect(e: SoulEffect) {
       return e.projectile;
     case "targeting":
       return e.targeting;
+    case "danger sense":
+      return "danger sense " + e.power;
   }
 }
 

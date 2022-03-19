@@ -76,74 +76,75 @@ function drawMap(display: ROT.Display) {
   if (sy < 0) {
     sy = 0;
   }
-  // Draw remembered tiles
+
+  let targets = findTargets();
+
   for (let ix = 0; ix < UI.viewport.width; ix += 1) {
     for (let iy = 0; iy < UI.viewport.height; iy += 1) {
-      let mem = Game.map.memory[sx + ix + (sy + iy) * Game.map.w];
-      if (mem) {
-        let [mtile, mmons] = mem;
-        if (mmons) {
+      let x = sx + ix;
+      let y = sy + iy;
+      let c = contentsAt(x, y);
+
+      if (seenXYs.find(([ex, ey]) => x == ex && y == ey)) {
+        let isTarget = !!targets.find((c) => c.x === x && c.y === y);
+        let bg = isTarget ? bgColor("target") : bgColor("void");
+        Game.map.memory[x + y * Game.map.w] = c.memory;
+        if (c.player) {
           display.draw(
-            ix,
-            iy,
-            glyphChar(MonsterArchetypes[mmons].glyph),
-            "#666",
-            "#000"
+            x - sx,
+            y - sy,
+            glyphChar(Game.player.glyph),
+            fgColor("player"),
+            bg
           );
-        } else if (mtile) {
-          display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
+        } else if (c.monster) {
+          let arch = MonsterArchetypes[c.monster.archetype];
+          display.draw(
+            x - sx,
+            y - sy,
+            glyphChar(arch.glyph),
+            fgColor(arch.color, 0.75),
+            bgColor(
+              monsterHasStatus(c.monster, "dying")
+                ? "dying"
+                : isTarget
+                ? "target"
+                : weakMonster(c.monster)
+                ? "weak"
+                : "critterBG"
+            )
+          );
+        } else if (c.tile) {
+          display.draw(
+            x - sx,
+            y - sy,
+            glyphChar(c.tile.glyph),
+            fgColor(c.tile.blocks ? "terrain" : "floor", 0.75),
+            bg
+          );
+        } else {
+          display.draw(x - sx, y - sy, glyphChar("rock"), "#000", bg);
+        }
+      } else if (c.sensedDanger && c.monster) {
+        let arch = MonsterArchetypes[c.monster.archetype];
+        display.draw(ix, iy, "?", "#000", fgColor(arch.color));
+      } else {
+        let mem = Game.map.memory[x + y * Game.map.w];
+        if (mem) {
+          let [mtile, mmons] = mem;
+          if (mmons) {
+            display.draw(
+              ix,
+              iy,
+              glyphChar(MonsterArchetypes[mmons].glyph),
+              "#666",
+              "#000"
+            );
+          } else if (mtile) {
+            display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
+          }
         }
       }
-    }
-  }
-  // Draw seen tiles
-  let targets = findTargets();
-  for (let [x, y] of seenXYs) {
-    if (x < sx) {
-      return;
-    }
-    if (y < sy) {
-      return;
-    }
-    let c = contentsAt(x, y);
-    let isTarget = !!targets.find((c) => c.x === x && c.y === y);
-    let bg = isTarget ? bgColor("target") : bgColor("void");
-    Game.map.memory[x + y * Game.map.w] = c.memory;
-    if (c.player) {
-      display.draw(
-        x - sx,
-        y - sy,
-        glyphChar(Game.player.glyph),
-        fgColor("player"),
-        bg
-      );
-    } else if (c.monster) {
-      let arch = MonsterArchetypes[c.monster.archetype];
-      display.draw(
-        x - sx,
-        y - sy,
-        glyphChar(arch.glyph),
-        fgColor(arch.color, 0.75),
-        bgColor(
-          monsterHasStatus(c.monster, "dying")
-            ? "dying"
-            : isTarget
-            ? "target"
-            : weakMonster(c.monster)
-            ? "weak"
-            : "critterBG"
-        )
-      );
-    } else if (c.tile) {
-      display.draw(
-        x - sx,
-        y - sy,
-        glyphChar(c.tile.glyph),
-        fgColor(c.tile.blocks ? "terrain" : "floor", 0.75),
-        bg
-      );
-    } else {
-      display.draw(x - sx, y - sy, glyphChar("rock"), "#000", bg);
     }
   }
 }

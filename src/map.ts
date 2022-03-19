@@ -1,5 +1,5 @@
 import * as ROT from "rot-js";
-import { getPlayerVision, getWand } from "./commands";
+import { getPlayerVision, getSoulEffect, getWand } from "./commands";
 import { Game } from "./game";
 import { GlyphID } from "./token";
 import {
@@ -8,6 +8,7 @@ import {
   Monster,
   weakMonster,
   MonsterFormations,
+  MonsterArchetypes,
 } from "./monster";
 import { msg } from "./msg";
 import { offerChoice, startNewGame } from "./ui";
@@ -295,6 +296,7 @@ export type XYContents = {
   blocked: boolean;
   memory: RememberedCell;
   exitDanger: number | null;
+  sensedDanger: number | null;
 };
 
 export function tileAt(x: number, y: number): Tile | null {
@@ -315,17 +317,29 @@ export function contentsAt(x: number, y: number): XYContents {
   let player = playerAt(x, y);
   let archetype = monster?.archetype || null;
   let blocked = player;
+  let sensedDanger = null;
+
   if (!tile || tile.blocks) {
     blocked = true;
   }
   if (monster) {
     blocked = true;
+    let esp = getSoulEffect("danger sense");
+    if (esp) {
+      let dx = Math.abs(Game.player.x - x);
+      let dy = Math.abs(Game.player.y - y);
+      if (dx < esp.power || dy < esp.power) {
+        // todo
+        sensedDanger = MonsterArchetypes[archetype!].essence;
+      }
+    }
   }
   let exitDanger = null;
   if (tile?.glyph === "exit") {
     let exit = Game.map.exits.find(([ex, ey, _]) => ex === x && ey === y);
     exitDanger = exit?.[2] || null;
   }
+
   return {
     x,
     y,
@@ -335,6 +349,7 @@ export function contentsAt(x: number, y: number): XYContents {
     blocked,
     memory: [tile, archetype],
     exitDanger,
+    sensedDanger,
   };
 }
 

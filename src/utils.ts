@@ -33,3 +33,7 @@ export function doRoll(roll: Roll): number {
 export function describeRoll(roll: Roll): string {
   return roll.n + "d" + roll.sides + "+" + roll.mod;
 }
+
+export function roll100(under: number): boolean {
+  return ROT.RNG.getUniformInt(1, 100) <= under;
+}

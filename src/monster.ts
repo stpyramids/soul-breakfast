@@ -13,7 +13,7 @@ import {
 } from "./map";
 import { msg } from "./msg";
 import { EmptySoul, Soul, isEmptySoul } from "./souls";
-import { keysOf, R, doRoll, Roll } from "./utils";
+import { keysOf, R, doRoll, Roll, roll100 } from "./utils";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
 const verminHP: Roll = { n: 1, sides: 1, mod: 0 };
@@ -268,11 +268,16 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
     name: a.name,
     effects: [
       { type: "stat bonus", stat: "max essence", power: a.essence },
-      {
-        type: "stat bonus",
-        stat: "sight",
-        power: Math.floor(a.essence / 2) + 1,
-      },
+      roll100(20 + a.essence)
+        ? {
+            type: "danger sense",
+            power: Math.floor(a.essence / 4) + 1,
+          }
+        : {
+            type: "stat bonus",
+            stat: "sight",
+            power: Math.floor(a.essence / 2) + 1,
+          },
     ],
   }),
   speed: (a) => ({
@@ -331,6 +336,10 @@ export const SoulFactories: { [id: string]: SoulFactory } = {
         power: 10.0,
       },
       { type: "damage", damage: R(10, 100, 50) },
+      {
+        type: "danger sense",
+        power: 20,
+      },
     ],
   }),
 };

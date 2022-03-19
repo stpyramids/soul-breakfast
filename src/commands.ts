@@ -11,11 +11,9 @@ import {
 import {
   MonsterArchetypes,
   DeathType,
-  DeathMessages,
   getSoul,
   weakMonster,
   killMonster,
-  makeSoul,
   inflictStatus,
 } from "./monster";
 import { msg } from "./msg";
@@ -29,6 +27,7 @@ import {
   EmptySoul,
   isEmptySoul,
   Soul,
+  SoulEffect,
 } from "./souls";
 import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
@@ -48,6 +47,20 @@ function gainEssence(amt: number) {
 
 function loseEssence(amt: number) {
   Game.player.essence -= amt;
+}
+
+export function getSoulEffect<
+  E extends SoulEffect["type"],
+  T extends SoulEffect & { type: E }
+>(type: E): T | null {
+  for (let soul of Game.player.soulSlots.generic) {
+    for (let effect of soul.effects) {
+      if (effect.type === type) {
+        return effect as T;
+      }
+    }
+  }
+  return null;
 }
 
 export function getWand(): {
