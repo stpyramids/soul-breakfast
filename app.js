@@ -3425,6 +3425,9 @@ void main() {
   function describeRoll(roll) {
     return roll.n + "d" + roll.sides + "+" + roll.mod;
   }
+  function roll100(under) {
+    return rng_default.getUniformInt(1, 100) <= under;
+  }
 
   // src/souls.ts
   var WandEffects = {
@@ -3459,6 +3462,8 @@ void main() {
         return e2.projectile;
       case "targeting":
         return e2.targeting;
+      case "danger sense":
+        return "danger sense " + e2.power;
     }
   }
   function describeSoulEffects(s2) {
@@ -3740,7 +3745,10 @@ void main() {
       name: a2.name,
       effects: [
         { type: "stat bonus", stat: "max essence", power: a2.essence },
-        {
+        roll100(20 + a2.essence) ? {
+          type: "danger sense",
+          power: Math.floor(a2.essence / 4) + 1
+        } : {
           type: "stat bonus",
           stat: "sight",
           power: Math.floor(a2.essence / 2) + 1
@@ -3801,7 +3809,11 @@ void main() {
           stat: "speed",
           power: 10
         },
-        { type: "damage", damage: R(10, 100, 50) }
+        { type: "damage", damage: R(10, 100, 50) },
+        {
+          type: "danger sense",
+          power: 20
+        }
       ]
     })
   };
@@ -4426,11 +4438,20 @@ void main() {
     let player = playerAt(x2, y2);
     let archetype = (monster == null ? void 0 : monster.archetype) || null;
     let blocked = player;
+    let sensedDanger = null;
     if (!tile || tile.blocks) {
       blocked = true;
     }
     if (monster) {
       blocked = true;
+      let esp = getSoulEffect("danger sense");
+      if (esp) {
+        let dx = Math.abs(Game.player.x - x2);
+        let dy = Math.abs(Game.player.y - y2);
+        if (dx < esp.power || dy < esp.power) {
+          sensedDanger = MonsterArchetypes[archetype].essence;
+        }
+      }
     }
     let exitDanger = null;
     if ((tile == null ? void 0 : tile.glyph) === "exit") {
@@ -4445,7 +4466,8 @@ void main() {
       player,
       blocked,
       memory: [tile, archetype],
-      exitDanger
+      exitDanger,
+      sensedDanger
     };
   }
   function getVictim() {
@@ -4534,6 +4556,16 @@ void main() {
   }
   function loseEssence(amt) {
     Game.player.essence -= amt;
+  }
+  function getSoulEffect(type) {
+    for (let soul of Game.player.soulSlots.generic) {
+      for (let effect of soul.effects) {
+        if (effect.type === type) {
+          return effect;
+        }
+      }
+    }
+    return null;
   }
   function getWand() {
     let targeting = WandEffects.seek_closest;
@@ -5502,40 +5534,40 @@ void main() {
     if (sy < 0) {
       sy = 0;
     }
+    let targets = findTargets();
     for (let ix = 0; ix < UI.viewport.width; ix += 1) {
       for (let iy = 0; iy < UI.viewport.height; iy += 1) {
-        let mem = Game.map.memory[sx + ix + (sy + iy) * Game.map.w];
-        if (mem) {
-          let [mtile, mmons] = mem;
-          if (mmons) {
-            display.draw(ix, iy, glyphChar(MonsterArchetypes[mmons].glyph), "#666", "#000");
-          } else if (mtile) {
-            display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
+        let x2 = sx + ix;
+        let y2 = sy + iy;
+        let c2 = contentsAt(x2, y2);
+        if (seenXYs.find(([ex, ey]) => x2 == ex && y2 == ey)) {
+          let isTarget = !!targets.find((c3) => c3.x === x2 && c3.y === y2);
+          let bg = isTarget ? bgColor("target") : bgColor("void");
+          Game.map.memory[x2 + y2 * Game.map.w] = c2.memory;
+          if (c2.player) {
+            display.draw(x2 - sx, y2 - sy, glyphChar(Game.player.glyph), fgColor("player"), bg);
+          } else if (c2.monster) {
+            let arch = MonsterArchetypes[c2.monster.archetype];
+            display.draw(x2 - sx, y2 - sy, glyphChar(arch.glyph), fgColor(arch.color, 0.75), bgColor(monsterHasStatus(c2.monster, "dying") ? "dying" : isTarget ? "target" : weakMonster(c2.monster) ? "weak" : "critterBG"));
+          } else if (c2.tile) {
+            display.draw(x2 - sx, y2 - sy, glyphChar(c2.tile.glyph), fgColor(c2.tile.blocks ? "terrain" : "floor", 0.75), bg);
+          } else {
+            display.draw(x2 - sx, y2 - sy, glyphChar("rock"), "#000", bg);
+          }
+        } else if (c2.sensedDanger && c2.monster) {
+          let arch = MonsterArchetypes[c2.monster.archetype];
+          display.draw(ix, iy, "?", "#000", fgColor(arch.color));
+        } else {
+          let mem = Game.map.memory[x2 + y2 * Game.map.w];
+          if (mem) {
+            let [mtile, mmons] = mem;
+            if (mmons) {
+              display.draw(ix, iy, glyphChar(MonsterArchetypes[mmons].glyph), "#666", "#000");
+            } else if (mtile) {
+              display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
+            }
           }
         }
-      }
-    }
-    let targets = findTargets();
-    for (let [x2, y2] of seenXYs) {
-      if (x2 < sx) {
-        return;
-      }
-      if (y2 < sy) {
-        return;
-      }
-      let c2 = contentsAt(x2, y2);
-      let isTarget = !!targets.find((c3) => c3.x === x2 && c3.y === y2);
-      let bg = isTarget ? bgColor("target") : bgColor("void");
-      Game.map.memory[x2 + y2 * Game.map.w] = c2.memory;
-      if (c2.player) {
-        display.draw(x2 - sx, y2 - sy, glyphChar(Game.player.glyph), fgColor("player"), bg);
-      } else if (c2.monster) {
-        let arch = MonsterArchetypes[c2.monster.archetype];
-        display.draw(x2 - sx, y2 - sy, glyphChar(arch.glyph), fgColor(arch.color, 0.75), bgColor(monsterHasStatus(c2.monster, "dying") ? "dying" : isTarget ? "target" : weakMonster(c2.monster) ? "weak" : "critterBG"));
-      } else if (c2.tile) {
-        display.draw(x2 - sx, y2 - sy, glyphChar(c2.tile.glyph), fgColor(c2.tile.blocks ? "terrain" : "floor", 0.75), bg);
-      } else {
-        display.draw(x2 - sx, y2 - sy, glyphChar("rock"), "#000", bg);
       }
     }
   }
