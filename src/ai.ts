@@ -102,8 +102,10 @@ export const AI: { [id: string]: AIFunc } = {
   prankster: (c) =>
     tryAI(
       c,
-      maybeDawdle(25, "%The giggles!"),
-      maybeBlink(25),
+      maybeDawdle(20, "%The giggles!"),
+      maybeDawdle(20, "%The chortles!"),
+      maybeBlink(20),
+      maybeDawdle(20, "%The makes a rude gesture!"),
       doAttack,
       AI.wander,
       AI.passive
