@@ -42,6 +42,7 @@ const Glyphs = {
   ghost: "g",
   eyeball: "e",
   "do-gooder": "h",
+  fairy: "f",
 };
 
 export type GlyphID = keyof typeof Glyphs;

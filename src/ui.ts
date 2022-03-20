@@ -1,7 +1,7 @@
 import * as ROT from "rot-js";
 
 import { ColorID, glyphChar, rgb, rgba } from "./token";
-import { Commands, maxEssence } from "./commands";
+import { Commands } from "./commands";
 import { Game, resetGame } from "./game";
 import {
   contentsAt,
@@ -18,6 +18,7 @@ import { MonsterArchetypes, weakMonster, monsterHasStatus } from "./monster";
 import { msg } from "./msg";
 import { tick } from "./tick";
 import { renderControls } from "./ui/controls";
+import { maxEssence } from "./player";
 
 type Choice = {
   prompt: string;
@@ -213,6 +214,7 @@ export function runGame() {
 
   // Set up UI rendering
   UI.uiCallback = () => {
+    console.log("Drawing UI");
     UI.state = {
       playerEssence: Game.player.essence,
       playerMaxEssence: maxEssence(),
@@ -255,6 +257,7 @@ function handleInput() {
         UI.activeChoice = UI.nextChoice;
         UI.nextChoice = null;
       }
+      recomputeFOV();
       UI.uiCallback();
     } else {
       let alias = KeyAliases[key];

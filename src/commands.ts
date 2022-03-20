@@ -18,6 +18,15 @@ import {
 } from "./monster";
 import { msg } from "./msg";
 import {
+  endAbilityCooldowns,
+  gainEssence,
+  getPlayerEffect,
+  getSoulEffects,
+  getWand,
+  invokeAbility,
+  loseEssence,
+} from "./player";
+import {
   TargetingEffect,
   ProjectileEffect,
   DamageEffect,
@@ -28,113 +37,11 @@ import {
   isEmptySoul,
   Soul,
   SoulEffect,
+  describeSoulEffect,
 } from "./souls";
 import { offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
 import { wizard } from "./wizard";
-
-export function maxEssence(): number {
-  return Game.player.maxEssence + getStatBonus("max essence");
-}
-
-function gainEssence(amt: number) {
-  Game.player.essence += amt;
-  if (Game.player.essence > maxEssence()) {
-    Game.player.essence = maxEssence();
-    msg.essence("Some essence escapes you and dissipates.");
-  }
-}
-
-function loseEssence(amt: number) {
-  Game.player.essence -= amt;
-}
-
-export function getSoulEffect<
-  E extends SoulEffect["type"],
-  T extends SoulEffect & { type: E }
->(type: E): T | null {
-  for (let soul of Game.player.soulSlots.generic) {
-    for (let effect of soul.effects) {
-      if (effect.type === type) {
-        return effect as T;
-      }
-    }
-  }
-  return null;
-}
-
-export function getWand(): {
-  targeting: TargetingEffect;
-  projectile: ProjectileEffect;
-  damage: DamageEffect;
-  status: StatusEffect | null;
-  cost: number;
-} {
-  let targeting = WandEffects.seek_closest as TargetingEffect;
-  let projectile = WandEffects.bolt as ProjectileEffect;
-  let damage = WandEffects.weakMana as DamageEffect;
-  let status = null as StatusEffect | null;
-  let cost = 1;
-
-  for (let soul of Game.player.soulSlots.generic) {
-    for (let effect of soul.effects) {
-      switch (effect.type) {
-        case "targeting":
-          targeting = effect;
-          break;
-        case "projectile":
-          projectile = effect;
-          break;
-        case "damage":
-          damage = effect;
-          break;
-        case "status":
-          status = effect;
-          break;
-      }
-    }
-  }
-
-  return {
-    targeting,
-    projectile,
-    damage,
-    status,
-    cost,
-  };
-}
-
-function getStatBonus(stat: StatBonus): number {
-  let base = 0;
-  for (let soul of Game.player.soulSlots.generic) {
-    for (let effect of soul.effects) {
-      if (effect.type == "stat bonus" && effect.stat == stat) {
-        base += effect.power;
-      }
-    }
-  }
-  return base;
-}
-
-export function getPlayerVision(): number {
-  return 5 + getStatBonus("sight");
-}
-
-export function getPlayerSpeed(): number {
-  return 1.0 + getStatBonus("speed");
-}
-
-export function applySoak(dmg: number): number {
-  let soak = 0;
-  for (let soul of Game.player.soulSlots.generic) {
-    for (let effect of soul.effects) {
-      if (effect.type == "soak damage") {
-        soak += effect.power;
-      }
-    }
-  }
-  return dmg - soak;
-}
 
 function tryReleaseSoul(prompt?: string, onRelease?: () => void): boolean {
   prompt = prompt ? prompt : "Release which soul?";
@@ -370,7 +277,7 @@ export const Commands: { [key: string]: () => boolean } = {
     if (targets.length) {
       for (let target of targets) {
         // TODO: projectiles
-        msg.combat("The bolt hits %the!", D(target)); // todo
+        msg.combat("The %s hits %the!", wand.projectile.projectile, D(target)); // todo
         damageMonsterAt(target, wand.damage, wand.status);
       }
     } else {
@@ -380,6 +287,32 @@ export const Commands: { [key: string]: () => boolean } = {
     Game.player.essence -= wand.cost;
     Game.player.energy -= 1.0;
     return true;
+  },
+  a: () => {
+    let abilities = getSoulEffects("ability");
+    if (abilities.length > 0) {
+      let opts = new Map(
+        abilities.map((a, i) => [(i + 1).toString(), describeSoulEffect(a)])
+      );
+      offerChoice("Use which ability?", opts, {
+        onChoose: (key) => {
+          let i = parseInt(key);
+          if (i > 0) {
+            let ability = abilities[i - 1];
+            if (ability) {
+              invokeAbility(ability.ability, ability.power);
+              Game.player.energy -= 1.0;
+              return true;
+            }
+          }
+          return true;
+        },
+      });
+      return true;
+    } else {
+      msg.think("I have regained none of these powers.");
+      return false;
+    }
   },
   // Quit and reset
   Q: () => {

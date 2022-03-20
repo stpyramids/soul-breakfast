@@ -41,3 +41,7 @@ export function describeRoll(roll: Roll): string {
 export function roll100(under: number): boolean {
   return ROT.RNG.getUniformInt(1, 100) <= under;
 }
+
+export function randInt(low: number, high: number): number {
+  return ROT.RNG.getUniformInt(low, high);
+}

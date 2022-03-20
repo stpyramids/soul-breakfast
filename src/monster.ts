@@ -2,19 +2,14 @@
 
 import * as ROT from "rot-js";
 import { ColorID, GlyphID, Token } from "./token";
-import { applySoak, D } from "./commands";
+import { D } from "./commands";
 import { Game } from "./game";
-import {
-  XYContents,
-  contentsAt,
-  moveMonster,
-  playerCanSee,
-  newMap,
-} from "./map";
+import { playerCanSee, newMap } from "./map";
 import { msg } from "./msg";
 import { EmptySoul, Soul, isEmptySoul, SoulEffect } from "./souls";
 import { keysOf, R, doRoll, Roll, roll100, Rnd } from "./utils";
 import { Attack, AI } from "./ai";
+import { doDamage } from "./player";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
 const verminHP: Roll = { n: 1, sides: 1, mod: 0 };
@@ -36,55 +31,6 @@ export function getDamageDescription(dmg: number) {
     }
   }
   return DamageDescriptions[0][1];
-}
-export function doDamage(dmg: number) {
-  dmg = applySoak(dmg);
-  if (dmg <= 0) {
-    msg.combat("You absorb the attack!");
-    return;
-  }
-  msg.combat("%s (%s)%s", getDamageDescription(dmg), dmg, dmg > 8 ? "!" : ".");
-  let wasZero = Game.player.essence === 0;
-  Game.player.essence -= dmg;
-  if (Game.player.essence < 0) {
-    let extra = Math.abs(Game.player.essence);
-    Game.player.essence = 0;
-    let soulChecked = false;
-    if (wasZero) {
-      for (let slotGroup of keysOf(Game.player.soulSlots)) {
-        let slots = Game.player.soulSlots[slotGroup];
-        for (let i = 0; i < slots.length; i++) {
-          if (!isEmptySoul(slots[i])) {
-            soulChecked = true;
-            let roll = R(1, slots[i].essence, 1);
-            if (doRoll(roll) < extra) {
-              msg.angry("No!");
-              msg.essence("The %s soul breaks free!", slots[i].name);
-              slots[i] = EmptySoul;
-              break;
-            }
-          }
-        }
-      }
-      if (!soulChecked) {
-        let blowback = doRoll(R(1, extra, -3));
-        if (blowback > 0) {
-          msg.angry("I cannot hold together! I must flee!");
-          let newDanger = Game.map.danger - ROT.RNG.getUniformInt(1, blowback);
-          if (newDanger < 1) {
-            newDanger = 1;
-          }
-          newMap({
-            danger: newDanger,
-          });
-        }
-      }
-    } else {
-      msg.tutorial(
-        "Watch out! Taking damage at zero essence can free souls you have claimed or blow you out of the level."
-      );
-    }
-  }
 }
 
 export function meleeAttack(verb: string, damage: Roll): Attack {
@@ -227,6 +173,18 @@ export const SoulFactories = {
     {
       type: "soak damage",
       power: Math.floor(a.essence / Rnd(1, 2, 3)),
+    },
+  ]),
+  umbra: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence / 2) + 1,
+    },
+    {
+      type: "ability",
+      ability: "shadow cloak",
+      power: Math.floor(a.essence / 5) + 2,
     },
   ]),
   // Debug mode super-soul
@@ -515,6 +473,22 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         attack: "abjure",
       },
     ],
+  }),
+  ...expandProto({
+    base: {
+      name: "knocker",
+      description:
+        "A despicable little gremlin that prowls the underworld for its japes. Ripping its soul from its body would be a well-deserved punchline.",
+      essence: 7,
+      glyph: "fairy",
+      color: "danger5",
+      hp: R(2, 5, 1),
+      speed: 1.0,
+      ai: "nipper",
+      attack: "bite",
+      soul: "umbra",
+    },
+    variants: [],
   }),
   ...expandProto({
     base: {

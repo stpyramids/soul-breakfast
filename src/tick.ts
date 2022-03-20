@@ -1,5 +1,5 @@
 import { AI } from "./ai";
-import { Commands, D, getPlayerSpeed } from "./commands";
+import { Commands, D } from "./commands";
 import { GameState } from "./game";
 import { contentsAt, recomputeFOV } from "./map";
 import {
@@ -10,6 +10,7 @@ import {
   monsterSpeed,
 } from "./monster";
 import { msg } from "./msg";
+import { getPlayerSpeed, tickPlayerStatus } from "./player";
 import { UIState } from "./ui";
 
 export function tick(game: GameState, ui: UIState) {
@@ -61,6 +62,7 @@ export function tick(game: GameState, ui: UIState) {
       });
       game.turns += 1;
       game.player.energy += getPlayerSpeed();
+      tickPlayerStatus();
     }
   }
 

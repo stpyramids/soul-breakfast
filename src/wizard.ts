@@ -1,7 +1,8 @@
-import { doClaimSoul, maxEssence } from "./commands";
+import { doClaimSoul } from "./commands";
 import { Game } from "./game";
 import { newMap } from "./map";
 import { MonsterArchetypes, makeSoul } from "./monster";
+import { gainEssence, maxEssence } from "./player";
 import { glyphChar } from "./token";
 import { offerChoice } from "./ui";
 
@@ -25,7 +26,7 @@ export function wizard() {
             console.log(Game);
             return true;
           case "e":
-            Game.player.essence = maxEssence();
+            gainEssence(maxEssence());
             return true;
           case "s":
             wizardSoul();

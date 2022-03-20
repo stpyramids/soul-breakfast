@@ -1,5 +1,4 @@
 import * as ROT from "rot-js";
-import { getPlayerVision, getSoulEffect, getWand } from "./commands";
 import { Game } from "./game";
 import { GlyphID } from "./token";
 import {
@@ -13,6 +12,7 @@ import {
 import { msg } from "./msg";
 import { offerChoice, startNewGame } from "./ui";
 import { doRoll } from "./utils";
+import { getPlayerVision, getWand, getSoulEffect } from "./player";
 
 /// Map tiles
 
@@ -65,6 +65,7 @@ const FOV = new ROT.FOV.PreciseShadowcasting((x, y) => {
 
 export function recomputeFOV() {
   seenXYs.length = 0;
+  console.log("recomputing FOV! vision: ", getPlayerVision());
   FOV.compute(
     Game.player.x,
     Game.player.y,

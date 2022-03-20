@@ -53,9 +53,18 @@ export type DangerSenseEffect = {
   power: number;
 };
 
+export type ActivatedAbility = "shadow cloak";
+
+export type ActivatedAbilityEffect = {
+  type: "ability";
+  ability: ActivatedAbility;
+  power: number;
+};
+
 export type RingEffect = SoakDamageEffect;
+export type CrownEffect = ActivatedAbilityEffect;
 export type GenericEffect = StatBonusEffect | DangerSenseEffect;
-export type SoulEffect = RingEffect | WandEffect | GenericEffect;
+export type SoulEffect = RingEffect | WandEffect | CrownEffect | GenericEffect;
 
 // TODO:
 // Eventually I want separate slots for wand, ring, and crown souls.
@@ -80,7 +89,7 @@ export function isEmptySoul(soul: Soul): boolean {
   return soul.essence === 0;
 }
 
-function describeSoulEffect(e: SoulEffect) {
+export function describeSoulEffect(e: SoulEffect) {
   switch (e.type) {
     case "soak damage":
       return "soak " + e.power + " damage";
@@ -100,6 +109,8 @@ function describeSoulEffect(e: SoulEffect) {
       return e.targeting;
     case "danger sense":
       return "danger sense " + e.power;
+    case "ability":
+      return e.ability + " " + e.power;
   }
 }
 

@@ -6,6 +6,7 @@ import { MonsterArchetypes, Attacks } from "./monster";
 import { roll100 } from "./utils";
 
 type AIFunc = (c: XYContents) => number;
+
 function tryAI(c: XYContents, ...ais: AIFunc[]): number {
   for (let ai of ais) {
     let spent = ai(c);
@@ -16,8 +17,12 @@ function tryAI(c: XYContents, ...ais: AIFunc[]): number {
   return 0.0;
 }
 
+function canSeePlayer(c: XYContents): boolean {
+  return playerCanSee(c.x, c.y);
+}
+
 function doApproach(c: XYContents): number {
-  if (playerCanSee(c.x, c.y)) {
+  if (canSeePlayer(c)) {
     let dx = Game.player.x - c.x;
     dx = dx == 0 ? 0 : dx / Math.abs(dx);
     let dy = Game.player.y - c.y;
