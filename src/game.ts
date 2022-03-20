@@ -37,6 +37,15 @@ export function setPlayerXY(x: number, y: number) {
   Game.player.y = y;
 }
 
+export function getMonsterSoul(key: string, maker: () => Soul): Soul {
+  let soul = Game.monsterSouls[key];
+  if (!soul) {
+    soul = maker();
+    Game.monsterSouls[key] = soul;
+  }
+  return soul;
+}
+
 export function maybeWin() {
   if (Game.map.danger >= Game.maxLevel) {
     msg.break();

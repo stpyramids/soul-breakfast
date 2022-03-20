@@ -175,7 +175,7 @@ export function runGame() {
 
   // Set up the ROT.js playfield
   let playarea = document.getElementById("playarea")!;
-  let options: any = { ...UI.viewport };
+  let options: any = { ...UI.viewport, fontSize: 16 };
   // Secret experimental tiles mode (very broken)
   if (UI.doTiles) {
     let tileSet = document.createElement("img");
@@ -215,7 +215,6 @@ export function runGame() {
 
   // Set up UI rendering
   UI.uiCallback = () => {
-    console.log("Drawing UI");
     UI.state = {
       playerEssence: Game.player.essence,
       playerMaxEssence: maxEssence(),

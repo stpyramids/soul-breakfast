@@ -1,6 +1,6 @@
 import { D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
-import { Game } from "./game";
+import { getPlayerXY } from "./game";
 import { contentsAt, moveMonster, playerCanSee, XYContents } from "./map";
 import { Attacks } from "./monster";
 import { msg } from "./msg";
@@ -22,11 +22,21 @@ function canSeePlayer(c: XYContents): boolean {
   return playerCanSee(c.x, c.y);
 }
 
-function doApproach(c: XYContents): number {
+function getTarget(c: XYContents): XYContents | null {
   if (canSeePlayer(c)) {
-    let dx = Game.player.x - c.x;
+    let { x, y } = getPlayerXY();
+    return contentsAt(x, y);
+  } else {
+    return null;
+  }
+}
+
+function doApproach(c: XYContents): number {
+  let target = getTarget(c);
+  if (target) {
+    let dx = target.x - c.x;
     dx = dx == 0 ? 0 : dx / Math.abs(dx);
-    let dy = Game.player.y - c.y;
+    let dy = target.y - c.y;
     dy = dy == 0 ? 0 : dy / Math.abs(dy);
     moveMonster(c, contentsAt(c.x + dx, c.y + dy));
     return 1.0;
@@ -36,11 +46,12 @@ function doApproach(c: XYContents): number {
 }
 
 function doAttack(c: XYContents): number {
+  let target = getTarget(c);
   let m = c.monster!;
   let arch = MonsterArchetypes[m.archetype];
   let attack = Attacks[arch.attack];
-  if (attack.canReachFrom(c)) {
-    attack.attackFrom(c);
+  if (target && attack.canReachFrom(c, target)) {
+    attack.attackFrom(c, target);
     return 1.0;
   } else {
     return 0.0;
@@ -88,13 +99,18 @@ export const AI: { [id: string]: AIFunc } = {
     return 1.0;
   },
   wander: (c) => {
-    let nx = c.x + randInt(-1, 1);
-    let ny = c.y + randInt(-1, 1);
-    let spot = contentsAt(nx, ny);
-    moveMonster(c, spot);
+    for (let tries = 5; tries > 0; tries--) {
+      let nx = c.x + randInt(-1, 1);
+      let ny = c.y + randInt(-1, 1);
+      let spot = contentsAt(nx, ny);
+      if (!spot.blocked) {
+        moveMonster(c, spot);
+        return 1.0;
+      }
+    }
     return 1.0;
   },
-  nipper: (c) => tryAI(c, doAttack, AI.wander),
+  nipper: (c) => tryAI(c, maybeDawdle(25), doAttack, AI.wander),
   stationary: (c) => tryAI(c, maybeDawdle(25), doAttack, AI.passive),
   charge: (c) =>
     tryAI(c, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive),
@@ -112,6 +128,6 @@ export const AI: { [id: string]: AIFunc } = {
 };
 
 export type Attack = {
-  canReachFrom: (c: XYContents) => boolean;
-  attackFrom: (c: XYContents) => void;
+  canReachFrom: (from: XYContents, target: XYContents) => boolean;
+  attackFrom: (from: XYContents, target: XYContents) => void;
 };

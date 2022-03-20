@@ -2,7 +2,7 @@ import { AI, Attack } from "./ai";
 import { D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
 import { SoulFactories } from "./data/souls";
-import { Game } from "./game";
+import { getMonsterSoul } from "./game";
 import { playerCanSee } from "./map";
 import { msg } from "./msg";
 import { doDamage } from "./player";
@@ -31,13 +31,13 @@ export function getDamageDescription(dmg: number) {
 
 export function meleeAttack(verb: string, damage: Roll): Attack {
   return {
-    canReachFrom: (c) =>
-      (Game.player.x === c.x ||
-        Game.player.x === c.x - 1 ||
-        Game.player.x === c.x + 1) &&
-      (Game.player.y === c.y ||
-        Game.player.y === c.y - 1 ||
-        Game.player.y === c.y + 1),
+    canReachFrom: (from, target) =>
+      (target.x === from.x ||
+        target.x === from.x - 1 ||
+        target.x === from.x + 1) &&
+      (target.y === from.y ||
+        target.y === from.y - 1 ||
+        target.y === from.y + 1),
     attackFrom: (c) => {
       msg.combat("%The %s you!", D(c), verb);
       let m = c.monster;
@@ -55,10 +55,10 @@ export function meleeAttack(verb: string, damage: Roll): Attack {
 
 export function rangedAttack(verb: string, damage: Roll): Attack {
   return {
-    canReachFrom: (c) => playerCanSee(c.x, c.y),
-    attackFrom: (c) => {
-      msg.combat("%The %s you!", D(c), verb);
-      let m = c.monster;
+    canReachFrom: (from, target) => playerCanSee(from.x, from.y),
+    attackFrom: (from, target) => {
+      msg.combat("%The %s you!", D(from), verb);
+      let m = from.monster;
       let danger = m ? MonsterArchetypes[m.archetype].essence : 1;
       // TODO combat parameters
       if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
@@ -74,8 +74,8 @@ export function rangedAttack(verb: string, damage: Roll): Attack {
 
 export const Attacks: { [id: string]: Attack } = {
   none: {
-    canReachFrom: (c) => false,
-    attackFrom: (c) => {},
+    canReachFrom: (c, t) => false,
+    attackFrom: (c, t) => {},
   },
   bite: meleeAttack("snaps at", R(1, 4, 0)),
   touch: meleeAttack("reaches into", R(1, 4, 2)),
@@ -206,13 +206,7 @@ export function makeSoul(arch: MonsterArchetype): Soul {
 }
 
 export function getSoul(m: Monster): Soul {
-  let soul = Game.monsterSouls[m.archetype];
-  if (soul) {
-    return soul;
-  } else {
-    let arch = MonsterArchetypes[m.archetype];
-    soul = makeSoul(arch);
-    Game.monsterSouls[m.archetype] = soul;
-    return soul;
-  }
+  return getMonsterSoul(m.archetype, () => {
+    return makeSoul(MonsterArchetypes[m.archetype]);
+  });
 }
