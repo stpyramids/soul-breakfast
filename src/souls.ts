@@ -1,5 +1,5 @@
-import { GlyphID, Token } from "./token";
-import { Roll, asRoll, describeRoll } from "./utils";
+import { Token } from "./token";
+import { asRoll, describeRoll, Roll } from "./utils";
 
 export type Status = "slow";
 

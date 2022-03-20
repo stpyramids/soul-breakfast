@@ -1,5 +1,3 @@
-/// Monster data
-
 import { AI, Attack } from "./ai";
 import { D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";

@@ -65,6 +65,7 @@ function fgColor(color: ColorID, alpha?: number): string {
     return rgb(color);
   }
 }
+
 function drawMap(display: ROT.Display) {
   display.clear();
 
@@ -120,7 +121,7 @@ function drawMap(display: ROT.Display) {
             x - sx,
             y - sy,
             glyphChar(c.tile.glyph),
-            fgColor(c.tile.blocks ? "terrain" : "floor", 0.75),
+            fgColor(c.tile.blocks ? "terrain" : "floor", 1.0),
             bg
           );
         } else {

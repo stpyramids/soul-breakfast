@@ -45,3 +45,14 @@ export function roll100(under: number): boolean {
 export function randInt(low: number, high: number): number {
   return ROT.RNG.getUniformInt(low, high);
 }
+
+export interface XY {
+  x: number;
+  y: number;
+}
+
+export function xyDistance(from: XY, to: XY): number {
+  let dx = Math.abs(from.x - to.x);
+  let dy = Math.abs(from.y - to.y);
+  return Math.floor(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)));
+}

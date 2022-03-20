@@ -1,11 +1,10 @@
-import * as ROT from "rot-js";
 import { D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
 import { Game } from "./game";
 import { contentsAt, moveMonster, playerCanSee, XYContents } from "./map";
 import { Attacks } from "./monster";
 import { msg } from "./msg";
-import { roll100 } from "./utils";
+import { randInt, roll100 } from "./utils";
 
 type AIFunc = (c: XYContents) => number;
 
@@ -65,8 +64,8 @@ function maybeDawdle(pct: number, message?: string): AIFunc {
 
 function maybeBlink(pct: number): AIFunc {
   return (c) => {
-    let nx = c.x + ROT.RNG.getUniformInt(-4, 4);
-    let ny = c.y + ROT.RNG.getUniformInt(-4, 4);
+    let nx = c.x + randInt(-4, 4);
+    let ny = c.y + randInt(-4, 4);
     let spot = contentsAt(nx, ny);
     if (!spot.blocked) {
       if (canSeePlayer(c)) {
@@ -89,8 +88,8 @@ export const AI: { [id: string]: AIFunc } = {
     return 1.0;
   },
   wander: (c) => {
-    let nx = c.x + ROT.RNG.getUniformInt(-1, 1);
-    let ny = c.y + ROT.RNG.getUniformInt(-1, 1);
+    let nx = c.x + randInt(-1, 1);
+    let ny = c.y + randInt(-1, 1);
     let spot = contentsAt(nx, ny);
     moveMonster(c, spot);
     return 1.0;
