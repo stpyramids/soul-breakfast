@@ -1,16 +1,16 @@
 /// Monster data
 
-import { ColorID, GlyphID } from "./token";
+import { AI, Attack } from "./ai";
 import { D } from "./commands";
+import { MonsterArchetypes } from "./data/monsters";
+import { SoulFactories } from "./data/souls";
 import { Game } from "./game";
 import { playerCanSee } from "./map";
 import { msg } from "./msg";
-import { Soul } from "./souls";
-import { R, doRoll, Roll } from "./utils";
-import { Attack, AI } from "./ai";
 import { doDamage } from "./player";
-import { MonsterArchetypes } from "./data/monsters";
-import { SoulFactories } from "./data/souls";
+import { Soul } from "./souls";
+import { ColorID, GlyphID } from "./token";
+import { doRoll, R, Roll } from "./utils";
 
 const DamageDescriptions = [
   [0, "You absorb the attack"],
@@ -84,6 +84,7 @@ export const Attacks: { [id: string]: Attack } = {
   slice: meleeAttack("slices at", R(1, 8, 4)),
   gaze: rangedAttack("gazes at", R(1, 4, 0)),
   abjure: rangedAttack("abjures", R(1, 4, 2)),
+  rock: rangedAttack("pitches a rock at", R(1, 2, 0)),
 };
 
 export type MonsterArchetype = {

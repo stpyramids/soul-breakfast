@@ -1,4 +1,4 @@
-import { MonsterArchetype, ArchetypeID } from "../monster";
+import { ArchetypeID, MonsterArchetype } from "../monster";
 import { R } from "../utils";
 
 type MonsterProto = {
@@ -274,8 +274,8 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       color: "danger5",
       hp: R(2, 5, 1),
       speed: 1.0,
-      ai: "nipper",
-      attack: "bite",
+      ai: "prankster",
+      attack: "rock",
       soul: "umbra",
     },
     variants: [],

@@ -7,6 +7,7 @@ import {
   contentsAt,
   findTargets,
   newMap,
+  playerCanSee,
   XYContents,
 } from "./map";
 import {
@@ -74,6 +75,10 @@ export function doClaimSoul(soul: Soul): "claimed" | "dupe" | "full" {
   for (let i = 0; i < slots.length; i++) {
     if (isEmptySoul(slots[i])) {
       slots[i] = soul;
+      // ugly, but...
+      if (soul.effects.find((e) => e.type === "ability")) {
+        msg.tutorial("You can activate abilities with (a).");
+      }
       return "claimed";
     } else if (slots[i].name === soul.name) {
       return "dupe";
@@ -341,7 +346,7 @@ type Describer = {
 };
 
 export function D(c: XYContents): Describer {
-  if (c.monster) {
+  if (c.monster && playerCanSee(c.x, c.y)) {
     let monster = c.monster;
     return {
       toString: () => MonsterArchetypes[monster.archetype].name,
@@ -386,9 +391,9 @@ export function damageMonsterAt(
       } else {
         msg.combat("%The collapses!", D(c));
         msg.tutorial(
-          "Enter a dying creature's tile to (d)evour or (c)laim their soul."
+          "Enter a dying creature's tile to (d)evour or (c)laim their soul. Be quick, though!"
         );
-        m.statuses.push({ type: "dying", timer: 7 + Math.floor(m.maxHP / 2) });
+        m.statuses.push({ type: "dying", timer: 12 + Math.floor(m.maxHP / 2) });
         m.hp = 0;
       }
     }

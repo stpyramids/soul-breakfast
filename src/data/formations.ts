@@ -1,5 +1,5 @@
 import { ArchetypeID, MonsterFormation } from "../monster";
-import { Roll, R } from "../utils";
+import { R, Roll } from "../utils";
 
 function solo(arch: ArchetypeID, roll: Roll, danger: number): MonsterFormation {
   return {
@@ -27,6 +27,7 @@ export const MonsterFormations: MonsterFormation[] = [
     ],
     danger: 7,
   },
+  solo("knocker", R(1, 1, 0), 7),
   solo("wolf spider", R(1, 1, 0), 8),
   solo("weeping ghost", R(1, 1, 0), 10),
   solo("peering eye", R(1, 1, 0), 12),

@@ -1,8 +1,10 @@
 import * as ROT from "rot-js";
+import { D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
 import { Game } from "./game";
 import { contentsAt, moveMonster, playerCanSee, XYContents } from "./map";
 import { Attacks } from "./monster";
+import { msg } from "./msg";
 import { roll100 } from "./utils";
 
 type AIFunc = (c: XYContents) => number;
@@ -46,10 +48,35 @@ function doAttack(c: XYContents): number {
   }
 }
 
-function maybeDawdle(pct: number): AIFunc {
+function maybeDawdle(pct: number, message?: string): AIFunc {
   return (c) => {
     if (roll100(pct)) {
       // waste a turn
+      if (message && canSeePlayer(c)) {
+        // TODO: would like to have audible dawdles too
+        msg.combat(message, D(c));
+      }
+      return 1.0;
+    } else {
+      return 0.0;
+    }
+  };
+}
+
+function maybeBlink(pct: number): AIFunc {
+  return (c) => {
+    let nx = c.x + ROT.RNG.getUniformInt(-4, 4);
+    let ny = c.y + ROT.RNG.getUniformInt(-4, 4);
+    let spot = contentsAt(nx, ny);
+    if (!spot.blocked) {
+      if (canSeePlayer(c)) {
+        msg.combat(
+          "%The disappears " +
+            (canSeePlayer(spot) ? "from sight!" : "and reappears!"),
+          D(c)
+        );
+      }
+      moveMonster(c, spot);
       return 1.0;
     } else {
       return 0.0;
@@ -72,6 +99,15 @@ export const AI: { [id: string]: AIFunc } = {
   stationary: (c) => tryAI(c, maybeDawdle(25), doAttack, AI.passive),
   charge: (c) =>
     tryAI(c, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive),
+  prankster: (c) =>
+    tryAI(
+      c,
+      maybeDawdle(25, "%The giggles!"),
+      maybeBlink(25),
+      doAttack,
+      AI.wander,
+      AI.passive
+    ),
 };
 
 export type Attack = {
