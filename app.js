@@ -5049,7 +5049,7 @@ void main() {
     nipper: (c2) => tryAI(c2, doAttack, AI.wander),
     stationary: (c2) => tryAI(c2, maybeDawdle(25), doAttack, AI.passive),
     charge: (c2) => tryAI(c2, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive),
-    prankster: (c2) => tryAI(c2, maybeDawdle(25, "%The giggles!"), maybeBlink(25), doAttack, AI.wander, AI.passive)
+    prankster: (c2) => tryAI(c2, maybeDawdle(20, "%The giggles!"), maybeDawdle(20, "%The chortles!"), maybeBlink(20), maybeDawdle(20, "%The makes a rude gesture!"), doAttack, AI.wander, AI.passive)
   };
 
   // src/tick.ts
