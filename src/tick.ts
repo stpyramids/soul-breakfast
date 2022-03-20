@@ -1,13 +1,13 @@
 import { AI } from "./ai";
 import { Commands, D } from "./commands";
+import { MonsterArchetypes } from "./data/monsters";
 import { GameState } from "./game";
 import { contentsAt, recomputeFOV } from "./map";
 import {
-  monsterStatusTick,
   DeathMessages,
   monsterHasStatus,
-  MonsterArchetypes,
   monsterSpeed,
+  monsterStatusTick,
 } from "./monster";
 import { msg } from "./msg";
 import { getPlayerSpeed, tickPlayerStatus } from "./player";

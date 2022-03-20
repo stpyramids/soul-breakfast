@@ -1,18 +1,13 @@
 import * as ROT from "rot-js";
+import { MonsterFormations } from "./data/formations";
+import { MonsterArchetypes } from "./data/monsters";
 import { Game } from "./game";
-import { GlyphID } from "./token";
-import {
-  ArchetypeID,
-  spawnMonster,
-  Monster,
-  weakMonster,
-  MonsterFormations,
-  MonsterArchetypes,
-} from "./monster";
+import { ArchetypeID, Monster, spawnMonster, weakMonster } from "./monster";
 import { msg } from "./msg";
+import { getPlayerVision, getSoulEffect, getWand } from "./player";
+import { GlyphID } from "./token";
 import { offerChoice, startNewGame } from "./ui";
 import { doRoll } from "./utils";
-import { getPlayerVision, getWand, getSoulEffect } from "./player";
 
 /// Map tiles
 

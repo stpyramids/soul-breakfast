@@ -1,16 +1,17 @@
-import type { GameState } from "../game";
 import {
-  render,
-  createElement,
-  Fragment,
-  Component,
-  ComponentType,
+    Component,
+    ComponentType,
+    createElement,
+    Fragment,
+    render
 } from "preact";
-import { glyphChar, rgb, tokenChar, tokenRGB } from "../token";
-import { getSoul, MonsterArchetypes, monsterHasStatus } from "../monster";
-import { describeSoulEffects, Soul } from "../souls";
-import type { UIState } from "../ui";
+import { MonsterArchetypes } from "../data/monsters";
+import type { GameState } from "../game";
 import type { XYContents } from "../map";
+import { getSoul, monsterHasStatus } from "../monster";
+import { describeSoulEffects, Soul } from "../souls";
+import { glyphChar, rgb, tokenChar, tokenRGB } from "../token";
+import type { UIState } from "../ui";
 
 export function renderControls(
   game: GameState,

@@ -1,24 +1,24 @@
 import * as ROT from "rot-js";
-
-import { ColorID, glyphChar, rgb, rgba } from "./token";
 import { Commands } from "./commands";
+import { MonsterArchetypes } from "./data/monsters";
 import { Game, resetGame } from "./game";
 import {
   contentsAt,
-  recomputeFOV,
   findTargets,
-  seenXYs,
-  newMap,
   getMapDescription,
   getVictim,
-  XYContents,
   monstersByDistance,
+  newMap,
+  recomputeFOV,
+  seenXYs,
+  XYContents,
 } from "./map";
-import { MonsterArchetypes, weakMonster, monsterHasStatus } from "./monster";
+import { monsterHasStatus, weakMonster } from "./monster";
 import { msg } from "./msg";
-import { tick } from "./tick";
-import { renderControls } from "./ui/controls";
 import { maxEssence } from "./player";
+import { tick } from "./tick";
+import { ColorID, glyphChar, rgb, rgba } from "./token";
+import { renderControls } from "./ui/controls";
 
 type Choice = {
   prompt: string;

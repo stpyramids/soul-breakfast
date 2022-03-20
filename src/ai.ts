@@ -1,8 +1,8 @@
 import * as ROT from "rot-js";
-
+import { MonsterArchetypes } from "./data/monsters";
 import { Game } from "./game";
 import { contentsAt, moveMonster, playerCanSee, XYContents } from "./map";
-import { MonsterArchetypes, Attacks } from "./monster";
+import { Attacks } from "./monster";
 import { roll100 } from "./utils";
 
 type AIFunc = (c: XYContents) => number;
