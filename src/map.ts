@@ -71,7 +71,6 @@ const FOV = new ROT.FOV.PreciseShadowcasting((x, y) => {
 
 export function recomputeFOV() {
   seenXYs.length = 0;
-  console.log("recomputing FOV! vision: ", getPlayerVision());
   FOV.compute(
     getPlayerXY().x,
     getPlayerXY().y,
@@ -128,6 +127,15 @@ export function findTargets(): Array<XYContents> {
   return targets;
 }
 
+export function doMagicMap(radius: number) {
+  let { x, y } = getPlayerXY();
+  let fov = new ROT.FOV.PreciseShadowcasting((_x, _y) => true);
+  let map = getMap();
+  fov.compute(x, y, radius, (cx, cy) => {
+    map.memory[cx + cy * map.w] = contentsAt(cx, cy).memory;
+  });
+}
+
 type MapGenInput = {
   segW: number;
   segH: number;
@@ -177,7 +185,7 @@ export function newMap(opts?: NewMapOptions) {
   setMap(map);
 
   // Dig a new map
-  let digger = new ROT.Map.Digger(map.w, map.h);
+  let digger = new ROT.Map.Digger(map.w, map.h, { corridorLength: [2, 10] });
   digger.create();
 
   // Create rooms

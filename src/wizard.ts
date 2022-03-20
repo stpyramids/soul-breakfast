@@ -1,7 +1,7 @@
 import { doClaimSoul } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
 import { Game } from "./game";
-import { newMap } from "./map";
+import { doMagicMap, newMap } from "./map";
 import { makeSoul } from "./monster";
 import { gainEssence, maxEssence } from "./player";
 import { glyphChar } from "./token";
@@ -13,6 +13,7 @@ export function wizard() {
     new Map([
       ["d", "Dump game state to console"],
       ["e", "Fill essence"],
+      ["m", "Magic map"],
       ["s", "Get soul"],
       ["w", "Teleport to danger level 50"],
       [">", "Descend 5 levels"],
@@ -31,6 +32,9 @@ export function wizard() {
             return true;
           case "s":
             wizardSoul();
+            return true;
+          case "m":
+            doMagicMap(50);
             return true;
           case ">":
             newMap({ danger: Game.map.danger + 5 });

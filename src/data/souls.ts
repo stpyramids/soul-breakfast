@@ -38,7 +38,11 @@ export const SoulFactories = {
     },
   ]),
   sight: mkSoulF((a) => [
-    { type: "stat bonus", stat: "max essence", power: a.essence },
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence * 0.7),
+    },
     roll100(20 + a.essence)
       ? {
           type: "danger sense",
@@ -48,7 +52,25 @@ export const SoulFactories = {
     {
       type: "stat bonus",
       stat: "sight",
-      power: Math.floor(a.essence / 2) + 1,
+      power: Math.floor(a.essence / 4) + 1,
+    },
+  ]),
+  clairvoyance: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence * 0.7),
+    },
+    roll100(20 + a.essence)
+      ? {
+          type: "danger sense",
+          power: Math.floor(a.essence / 8) + 2,
+        }
+      : null,
+    {
+      type: "ability",
+      ability: "clairvoyance",
+      power: Math.floor(a.essence / 2) + Rnd(1, 3),
     },
   ]),
   speed: mkSoulF((a) => [
@@ -106,6 +128,16 @@ export const SoulFactories = {
     {
       type: "danger sense",
       power: 20,
+    },
+    {
+      type: "ability",
+      ability: "clairvoyance",
+      power: 50,
+    },
+    {
+      type: "ability",
+      ability: "shadow cloak",
+      power: 10,
     },
   ]),
 };

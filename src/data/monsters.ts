@@ -194,10 +194,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       {
         name: "gimlet eye",
         description:
-          "These remind me of the steely, courageous gaze of someone I once knew. Just like then, I'm going to tear its soul to shreds.",
+          "It arouses memories of the steely, courageous gaze of someone whose eyes I once had put out.",
         essence: 15,
         color: "danger15",
-        // TODO esp
+        soul: "clairvoyance",
       },
     ],
   }),

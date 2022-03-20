@@ -1,5 +1,5 @@
 import { Game } from "./game";
-import { newMap } from "./map";
+import { doMagicMap, newMap } from "./map";
 import { getDamageDescription } from "./monster";
 import { msg } from "./msg";
 import {
@@ -16,7 +16,7 @@ import {
   WandEffects,
 } from "./souls";
 import { GlyphID } from "./token";
-import { keysOf, R, doRoll, randInt, Rnd } from "./utils";
+import { doRoll, keysOf, R, randInt } from "./utils";
 
 export const newPlayer = {
   x: 10,
@@ -110,7 +110,10 @@ export function invokeAbility(ability: ActivatedAbility, power: number) {
   switch (ability) {
     case "shadow cloak":
       addPlayerEffect("umbra", power + randInt(1, 2));
-      msg.essence("You slip into darkness!");
+      msg.essence("You draw in your essence and conceal yourself.");
+    case "clairvoyance":
+      doMagicMap(power);
+      msg.essence("You peer briefly beyond the mortal veil.");
   }
   loseEssence(power);
   Game.player.cooldownAbilities.push(ability);

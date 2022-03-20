@@ -53,7 +53,7 @@ export type DangerSenseEffect = {
   power: number;
 };
 
-export type ActivatedAbility = "shadow cloak";
+export type ActivatedAbility = "shadow cloak" | "clairvoyance";
 
 export type ActivatedAbilityEffect = {
   type: "ability";
@@ -85,6 +85,7 @@ export const EmptySoul: Soul = {
   essence: 0,
   effects: [],
 };
+
 export function isEmptySoul(soul: Soul): boolean {
   return soul.essence === 0;
 }
