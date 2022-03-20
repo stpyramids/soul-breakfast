@@ -1,3 +1,4 @@
+import { AI } from "./ai";
 import { Commands, D, getPlayerSpeed } from "./commands";
 import { GameState } from "./game";
 import { contentsAt, recomputeFOV } from "./map";
@@ -6,7 +7,6 @@ import {
   DeathMessages,
   monsterHasStatus,
   MonsterArchetypes,
-  AI,
   monsterSpeed,
 } from "./monster";
 import { msg } from "./msg";

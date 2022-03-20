@@ -14,76 +14,10 @@ import {
 import { msg } from "./msg";
 import { EmptySoul, Soul, isEmptySoul, SoulEffect } from "./souls";
 import { keysOf, R, doRoll, Roll, roll100, Rnd } from "./utils";
+import { Attack, AI } from "./ai";
 
 // "Vermin" creatures always spawn with 1 HP, this is a shorthand
 const verminHP: Roll = { n: 1, sides: 1, mod: 0 };
-
-export const AI: { [id: string]: (c: XYContents) => number } = {
-  passive: (c) => {
-    return 1.0;
-  },
-  wander: (c) => {
-    let nx = c.x + ROT.RNG.getUniformInt(-1, 1);
-    let ny = c.y + ROT.RNG.getUniformInt(-1, 1);
-    let spot = contentsAt(nx, ny);
-    moveMonster(c, spot);
-    return 1.0;
-  },
-  nipper: (c) => {
-    let m = c.monster!;
-    let arch = MonsterArchetypes[m.archetype];
-    let attack = Attacks[arch.attack];
-
-    if (attack.canReachFrom(c)) {
-      attack.attackFrom(c);
-      return 1.0;
-    } else {
-      return AI.wander(c);
-    }
-  },
-  stationary: (c) => {
-    let m = c.monster!;
-    let arch = MonsterArchetypes[m.archetype];
-    let attack = Attacks[arch.attack];
-
-    if (attack.canReachFrom(c)) {
-      attack.attackFrom(c);
-    }
-    return 1.0;
-  },
-  charge: (c) => {
-    // TODO these all have similar structures
-    let m = c.monster!;
-    let arch = MonsterArchetypes[m.archetype];
-    let attack = Attacks[arch.attack];
-
-    if (attack.canReachFrom(c)) {
-      attack.attackFrom(c);
-      return 1.0;
-    } else if (ROT.RNG.getUniformInt(0, 3) == 0) {
-      // Skip a turn to be nice to the player
-      return 1.0;
-    } else {
-      // TODO should be _monster_ vision
-      if (playerCanSee(c.x, c.y)) {
-        let dx = Game.player.x - c.x;
-        dx = dx == 0 ? 0 : dx / Math.abs(dx);
-        let dy = Game.player.y - c.y;
-        dy = dy == 0 ? 0 : dy / Math.abs(dy);
-        moveMonster(c, contentsAt(c.x + dx, c.y + dy));
-        return 1.0;
-      } else {
-        // TODO should have pursuit vs. idle
-        return AI.wander(c);
-      }
-    }
-  },
-};
-
-export type Attack = {
-  canReachFrom: (c: XYContents) => boolean;
-  attackFrom: (c: XYContents) => void;
-};
 
 const DamageDescriptions = [
   [0, "You absorb the attack"],
