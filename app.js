@@ -3554,9 +3554,10 @@ void main() {
       },
       {
         name: "gimlet eye",
-        description: "These remind me of the steely, courageous gaze of someone I once knew. Just like then, I'm going to tear its soul to shreds.",
+        description: "It arouses memories of the steely, courageous gaze of someone whose eyes I once had put out.",
         essence: 15,
-        color: "danger15"
+        color: "danger15",
+        soul: "clairvoyance"
       }
     ]
   })), expandProto({
@@ -3783,7 +3784,11 @@ void main() {
       }
     ]),
     sight: mkSoulF((a2) => [
-      { type: "stat bonus", stat: "max essence", power: a2.essence },
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence * 0.7)
+      },
       roll100(20 + a2.essence) ? {
         type: "danger sense",
         power: Math.floor(a2.essence / 8) + 2
@@ -3791,7 +3796,23 @@ void main() {
       {
         type: "stat bonus",
         stat: "sight",
-        power: Math.floor(a2.essence / 2) + 1
+        power: Math.floor(a2.essence / 4) + 1
+      }
+    ]),
+    clairvoyance: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence * 0.7)
+      },
+      roll100(20 + a2.essence) ? {
+        type: "danger sense",
+        power: Math.floor(a2.essence / 8) + 2
+      } : null,
+      {
+        type: "ability",
+        ability: "clairvoyance",
+        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
       }
     ]),
     speed: mkSoulF((a2) => [
@@ -3848,6 +3869,16 @@ void main() {
       {
         type: "danger sense",
         power: 20
+      },
+      {
+        type: "ability",
+        ability: "clairvoyance",
+        power: 50
+      },
+      {
+        type: "ability",
+        ability: "shadow cloak",
+        power: 10
       }
     ])
   };
@@ -4002,7 +4033,10 @@ void main() {
     switch (ability) {
       case "shadow cloak":
         addPlayerEffect("umbra", power + randInt(1, 2));
-        msg.essence("You slip into darkness!");
+        msg.essence("You draw in your essence and conceal yourself.");
+      case "clairvoyance":
+        doMagicMap(power);
+        msg.essence("You peer briefly beyond the mortal veil.");
     }
     loseEssence(power);
     Game.player.cooldownAbilities.push(ability);
@@ -4318,7 +4352,6 @@ void main() {
   });
   function recomputeFOV() {
     seenXYs.length = 0;
-    console.log("recomputing FOV! vision: ", getPlayerVision());
     FOV2.compute(getPlayerXY().x, getPlayerXY().y, getPlayerVision(), (fx, fy, r2, v2) => {
       seenXYs.push([fx, fy]);
     });
@@ -4362,6 +4395,14 @@ void main() {
     }
     return targets;
   }
+  function doMagicMap(radius) {
+    let { x: x2, y: y2 } = getPlayerXY();
+    let fov = new fov_default.PreciseShadowcasting((_x, _y) => true);
+    let map = getMap();
+    fov.compute(x2, y2, radius, (cx, cy) => {
+      map.memory[cx + cy * map.w] = contentsAt(cx, cy).memory;
+    });
+  }
   function mapGenSimple(input) {
     const map = {
       danger: input.danger,
@@ -4384,7 +4425,7 @@ void main() {
       danger: (opts == null ? void 0 : opts.danger) ? opts.danger : getMap().danger
     }).map;
     setMap(map);
-    let digger = new map_default.Digger(map.w, map.h);
+    let digger = new map_default.Digger(map.w, map.h, { corridorLength: [2, 10] });
     digger.create();
     let rooms = digger.getRooms();
     for (let room of rooms) {
@@ -4625,6 +4666,7 @@ void main() {
     offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
       ["d", "Dump game state to console"],
       ["e", "Fill essence"],
+      ["m", "Magic map"],
       ["s", "Get soul"],
       ["w", "Teleport to danger level 50"],
       [">", "Descend 5 levels"]
@@ -4642,6 +4684,9 @@ void main() {
             return true;
           case "s":
             wizardSoul();
+            return true;
+          case "m":
+            doMagicMap(50);
             return true;
           case ">":
             newMap({ danger: Game.map.danger + 5 });
