@@ -2322,7 +2322,7 @@ void main() {
       this._map[x2][y2] = value;
     }
     create(callback) {
-      let newMap3 = this._fillMap(0);
+      let newMap2 = this._fillMap(0);
       let born = this._options.born;
       let survive = this._options.survive;
       for (let j2 = 0; j2 < this._height; j2++) {
@@ -2336,13 +2336,13 @@ void main() {
           let cur = this._map[i2][j2];
           let ncount = this._getNeighbors(i2, j2);
           if (cur && survive.indexOf(ncount) != -1) {
-            newMap3[i2][j2] = 1;
+            newMap2[i2][j2] = 1;
           } else if (!cur && born.indexOf(ncount) != -1) {
-            newMap3[i2][j2] = 1;
+            newMap2[i2][j2] = 1;
           }
         }
       }
-      this._map = newMap3;
+      this._map = newMap2;
       callback && this._serviceCallback(callback);
     }
     _serviceCallback(callback) {
@@ -3355,82 +3355,6 @@ void main() {
   // node_modules/rot-js/lib/index.js
   var Util = util_exports;
 
-  // src/token.ts
-  var Colors = {
-    void: [0, 0, 0],
-    target: [17, 51, 153],
-    dying: [68, 17, 17],
-    weak: [34, 17, 17],
-    critterBG: [17, 17, 17],
-    vermin: [170, 170, 170],
-    danger0: [124, 83, 53],
-    danger5: [157, 137, 59],
-    danger10: [67, 157, 59],
-    danger15: [59, 157, 142],
-    danger20: [157, 59, 67],
-    danger25: [146, 59, 157],
-    terrain: [190, 190, 190],
-    floor: [127, 127, 127],
-    player: [255, 255, 255]
-  };
-  function rgb(color) {
-    let c2 = Colors[color];
-    return `rgb(${c2[0]},${c2[1]},${c2[2]})`;
-  }
-  function rgba(color, alpha) {
-    let c2 = Colors[color];
-    return `rgba(${c2[0]},${c2[1]},${c2[2]},${alpha})`;
-  }
-  var Glyphs = {
-    none: " ",
-    player: "@",
-    exit: ">",
-    wall: "#",
-    floor: ".",
-    rock: ".",
-    insect: "i",
-    worm: "w",
-    rodent: "r",
-    spider: "s",
-    ghost: "g",
-    eyeball: "e",
-    "do-gooder": "h",
-    fairy: "f"
-  };
-  function glyphChar(glyph) {
-    return Glyphs[glyph];
-  }
-  function tokenChar(token) {
-    return glyphChar(token[0]);
-  }
-  function tokenRGB(token) {
-    return rgb(token[1]);
-  }
-
-  // src/msg.ts
-  function mkSay(type) {
-    return (fmt, ...args) => {
-      UI.logCallback(Util.format(fmt, ...args), type);
-    };
-  }
-  var msg = {
-    log: mkSay("normal"),
-    think: mkSay("thought"),
-    angry: mkSay("angry"),
-    essence: mkSay("essence"),
-    combat: mkSay("combat"),
-    help: mkSay("help"),
-    tutorial: (fmt, ...args) => {
-      if (!Game.player.seenTutorials[fmt]) {
-        msg.help(fmt, ...args);
-        Game.player.seenTutorials[fmt] = true;
-      }
-    },
-    break: () => {
-      UI.logCallback("", "break");
-    }
-  };
-
   // src/utils.ts
   function keysOf(obj) {
     return Object.keys(obj);
@@ -3460,169 +3384,7 @@ void main() {
     return rng_default.getUniformInt(low, high);
   }
 
-  // src/monster.ts
-  var verminHP = { n: 1, sides: 1, mod: 0 };
-  var DamageDescriptions = [
-    [0, "You absorb the attack"],
-    [1, "Your essence trembles"],
-    [5, "Your essence wavers"],
-    [10, "You stagger as your essence is drained"],
-    [20, "Your connection to the mortal world frays"],
-    [30, "Your being is stretched to the breaking point"],
-    [50, "You briefly swim through endless aeons of hell"]
-  ];
-  function getDamageDescription(dmg) {
-    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
-      if (DamageDescriptions[i2][0] <= dmg) {
-        return DamageDescriptions[i2][1];
-      }
-    }
-    return DamageDescriptions[0][1];
-  }
-  function meleeAttack(verb, damage) {
-    return {
-      canReachFrom: (c2) => (Game.player.x === c2.x || Game.player.x === c2.x - 1 || Game.player.x === c2.x + 1) && (Game.player.y === c2.y || Game.player.y === c2.y - 1 || Game.player.y === c2.y + 1),
-      attackFrom: (c2) => {
-        msg.combat("%The %s you!", D(c2), verb);
-        let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
-        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
-          let dmg = doRoll(dmgRoll);
-          doDamage(dmg);
-        }
-      }
-    };
-  }
-  function rangedAttack(verb, damage) {
-    return {
-      canReachFrom: (c2) => playerCanSee(c2.x, c2.y),
-      attackFrom: (c2) => {
-        msg.combat("%The %s you!", D(c2), verb);
-        let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
-        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
-          let dmg = doRoll(dmgRoll);
-          doDamage(dmg);
-        }
-      }
-    };
-  }
-  var Attacks = {
-    none: {
-      canReachFrom: (c2) => false,
-      attackFrom: (c2) => {
-      }
-    },
-    bite: meleeAttack("snaps at", R(1, 4, 0)),
-    touch: meleeAttack("reaches into", R(1, 4, 2)),
-    slice: meleeAttack("slices at", R(1, 8, 4)),
-    gaze: rangedAttack("gazes at", R(1, 4, 0)),
-    abjure: rangedAttack("abjures", R(1, 4, 2))
-  };
-  function mkSoulF(effects) {
-    return (a2) => ({
-      token: [a2.glyph, a2.color],
-      essence: a2.essence,
-      name: a2.name,
-      effects: effects(a2).filter((f2) => f2)
-    });
-  }
-  var SoulFactories = {
-    vermin: mkSoulF((a2) => []),
-    maxEssence: mkSoulF((a2) => [
-      { type: "stat bonus", stat: "max essence", power: a2.essence }
-    ]),
-    extraDamage: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      { type: "damage", damage: R(Math.floor(a2.essence / 2), 4, Rnd(1, 4)) }
-    ]),
-    slow: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "status",
-        status: "slow",
-        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
-      }
-    ]),
-    sight: mkSoulF((a2) => [
-      { type: "stat bonus", stat: "max essence", power: a2.essence },
-      roll100(20 + a2.essence) ? {
-        type: "danger sense",
-        power: Math.floor(a2.essence / 8) + 2
-      } : null,
-      {
-        type: "stat bonus",
-        stat: "sight",
-        power: Math.floor(a2.essence / 2) + 1
-      }
-    ]),
-    speed: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence * 0.8)
-      },
-      {
-        type: "stat bonus",
-        stat: "speed",
-        power: 0.05 * (Math.floor(a2.essence / 2) + Rnd(1, 3))
-      }
-    ]),
-    soak: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "soak damage",
-        power: Math.floor(a2.essence / Rnd(1, 2, 3))
-      }
-    ]),
-    umbra: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "ability",
-        ability: "shadow cloak",
-        power: Math.floor(a2.essence / 5) + 2
-      }
-    ]),
-    megalich: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: 200
-      },
-      {
-        type: "soak damage",
-        power: 500
-      },
-      {
-        type: "stat bonus",
-        stat: "speed",
-        power: 10
-      },
-      { type: "damage", damage: R(10, 100, 50) },
-      {
-        type: "danger sense",
-        power: 20
-      }
-    ])
-  };
+  // src/data/monsters.ts
   function expandProto(proto) {
     let archs = { [proto.base.name]: proto.base };
     for (let variant of proto.variants) {
@@ -3637,7 +3399,7 @@ void main() {
       essence: 1,
       glyph: "worm",
       color: "vermin",
-      hp: verminHP,
+      hp: R(1, 1, 0),
       speed: 0.2,
       ai: "passive",
       attack: "none",
@@ -3857,8 +3619,8 @@ void main() {
       color: "danger5",
       hp: R(2, 5, 1),
       speed: 1,
-      ai: "nipper",
-      attack: "bite",
+      ai: "prankster",
+      attack: "rock",
       soul: "umbra"
     },
     variants: []
@@ -3877,6 +3639,8 @@ void main() {
     },
     variants: []
   }));
+
+  // src/data/formations.ts
   function solo(arch, roll, danger) {
     return {
       appearing: [[arch, roll]],
@@ -3900,6 +3664,7 @@ void main() {
       ],
       danger: 7
     },
+    solo("knocker", R(1, 1, 0), 7),
     solo("wolf spider", R(1, 1, 0), 8),
     solo("weeping ghost", R(1, 1, 0), 10),
     solo("peering eye", R(1, 1, 0), 12),
@@ -3977,6 +3742,196 @@ void main() {
       danger: 25
     }
   ];
+
+  // src/data/souls.ts
+  function mkSoulF(effects) {
+    return (a2) => ({
+      token: [a2.glyph, a2.color],
+      essence: a2.essence,
+      name: a2.name,
+      effects: effects(a2).filter((f2) => f2)
+    });
+  }
+  var SoulFactories = {
+    vermin: mkSoulF((a2) => []),
+    maxEssence: mkSoulF((a2) => [
+      { type: "stat bonus", stat: "max essence", power: a2.essence }
+    ]),
+    extraDamage: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      { type: "damage", damage: R(Math.floor(a2.essence / 2), 4, Rnd(1, 4)) }
+    ]),
+    slow: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "status",
+        status: "slow",
+        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
+      }
+    ]),
+    sight: mkSoulF((a2) => [
+      { type: "stat bonus", stat: "max essence", power: a2.essence },
+      roll100(20 + a2.essence) ? {
+        type: "danger sense",
+        power: Math.floor(a2.essence / 8) + 2
+      } : null,
+      {
+        type: "stat bonus",
+        stat: "sight",
+        power: Math.floor(a2.essence / 2) + 1
+      }
+    ]),
+    speed: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence * 0.8)
+      },
+      {
+        type: "stat bonus",
+        stat: "speed",
+        power: 0.05 * (Math.floor(a2.essence / 2) + Rnd(1, 3))
+      }
+    ]),
+    soak: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "soak damage",
+        power: Math.floor(a2.essence / Rnd(1, 2, 3))
+      }
+    ]),
+    umbra: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "ability",
+        ability: "shadow cloak",
+        power: Math.floor(a2.essence / 5) + 2
+      }
+    ]),
+    megalich: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: 200
+      },
+      {
+        type: "soak damage",
+        power: 500
+      },
+      {
+        type: "stat bonus",
+        stat: "speed",
+        power: 10
+      },
+      { type: "damage", damage: R(10, 100, 50) },
+      {
+        type: "danger sense",
+        power: 20
+      }
+    ])
+  };
+
+  // src/msg.ts
+  function mkSay(type) {
+    return (fmt, ...args) => {
+      UI.logCallback(Util.format(fmt, ...args), type);
+    };
+  }
+  var msg = {
+    log: mkSay("normal"),
+    think: mkSay("thought"),
+    angry: mkSay("angry"),
+    essence: mkSay("essence"),
+    combat: mkSay("combat"),
+    help: mkSay("help"),
+    tutorial: (fmt, ...args) => {
+      if (!Game.player.seenTutorials[fmt]) {
+        msg.help(fmt, ...args);
+        Game.player.seenTutorials[fmt] = true;
+      }
+    },
+    break: () => {
+      UI.logCallback("", "break");
+    }
+  };
+
+  // src/monster.ts
+  var DamageDescriptions = [
+    [0, "You absorb the attack"],
+    [1, "Your essence trembles"],
+    [5, "Your essence wavers"],
+    [10, "You stagger as your essence is drained"],
+    [20, "Your connection to the mortal world frays"],
+    [30, "Your being is stretched to the breaking point"],
+    [50, "You briefly swim through endless aeons of hell"]
+  ];
+  function getDamageDescription(dmg) {
+    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
+      if (DamageDescriptions[i2][0] <= dmg) {
+        return DamageDescriptions[i2][1];
+      }
+    }
+    return DamageDescriptions[0][1];
+  }
+  function meleeAttack(verb, damage) {
+    return {
+      canReachFrom: (c2) => (Game.player.x === c2.x || Game.player.x === c2.x - 1 || Game.player.x === c2.x + 1) && (Game.player.y === c2.y || Game.player.y === c2.y - 1 || Game.player.y === c2.y + 1),
+      attackFrom: (c2) => {
+        msg.combat("%The %s you!", D(c2), verb);
+        let m2 = c2.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  function rangedAttack(verb, damage) {
+    return {
+      canReachFrom: (c2) => playerCanSee(c2.x, c2.y),
+      attackFrom: (c2) => {
+        msg.combat("%The %s you!", D(c2), verb);
+        let m2 = c2.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  var Attacks = {
+    none: {
+      canReachFrom: (c2) => false,
+      attackFrom: (c2) => {
+      }
+    },
+    bite: meleeAttack("snaps at", R(1, 4, 0)),
+    touch: meleeAttack("reaches into", R(1, 4, 2)),
+    slice: meleeAttack("slices at", R(1, 8, 4)),
+    gaze: rangedAttack("gazes at", R(1, 4, 0)),
+    abjure: rangedAttack("abjures", R(1, 4, 2)),
+    rock: rangedAttack("pitches a rock at", R(1, 2, 0))
+  };
   var DeathMessages = {
     drain: "%The crumbles into dust.",
     force: "%The is blown to pieces.",
@@ -4134,7 +4089,7 @@ void main() {
     }
     return targets;
   }
-  function newMap2(opts) {
+  function newMap(opts) {
     Game.map.tiles = [];
     Game.map.monsters = [];
     Game.map.memory = [];
@@ -4550,7 +4505,7 @@ void main() {
             if (newDanger < 1) {
               newDanger = 1;
             }
-            newMap2({
+            newMap({
               danger: newDanger
             });
           }
@@ -4582,6 +4537,58 @@ void main() {
     Game = JSON.parse(freshGame);
   }
 
+  // src/token.ts
+  var Colors = {
+    void: [0, 0, 0],
+    target: [17, 51, 153],
+    dying: [68, 17, 17],
+    weak: [34, 17, 17],
+    critterBG: [17, 17, 17],
+    vermin: [170, 170, 170],
+    danger0: [124, 83, 53],
+    danger5: [157, 137, 59],
+    danger10: [67, 157, 59],
+    danger15: [59, 157, 142],
+    danger20: [157, 59, 67],
+    danger25: [146, 59, 157],
+    terrain: [190, 190, 190],
+    floor: [127, 127, 127],
+    player: [255, 255, 255]
+  };
+  function rgb(color) {
+    let c2 = Colors[color];
+    return `rgb(${c2[0]},${c2[1]},${c2[2]})`;
+  }
+  function rgba(color, alpha) {
+    let c2 = Colors[color];
+    return `rgba(${c2[0]},${c2[1]},${c2[2]},${alpha})`;
+  }
+  var Glyphs = {
+    none: " ",
+    player: "@",
+    exit: ">",
+    wall: "#",
+    floor: ".",
+    rock: ".",
+    insect: "i",
+    worm: "w",
+    rodent: "r",
+    spider: "s",
+    ghost: "g",
+    eyeball: "e",
+    "do-gooder": "h",
+    fairy: "f"
+  };
+  function glyphChar(glyph) {
+    return Glyphs[glyph];
+  }
+  function tokenChar(token) {
+    return glyphChar(token[0]);
+  }
+  function tokenRGB(token) {
+    return rgb(token[1]);
+  }
+
   // src/wizard.ts
   function wizard() {
     offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
@@ -4594,7 +4601,7 @@ void main() {
       onChoose: (key) => {
         switch (key) {
           case "w":
-            newMap2({ danger: 50 });
+            newMap({ danger: 50 });
             return true;
           case "d":
             console.log(Game);
@@ -4606,7 +4613,7 @@ void main() {
             wizardSoul();
             return true;
           case ">":
-            newMap2({ danger: Game.map.danger + 5 });
+            newMap({ danger: Game.map.danger + 5 });
             return true;
         }
         return true;
@@ -4689,6 +4696,9 @@ void main() {
     for (let i2 = 0; i2 < slots.length; i2++) {
       if (isEmptySoul(slots[i2])) {
         slots[i2] = soul;
+        if (soul.effects.find((e2) => e2.type === "ability")) {
+          msg.tutorial("You can activate abilities with (a).");
+        }
         return "claimed";
       } else if (slots[i2].name === soul.name) {
         return "dupe";
@@ -4837,7 +4847,7 @@ void main() {
           Game.player.energy -= 1;
           msg.essence("You pour essence into the passage and force it open.");
           loseEssence(exitCost);
-          newMap2({ danger: c2.exitDanger });
+          newMap({ danger: c2.exitDanger });
         } else {
           msg.angry("I need more essence to pass!");
           msg.tutorial("Passages to more dangerous areas require spending more essence to enter.");
@@ -4916,7 +4926,7 @@ void main() {
     }
   };
   function D(c2) {
-    if (c2.monster) {
+    if (c2.monster && playerCanSee(c2.x, c2.y)) {
       let monster = c2.monster;
       return {
         toString: () => MonsterArchetypes[monster.archetype].name,
@@ -4953,8 +4963,8 @@ void main() {
           killMonsterAt(c2, "force");
         } else {
           msg.combat("%The collapses!", D(c2));
-          msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul.");
-          m2.statuses.push({ type: "dying", timer: 7 + Math.floor(m2.maxHP / 2) });
+          msg.tutorial("Enter a dying creature's tile to (d)evour or (c)laim their soul. Be quick, though!");
+          m2.statuses.push({ type: "dying", timer: 12 + Math.floor(m2.maxHP / 2) });
           m2.hp = 0;
         }
       }
@@ -4997,9 +5007,28 @@ void main() {
       return 0;
     }
   }
-  function maybeDawdle(pct) {
+  function maybeDawdle(pct, message) {
     return (c2) => {
       if (roll100(pct)) {
+        if (message && canSeePlayer(c2)) {
+          msg.combat(message, D(c2));
+        }
+        return 1;
+      } else {
+        return 0;
+      }
+    };
+  }
+  function maybeBlink(pct) {
+    return (c2) => {
+      let nx = c2.x + rng_default.getUniformInt(-4, 4);
+      let ny = c2.y + rng_default.getUniformInt(-4, 4);
+      let spot = contentsAt(nx, ny);
+      if (!spot.blocked) {
+        if (canSeePlayer(c2)) {
+          msg.combat("%The disappears " + (canSeePlayer(spot) ? "from sight!" : "and reappears!"), D(c2));
+        }
+        moveMonster(c2, spot);
         return 1;
       } else {
         return 0;
@@ -5019,7 +5048,8 @@ void main() {
     },
     nipper: (c2) => tryAI(c2, doAttack, AI.wander),
     stationary: (c2) => tryAI(c2, maybeDawdle(25), doAttack, AI.passive),
-    charge: (c2) => tryAI(c2, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive)
+    charge: (c2) => tryAI(c2, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive),
+    prankster: (c2) => tryAI(c2, maybeDawdle(25, "%The giggles!"), maybeBlink(25), doAttack, AI.wander, AI.passive)
   };
 
   // src/tick.ts
@@ -5791,7 +5821,7 @@ void main() {
   }
   function startNewGame() {
     resetGame();
-    newMap2();
+    newMap();
     recomputeFOV();
     msg.think("The world thought me forever sleeping, yet I arise.");
     msg.think("But my essence is still weak. I can barely sustain these remnants of what I once was.");
