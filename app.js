@@ -3383,6 +3383,11 @@ void main() {
   function randInt(low, high) {
     return rng_default.getUniformInt(low, high);
   }
+  function xyDistance(from, to) {
+    let dx = Math.abs(from.x - to.x);
+    let dy = Math.abs(from.y - to.y);
+    return Math.floor(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)));
+  }
 
   // src/data/monsters.ts
   function expandProto(proto) {
@@ -3871,387 +3876,6 @@ void main() {
     }
   };
 
-  // src/monster.ts
-  var DamageDescriptions = [
-    [0, "You absorb the attack"],
-    [1, "Your essence trembles"],
-    [5, "Your essence wavers"],
-    [10, "You stagger as your essence is drained"],
-    [20, "Your connection to the mortal world frays"],
-    [30, "Your being is stretched to the breaking point"],
-    [50, "You briefly swim through endless aeons of hell"]
-  ];
-  function getDamageDescription(dmg) {
-    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
-      if (DamageDescriptions[i2][0] <= dmg) {
-        return DamageDescriptions[i2][1];
-      }
-    }
-    return DamageDescriptions[0][1];
-  }
-  function meleeAttack(verb, damage) {
-    return {
-      canReachFrom: (c2) => (Game.player.x === c2.x || Game.player.x === c2.x - 1 || Game.player.x === c2.x + 1) && (Game.player.y === c2.y || Game.player.y === c2.y - 1 || Game.player.y === c2.y + 1),
-      attackFrom: (c2) => {
-        msg.combat("%The %s you!", D(c2), verb);
-        let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
-        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
-          let dmg = doRoll(dmgRoll);
-          doDamage(dmg);
-        }
-      }
-    };
-  }
-  function rangedAttack(verb, damage) {
-    return {
-      canReachFrom: (c2) => playerCanSee(c2.x, c2.y),
-      attackFrom: (c2) => {
-        msg.combat("%The %s you!", D(c2), verb);
-        let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
-        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
-          let dmg = doRoll(dmgRoll);
-          doDamage(dmg);
-        }
-      }
-    };
-  }
-  var Attacks = {
-    none: {
-      canReachFrom: (c2) => false,
-      attackFrom: (c2) => {
-      }
-    },
-    bite: meleeAttack("snaps at", R(1, 4, 0)),
-    touch: meleeAttack("reaches into", R(1, 4, 2)),
-    slice: meleeAttack("slices at", R(1, 8, 4)),
-    gaze: rangedAttack("gazes at", R(1, 4, 0)),
-    abjure: rangedAttack("abjures", R(1, 4, 2)),
-    rock: rangedAttack("pitches a rock at", R(1, 2, 0))
-  };
-  var DeathMessages = {
-    drain: "%The crumbles into dust.",
-    force: "%The is blown to pieces.",
-    bleedout: "The soul of %the departs."
-  };
-  function spawnMonster(archetype) {
-    let hp = doRoll(MonsterArchetypes[archetype].hp);
-    return {
-      archetype,
-      hp,
-      maxHP: hp,
-      energy: 1,
-      statuses: []
-    };
-  }
-  function killMonster(m2, cause) {
-    if (!m2.deathCause) {
-      m2.deathCause = cause;
-    }
-  }
-  function monsterHasStatus(m2, status) {
-    return !!m2.statuses.find((s2) => s2.type === status);
-  }
-  function inflictStatus(m2, s2) {
-    m2.statuses = m2.statuses.filter((s3) => s3.type !== s3.type);
-    m2.statuses.push(s2);
-  }
-  function cureStatus(m2, st) {
-    m2.statuses = m2.statuses.filter((s2) => s2.type !== st);
-  }
-  function monsterStatusTick(m2) {
-    for (let st of m2.statuses) {
-      switch (st.type) {
-        case "dying":
-          st.timer--;
-          if (st.timer <= 0) {
-            killMonster(m2, "bleedout");
-          }
-          break;
-        case "slow":
-          st.timer--;
-          if (st.timer <= 0) {
-            cureStatus(m2, "slow");
-          }
-          break;
-      }
-    }
-  }
-  function monsterSpeed(m2) {
-    let speed = MonsterArchetypes[m2.archetype].speed;
-    if (monsterHasStatus(m2, "slow")) {
-      speed /= 2;
-    }
-    return speed;
-  }
-  function weakMonster(m2) {
-    return m2.hp <= 1 || monsterHasStatus(m2, "dying");
-  }
-  function makeSoul(arch) {
-    let f2 = SoulFactories[arch.soul];
-    return f2(arch);
-  }
-  function getSoul(m2) {
-    let soul = Game.monsterSouls[m2.archetype];
-    if (soul) {
-      return soul;
-    } else {
-      let arch = MonsterArchetypes[m2.archetype];
-      soul = makeSoul(arch);
-      Game.monsterSouls[m2.archetype] = soul;
-      return soul;
-    }
-  }
-
-  // src/map.ts
-  var Tiles = {
-    rock: { glyph: "rock", blocks: true },
-    wall: { glyph: "wall", blocks: true },
-    floor: { glyph: "floor", blocks: false },
-    exit: { glyph: "exit", blocks: false }
-  };
-  var DangerDescriptions = [
-    [1, "cobwebbed catacomb"],
-    [5, "ruined crypt"],
-    [10, "murky tomb"],
-    [15, "silent mausoleum"],
-    [20, "tranquil sepulcher"],
-    [25, "teeming necropolis"]
-  ];
-  function getMapDescription() {
-    for (let i2 = DangerDescriptions.length - 1; i2 >= 0; i2--) {
-      if (DangerDescriptions[i2][0] < Game.map.danger) {
-        return DangerDescriptions[i2][1];
-      }
-    }
-    return DangerDescriptions[0][1];
-  }
-  function moveMonster(from, to) {
-    if (!to.blocked) {
-      Game.map.monsters[from.x + from.y * Game.map.w] = null;
-      Game.map.monsters[to.x + to.y * Game.map.w] = from.monster;
-      return true;
-    } else {
-      return false;
-    }
-  }
-  var seenXYs = [];
-  var FOV2 = new fov_default.PreciseShadowcasting((x2, y2) => {
-    let c2 = contentsAt(x2, y2);
-    return !(!c2.tile || c2.tile.blocks);
-  });
-  function recomputeFOV() {
-    seenXYs.length = 0;
-    console.log("recomputing FOV! vision: ", getPlayerVision());
-    FOV2.compute(Game.player.x, Game.player.y, getPlayerVision(), (fx, fy, r2, v2) => {
-      seenXYs.push([fx, fy]);
-    });
-  }
-  function playerCanSee(x2, y2) {
-    return !!seenXYs.find(([sx, sy]) => x2 == sx && y2 == sy);
-  }
-  function canSeeThreat() {
-    for (let [x2, y2] of seenXYs) {
-      let c2 = contentsAt(x2, y2);
-      if (c2.monster && !weakMonster(c2.monster)) {
-        return true;
-      }
-    }
-    return false;
-  }
-  function monstersByDistance() {
-    let monstersByDistance2 = [];
-    for (let [x2, y2] of seenXYs) {
-      if (x2 == Game.player.x && y2 == Game.player.y) {
-        continue;
-      }
-      let c2 = contentsAt(x2, y2);
-      if (c2.monster) {
-        let dist = Math.sqrt(Math.pow(Math.abs(Game.player.x - x2), 2) + Math.pow(Math.abs(Game.player.y - y2), 2));
-        monstersByDistance2.push([dist, c2]);
-      }
-    }
-    monstersByDistance2.sort(([a2, _v], [b2, _v2]) => a2 - b2);
-    return monstersByDistance2;
-  }
-  function findTargets() {
-    let targets = [];
-    let targetEffect = getWand().targeting;
-    switch (targetEffect.targeting) {
-      case "seek closest":
-        let monsters = monstersByDistance();
-        for (let i2 = 0; i2 < targetEffect.count && i2 < monsters.length; i2++) {
-          targets.push(monsters[i2][1]);
-        }
-    }
-    return targets;
-  }
-  function newMap(opts) {
-    Game.map.tiles = [];
-    Game.map.monsters = [];
-    Game.map.memory = [];
-    Game.map.exits = [];
-    if (opts) {
-      Game.map = __spreadValues(__spreadValues({}, Game.map), opts);
-    }
-    if (Game.map.danger < 1) {
-      Game.map.danger = 1;
-    }
-    Game.map.tiles.fill(Tiles.rock, 0, Game.map.h * Game.map.w);
-    Game.map.monsters.fill(null, 0, Game.map.w * Game.map.h);
-    Game.map.memory.fill([null, null], 0, Game.map.w * Game.map.h);
-    let map = new map_default.Digger(Game.map.w, Game.map.h);
-    map.create();
-    let rooms = map.getRooms();
-    for (let room of rooms) {
-      room.create((x2, y2, v2) => {
-        Game.map.tiles[x2 + y2 * Game.map.w] = v2 === 1 ? Tiles.wall : Tiles.floor;
-      });
-    }
-    rooms = rng_default.shuffle(rooms);
-    const startRoom = rooms.shift();
-    const [px, py] = startRoom.getCenter();
-    Game.player.x = px;
-    Game.player.y = py;
-    const formations = MonsterFormations.filter((f2) => f2.danger <= Game.map.danger + 2);
-    const formDist = formations.reduce((d2, form, i2) => {
-      d2[i2] = Game.map.danger - Math.abs(Game.map.danger - form.danger) / 2;
-      return d2;
-    }, {});
-    let exits = rng_default.shuffle([
-      Game.map.danger > 1 ? Math.floor(Game.map.danger / 2) : 1,
-      Game.map.danger,
-      Game.map.danger,
-      Game.map.danger + 1,
-      Game.map.danger + 1,
-      Game.map.danger + 1,
-      Game.map.danger + 2,
-      Game.map.danger + 2,
-      Game.map.danger + 2,
-      Game.map.danger + 2,
-      Game.map.danger + 2,
-      Game.map.danger + 2,
-      Game.map.danger + 3,
-      Game.map.danger + 3,
-      Game.map.danger + 3,
-      rng_default.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
-      rng_default.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1,
-      rng_default.getUniformInt(Game.map.danger, Game.map.danger * 2) + 1
-    ]);
-    for (let room of rooms) {
-      if (exits.length > 0 && rng_default.getUniformInt(1, exits.length / 4) === 1) {
-        let exit = exits.shift();
-        let ex = rng_default.getUniformInt(room.getLeft(), room.getRight());
-        let ey = rng_default.getUniformInt(room.getTop(), room.getBottom());
-        Game.map.exits.push([ex, ey, exit]);
-        Game.map.tiles[ex + ey * Game.map.w] = Tiles.exit;
-      }
-      let capacity = Math.floor(0.5 * (room.getRight() - room.getLeft()) * (room.getBottom() - room.getTop()));
-      let groups = rng_default.getUniformInt(0, 3);
-      while (capacity > 0 && groups > 0) {
-        let form = formations[parseInt(rng_default.getWeightedValue(formDist))];
-        for (let [arch, roll] of form.appearing) {
-          let appearing = doRoll(roll);
-          while (appearing > 0) {
-            let mx = rng_default.getUniformInt(room.getLeft(), room.getRight());
-            let my = rng_default.getUniformInt(room.getTop(), room.getBottom());
-            let c2 = contentsAt(mx, my);
-            if (!c2.blocked) {
-              Game.map.monsters[mx + my * Game.map.w] = spawnMonster(arch);
-            }
-            capacity--;
-            appearing--;
-          }
-        }
-        groups--;
-      }
-    }
-    for (let corridor of map.getCorridors()) {
-      corridor.create((x2, y2, v2) => {
-        Game.map.tiles[x2 + y2 * Game.map.w] = Tiles.floor;
-      });
-    }
-    recomputeFOV();
-    if (Game.map.danger >= Game.maxLevel) {
-      msg.break();
-      msg.tutorial("Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination.");
-      msg.break();
-      msg.tutorial("You reached danger level %s in %s turns.", Game.map.danger, Game.turns);
-      msg.break();
-      msg.tutorial("Thanks for playing!");
-      offerChoice("Thanks for playing! You have reached the end of the currently implemented content.", /* @__PURE__ */ new Map([
-        ["q", "Start a new run"],
-        ["c", "Continue playing"]
-      ]), {
-        onChoose: (key) => {
-          switch (key) {
-            case "q":
-              startNewGame();
-              return true;
-            case "c":
-              msg.tutorial("Use Q (shift-q) to restart, or just reload the page.");
-              return true;
-          }
-          return false;
-        }
-      });
-    }
-  }
-  function tileAt(x2, y2) {
-    return Game.map.tiles[x2 + y2 * Game.map.w];
-  }
-  function monsterAt(x2, y2) {
-    return Game.map.monsters[x2 + y2 * Game.map.w];
-  }
-  function playerAt(x2, y2) {
-    return Game.player.x === x2 && Game.player.y === y2;
-  }
-  function contentsAt(x2, y2) {
-    let tile = tileAt(x2, y2);
-    let monster = monsterAt(x2, y2);
-    let player = playerAt(x2, y2);
-    let archetype = (monster == null ? void 0 : monster.archetype) || null;
-    let blocked = player;
-    let sensedDanger = null;
-    if (!tile || tile.blocks) {
-      blocked = true;
-    }
-    if (monster) {
-      blocked = true;
-      let esp = getSoulEffect("danger sense");
-      if (esp) {
-        let dx = Math.abs(Game.player.x - x2);
-        let dy = Math.abs(Game.player.y - y2);
-        let dist = Math.floor(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)));
-        if (dist <= esp.power) {
-          sensedDanger = MonsterArchetypes[archetype].essence;
-        }
-      }
-    }
-    let exitDanger = null;
-    if ((tile == null ? void 0 : tile.glyph) === "exit") {
-      let exit = Game.map.exits.find(([ex, ey, _2]) => ex === x2 && ey === y2);
-      exitDanger = (exit == null ? void 0 : exit[2]) || null;
-    }
-    return {
-      x: x2,
-      y: y2,
-      tile,
-      monster,
-      player,
-      blocked,
-      memory: [tile, archetype],
-      exitDanger,
-      sensedDanger
-    };
-  }
-  function getVictim() {
-    return contentsAt(Game.player.x, Game.player.y);
-  }
-
   // src/souls.ts
   var WandEffects = {
     seek_closest: { type: "targeting", targeting: "seek closest", count: 1 },
@@ -4516,25 +4140,432 @@ void main() {
     }
   }
 
+  // src/monster.ts
+  var DamageDescriptions = [
+    [0, "You absorb the attack"],
+    [1, "Your essence trembles"],
+    [5, "Your essence wavers"],
+    [10, "You stagger as your essence is drained"],
+    [20, "Your connection to the mortal world frays"],
+    [30, "Your being is stretched to the breaking point"],
+    [50, "You briefly swim through endless aeons of hell"]
+  ];
+  function getDamageDescription(dmg) {
+    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
+      if (DamageDescriptions[i2][0] <= dmg) {
+        return DamageDescriptions[i2][1];
+      }
+    }
+    return DamageDescriptions[0][1];
+  }
+  function meleeAttack(verb, damage) {
+    return {
+      canReachFrom: (from, target) => (target.x === from.x || target.x === from.x - 1 || target.x === from.x + 1) && (target.y === from.y || target.y === from.y - 1 || target.y === from.y + 1),
+      attackFrom: (c2) => {
+        msg.combat("%The %s you!", D(c2), verb);
+        let m2 = c2.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  function rangedAttack(verb, damage) {
+    return {
+      canReachFrom: (from, target) => playerCanSee(from.x, from.y),
+      attackFrom: (from, target) => {
+        msg.combat("%The %s you!", D(from), verb);
+        let m2 = from.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  var Attacks = {
+    none: {
+      canReachFrom: (c2, t2) => false,
+      attackFrom: (c2, t2) => {
+      }
+    },
+    bite: meleeAttack("snaps at", R(1, 4, 0)),
+    touch: meleeAttack("reaches into", R(1, 4, 2)),
+    slice: meleeAttack("slices at", R(1, 8, 4)),
+    gaze: rangedAttack("gazes at", R(1, 4, 0)),
+    abjure: rangedAttack("abjures", R(1, 4, 2)),
+    rock: rangedAttack("pitches a rock at", R(1, 2, 0))
+  };
+  var DeathMessages = {
+    drain: "%The crumbles into dust.",
+    force: "%The is blown to pieces.",
+    bleedout: "The soul of %the departs."
+  };
+  function spawnMonster(archetype) {
+    let hp = doRoll(MonsterArchetypes[archetype].hp);
+    return {
+      archetype,
+      hp,
+      maxHP: hp,
+      energy: 1,
+      statuses: []
+    };
+  }
+  function killMonster(m2, cause) {
+    if (!m2.deathCause) {
+      m2.deathCause = cause;
+    }
+  }
+  function monsterHasStatus(m2, status) {
+    return !!m2.statuses.find((s2) => s2.type === status);
+  }
+  function inflictStatus(m2, s2) {
+    m2.statuses = m2.statuses.filter((s3) => s3.type !== s3.type);
+    m2.statuses.push(s2);
+  }
+  function cureStatus(m2, st) {
+    m2.statuses = m2.statuses.filter((s2) => s2.type !== st);
+  }
+  function monsterStatusTick(m2) {
+    for (let st of m2.statuses) {
+      switch (st.type) {
+        case "dying":
+          st.timer--;
+          if (st.timer <= 0) {
+            killMonster(m2, "bleedout");
+          }
+          break;
+        case "slow":
+          st.timer--;
+          if (st.timer <= 0) {
+            cureStatus(m2, "slow");
+          }
+          break;
+      }
+    }
+  }
+  function monsterSpeed(m2) {
+    let speed = MonsterArchetypes[m2.archetype].speed;
+    if (monsterHasStatus(m2, "slow")) {
+      speed /= 2;
+    }
+    return speed;
+  }
+  function weakMonster(m2) {
+    return m2.hp <= 1 || monsterHasStatus(m2, "dying");
+  }
+  function makeSoul(arch) {
+    let f2 = SoulFactories[arch.soul];
+    return f2(arch);
+  }
+  function getSoul(m2) {
+    return getMonsterSoul(m2.archetype, () => {
+      return makeSoul(MonsterArchetypes[m2.archetype]);
+    });
+  }
+
+  // src/map.ts
+  var baseMap = {
+    danger: 1,
+    w: 80,
+    h: 80,
+    tiles: [],
+    monsters: [],
+    memory: [],
+    exits: []
+  };
+  var Tiles = {
+    rock: { glyph: "rock", blocks: true },
+    wall: { glyph: "wall", blocks: true },
+    floor: { glyph: "floor", blocks: false },
+    exit: { glyph: "exit", blocks: false }
+  };
+  var DangerDescriptions = [
+    [1, "cobwebbed catacomb"],
+    [5, "ruined crypt"],
+    [10, "murky tomb"],
+    [15, "silent mausoleum"],
+    [20, "tranquil sepulcher"],
+    [25, "teeming necropolis"]
+  ];
+  function getMapDescription() {
+    for (let i2 = DangerDescriptions.length - 1; i2 >= 0; i2--) {
+      if (DangerDescriptions[i2][0] < getMap().danger) {
+        return DangerDescriptions[i2][1];
+      }
+    }
+    return DangerDescriptions[0][1];
+  }
+  function moveMonster(from, to) {
+    if (!to.blocked) {
+      const map = getMap();
+      map.monsters[from.x + from.y * map.w] = null;
+      map.monsters[to.x + to.y * map.w] = from.monster;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  var seenXYs = [];
+  var FOV2 = new fov_default.PreciseShadowcasting((x2, y2) => {
+    let c2 = contentsAt(x2, y2);
+    return !(!c2.tile || c2.tile.blocks);
+  });
+  function recomputeFOV() {
+    seenXYs.length = 0;
+    console.log("recomputing FOV! vision: ", getPlayerVision());
+    FOV2.compute(getPlayerXY().x, getPlayerXY().y, getPlayerVision(), (fx, fy, r2, v2) => {
+      seenXYs.push([fx, fy]);
+    });
+  }
+  function playerCanSee(x2, y2) {
+    return !!seenXYs.find(([sx, sy]) => x2 == sx && y2 == sy);
+  }
+  function canSeeThreat() {
+    for (let [x2, y2] of seenXYs) {
+      let c2 = contentsAt(x2, y2);
+      if (c2.monster && !weakMonster(c2.monster)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function monstersByDistance() {
+    let monstersByDistance2 = [];
+    for (let [x2, y2] of seenXYs) {
+      if (x2 == getPlayerXY().x && y2 == getPlayerXY().y) {
+        continue;
+      }
+      let c2 = contentsAt(x2, y2);
+      if (c2.monster) {
+        let dist = Math.sqrt(Math.pow(Math.abs(getPlayerXY().x - x2), 2) + Math.pow(Math.abs(getPlayerXY().y - y2), 2));
+        monstersByDistance2.push([dist, c2]);
+      }
+    }
+    monstersByDistance2.sort(([a2, _v], [b2, _v2]) => a2 - b2);
+    return monstersByDistance2;
+  }
+  function findTargets() {
+    let targets = [];
+    let targetEffect = getWand().targeting;
+    switch (targetEffect.targeting) {
+      case "seek closest":
+        let monsters = monstersByDistance();
+        for (let i2 = 0; i2 < targetEffect.count && i2 < monsters.length; i2++) {
+          targets.push(monsters[i2][1]);
+        }
+    }
+    return targets;
+  }
+  function mapGenSimple(input) {
+    const map = {
+      danger: input.danger,
+      w: input.segW * 10,
+      h: input.segH * 10,
+      tiles: [],
+      monsters: [],
+      memory: [],
+      exits: []
+    };
+    map.tiles.fill(Tiles.rock, 0, map.h * map.w);
+    map.monsters.fill(null, 0, map.w * map.h);
+    map.memory.fill([null, null], 0, map.w * map.h);
+    return { map };
+  }
+  function newMap(opts) {
+    const map = mapGenSimple({
+      segH: 8,
+      segW: 8,
+      danger: (opts == null ? void 0 : opts.danger) ? opts.danger : getMap().danger
+    }).map;
+    setMap(map);
+    let digger = new map_default.Digger(map.w, map.h);
+    digger.create();
+    let rooms = digger.getRooms();
+    for (let room of rooms) {
+      room.create((x2, y2, v2) => {
+        map.tiles[x2 + y2 * map.w] = v2 === 1 ? Tiles.wall : Tiles.floor;
+      });
+    }
+    rooms = rng_default.shuffle(rooms);
+    const startRoom = rooms.shift();
+    const [px, py] = startRoom.getCenter();
+    setPlayerXY(px, py);
+    const formations = MonsterFormations.filter((f2) => f2.danger <= map.danger + 2);
+    const formDist = formations.reduce((d2, form, i2) => {
+      d2[i2] = map.danger - Math.abs(map.danger - form.danger) / 2;
+      return d2;
+    }, {});
+    let exits = rng_default.shuffle([
+      map.danger > 1 ? Math.floor(map.danger / 2) : 1,
+      map.danger,
+      map.danger,
+      map.danger + 1,
+      map.danger + 1,
+      map.danger + 1,
+      map.danger + 2,
+      map.danger + 2,
+      map.danger + 2,
+      map.danger + 2,
+      map.danger + 2,
+      map.danger + 2,
+      map.danger + 3,
+      map.danger + 3,
+      map.danger + 3,
+      randInt(map.danger, map.danger * 2) + 1,
+      randInt(map.danger, map.danger * 2) + 1,
+      randInt(map.danger, map.danger * 2) + 1
+    ]);
+    for (let room of rooms) {
+      if (exits.length > 0 && randInt(1, exits.length / 4) === 1) {
+        let exit = exits.shift();
+        let ex = randInt(room.getLeft(), room.getRight());
+        let ey = randInt(room.getTop(), room.getBottom());
+        map.exits.push([ex, ey, exit]);
+        map.tiles[ex + ey * map.w] = Tiles.exit;
+      }
+      let capacity = Math.floor(0.5 * (room.getRight() - room.getLeft()) * (room.getBottom() - room.getTop()));
+      let groups = randInt(0, 3);
+      while (capacity > 0 && groups > 0) {
+        let form = formations[parseInt(rng_default.getWeightedValue(formDist))];
+        for (let [arch, roll] of form.appearing) {
+          let appearing = doRoll(roll);
+          while (appearing > 0) {
+            let mx = randInt(room.getLeft(), room.getRight());
+            let my = randInt(room.getTop(), room.getBottom());
+            let c2 = contentsAt(mx, my);
+            if (!c2.blocked) {
+              map.monsters[mx + my * map.w] = spawnMonster(arch);
+            }
+            capacity--;
+            appearing--;
+          }
+        }
+        groups--;
+      }
+    }
+    for (let corridor of digger.getCorridors()) {
+      corridor.create((x2, y2, v2) => {
+        map.tiles[x2 + y2 * map.w] = Tiles.floor;
+      });
+    }
+    recomputeFOV();
+    maybeWin();
+  }
+  function tileAt(x2, y2) {
+    return getMap().tiles[x2 + y2 * getMap().w];
+  }
+  function monsterAt(x2, y2) {
+    return getMap().monsters[x2 + y2 * getMap().w];
+  }
+  function playerAt(x2, y2) {
+    return getPlayerXY().x === x2 && getPlayerXY().y === y2;
+  }
+  function contentsAt(x2, y2) {
+    let tile = tileAt(x2, y2);
+    let monster = monsterAt(x2, y2);
+    let player = playerAt(x2, y2);
+    let archetype = (monster == null ? void 0 : monster.archetype) || null;
+    let blocked = player;
+    let sensedDanger = null;
+    if (!tile || tile.blocks) {
+      blocked = true;
+    }
+    if (monster) {
+      blocked = true;
+      let esp = getSoulEffect("danger sense");
+      if (esp) {
+        let dist = xyDistance({ x: x2, y: y2 }, getPlayerXY());
+        if (dist <= esp.power) {
+          sensedDanger = MonsterArchetypes[archetype].essence;
+        }
+      }
+    }
+    let exitDanger = null;
+    if ((tile == null ? void 0 : tile.glyph) === "exit") {
+      let exit = getMap().exits.find(([ex, ey, _2]) => ex === x2 && ey === y2);
+      exitDanger = (exit == null ? void 0 : exit[2]) || null;
+    }
+    return {
+      x: x2,
+      y: y2,
+      tile,
+      monster,
+      player,
+      blocked,
+      memory: [tile, archetype],
+      exitDanger,
+      sensedDanger
+    };
+  }
+  function getVictim() {
+    let { x: x2, y: y2 } = getPlayerXY();
+    return contentsAt(x2, y2);
+  }
+
   // src/game.ts
   var Game = {
     turns: 0,
     player: newPlayer,
     maxLevel: 30,
-    map: {
-      danger: 1,
-      w: 80,
-      h: 80,
-      tiles: [],
-      monsters: [],
-      memory: [],
-      exits: []
-    },
+    map: baseMap,
     monsterSouls: {}
   };
   var freshGame = JSON.stringify(Game);
   function resetGame() {
     Game = JSON.parse(freshGame);
+  }
+  function setMap(map) {
+    Game.map = map;
+  }
+  function getMap() {
+    return Game.map;
+  }
+  function getPlayerXY() {
+    return { x: Game.player.x, y: Game.player.y };
+  }
+  function setPlayerXY(x2, y2) {
+    Game.player.x = x2;
+    Game.player.y = y2;
+  }
+  function getMonsterSoul(key, maker) {
+    let soul = Game.monsterSouls[key];
+    if (!soul) {
+      soul = maker();
+      Game.monsterSouls[key] = soul;
+    }
+    return soul;
+  }
+  function maybeWin() {
+    if (Game.map.danger >= Game.maxLevel) {
+      msg.break();
+      msg.tutorial("Congratulations! You have regained enough of your lost power to begin making longer-term plans for world domination.");
+      msg.break();
+      msg.tutorial("You reached danger level %s in %s turns.", Game.map.danger, Game.turns);
+      msg.break();
+      msg.tutorial("Thanks for playing!");
+      offerChoice("Thanks for playing! You have reached the end of the currently implemented content.", /* @__PURE__ */ new Map([
+        ["q", "Start a new run"],
+        ["c", "Continue playing"]
+      ]), {
+        onChoose: (key) => {
+          switch (key) {
+            case "q":
+              startNewGame();
+              return true;
+            case "c":
+              msg.tutorial("Use Q (shift-q) to restart, or just reload the page.");
+              return true;
+          }
+          return false;
+        }
+      });
+    }
   }
 
   // src/token.ts
@@ -4984,11 +5015,20 @@ void main() {
   function canSeePlayer(c2) {
     return playerCanSee(c2.x, c2.y);
   }
-  function doApproach(c2) {
+  function getTarget(c2) {
     if (canSeePlayer(c2)) {
-      let dx = Game.player.x - c2.x;
+      let { x: x2, y: y2 } = getPlayerXY();
+      return contentsAt(x2, y2);
+    } else {
+      return null;
+    }
+  }
+  function doApproach(c2) {
+    let target = getTarget(c2);
+    if (target) {
+      let dx = target.x - c2.x;
       dx = dx == 0 ? 0 : dx / Math.abs(dx);
-      let dy = Game.player.y - c2.y;
+      let dy = target.y - c2.y;
       dy = dy == 0 ? 0 : dy / Math.abs(dy);
       moveMonster(c2, contentsAt(c2.x + dx, c2.y + dy));
       return 1;
@@ -4997,11 +5037,12 @@ void main() {
     }
   }
   function doAttack(c2) {
+    let target = getTarget(c2);
     let m2 = c2.monster;
     let arch = MonsterArchetypes[m2.archetype];
     let attack = Attacks[arch.attack];
-    if (attack.canReachFrom(c2)) {
-      attack.attackFrom(c2);
+    if (target && attack.canReachFrom(c2, target)) {
+      attack.attackFrom(c2, target);
       return 1;
     } else {
       return 0;
@@ -5021,8 +5062,8 @@ void main() {
   }
   function maybeBlink(pct) {
     return (c2) => {
-      let nx = c2.x + rng_default.getUniformInt(-4, 4);
-      let ny = c2.y + rng_default.getUniformInt(-4, 4);
+      let nx = c2.x + randInt(-4, 4);
+      let ny = c2.y + randInt(-4, 4);
       let spot = contentsAt(nx, ny);
       if (!spot.blocked) {
         if (canSeePlayer(c2)) {
@@ -5040,13 +5081,18 @@ void main() {
       return 1;
     },
     wander: (c2) => {
-      let nx = c2.x + rng_default.getUniformInt(-1, 1);
-      let ny = c2.y + rng_default.getUniformInt(-1, 1);
-      let spot = contentsAt(nx, ny);
-      moveMonster(c2, spot);
+      for (let tries = 5; tries > 0; tries--) {
+        let nx = c2.x + randInt(-1, 1);
+        let ny = c2.y + randInt(-1, 1);
+        let spot = contentsAt(nx, ny);
+        if (!spot.blocked) {
+          moveMonster(c2, spot);
+          return 1;
+        }
+      }
       return 1;
     },
-    nipper: (c2) => tryAI(c2, doAttack, AI.wander),
+    nipper: (c2) => tryAI(c2, maybeDawdle(25), doAttack, AI.wander),
     stationary: (c2) => tryAI(c2, maybeDawdle(25), doAttack, AI.passive),
     charge: (c2) => tryAI(c2, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive),
     prankster: (c2) => tryAI(c2, maybeDawdle(20, "%The giggles!"), maybeDawdle(20, "%The chortles!"), maybeBlink(20), maybeDawdle(20, "%The makes a rude gesture!"), doAttack, AI.wander, AI.passive)
@@ -5691,7 +5737,7 @@ void main() {
             let arch = MonsterArchetypes[c2.monster.archetype];
             display.draw(x2 - sx, y2 - sy, glyphChar(arch.glyph), fgColor(arch.color, 0.75), bgColor(monsterHasStatus(c2.monster, "dying") ? "dying" : isTarget ? "target" : weakMonster(c2.monster) ? "weak" : "critterBG"));
           } else if (c2.tile) {
-            display.draw(x2 - sx, y2 - sy, glyphChar(c2.tile.glyph), fgColor(c2.tile.blocks ? "terrain" : "floor", 0.75), bg);
+            display.draw(x2 - sx, y2 - sy, glyphChar(c2.tile.glyph), fgColor(c2.tile.blocks ? "terrain" : "floor", 1), bg);
           } else {
             display.draw(x2 - sx, y2 - sy, glyphChar("rock"), "#000", bg);
           }
@@ -5724,7 +5770,7 @@ void main() {
     Util.format.map.the = "the";
     renderControls(Game, UI, logMessages);
     let playarea = document.getElementById("playarea");
-    let options = __spreadValues({}, UI.viewport);
+    let options = __spreadProps(__spreadValues({}, UI.viewport), { fontSize: 16 });
     if (UI.doTiles) {
       let tileSet = document.createElement("img");
       tileSet.src = "sprites.png";
@@ -5760,7 +5806,6 @@ void main() {
     let dispC = display.getContainer();
     playarea.appendChild(dispC);
     UI.uiCallback = () => {
-      console.log("Drawing UI");
       UI.state = {
         playerEssence: Game.player.essence,
         playerMaxEssence: maxEssence(),
