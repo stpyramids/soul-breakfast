@@ -79,6 +79,9 @@ function maybeDawdle(pct: number, message?: string): AIFunc {
 
 function maybeBlink(pct: number): AIFunc {
   return (c) => {
+    if (!roll100(pct)) {
+      return 0.0;
+    }
     let nx = c.x + randInt(-4, 4);
     let ny = c.y + randInt(-4, 4);
     let spot = contentsAt(nx, ny);
@@ -130,7 +133,7 @@ export const AI: { [id: string]: AIFunc } = {
       AI.passive
     ),
   blinker: (c) =>
-    tryAI(c, maybeDawdle(20), maybeBlink(20), doAttack, doApproach), // should "blink close"
+    tryAI(c, maybeBlink(30), maybeDawdle(50), doAttack, doApproach), // should "blink close"
 };
 
 export type Attack = {
