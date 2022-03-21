@@ -56,3 +56,7 @@ export function xyDistance(from: XY, to: XY): number {
   let dy = Math.abs(from.y - to.y);
   return Math.floor(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)));
 }
+
+export function sample<T>(items: T[]): T | null {
+  return ROT.RNG.getItem(items);
+}

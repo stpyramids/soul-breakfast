@@ -63,6 +63,7 @@ export const MonsterFormations: MonsterFormation[] = [
     ],
     danger: 15,
   },
+  solo("will-o-wisp", R(1, 1, 0), 15),
   solo("soul sucker", R(2, 2, 2), 17),
 
   /// Do-gooder parties

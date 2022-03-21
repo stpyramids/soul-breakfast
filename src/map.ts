@@ -2,7 +2,13 @@ import * as ROT from "rot-js";
 import { MonsterFormations } from "./data/formations";
 import { MonsterArchetypes } from "./data/monsters";
 import { getMap, getPlayerXY, maybeWin, setMap, setPlayerXY } from "./game";
-import { ArchetypeID, Monster, spawnMonster, weakMonster } from "./monster";
+import {
+  ArchetypeID,
+  Monster,
+  MonsterFormation,
+  spawnMonster,
+  weakMonster,
+} from "./monster";
 import { getPlayerVision, getSoulEffect, getWand } from "./player";
 import { GlyphID } from "./token";
 import { doRoll, randInt, xyDistance } from "./utils";
@@ -200,6 +206,10 @@ export function newMap(opts?: NewMapOptions) {
   rooms = ROT.RNG.shuffle(rooms);
   const startRoom = rooms.shift()!;
   const [px, py] = startRoom.getCenter();
+  if (map.danger === 1) {
+    // Leave a mint under the pillow
+    placeMonsters(map, startRoom, [MonsterFormations[0]], { [0]: 1 });
+  }
   setPlayerXY(px, py);
 
   // Place monsters and exits in other rooms
@@ -242,29 +252,7 @@ export function newMap(opts?: NewMapOptions) {
       map.tiles[ex + ey * map.w] = Tiles.exit;
     }
     // New monster placement logic. Calculate a capacity for each room and try to fill it.
-    let capacity = Math.floor(
-      0.5 *
-        (room.getRight() - room.getLeft()) *
-        (room.getBottom() - room.getTop())
-    );
-    let groups = randInt(0, 3);
-    while (capacity > 0 && groups > 0) {
-      let form = formations[parseInt(ROT.RNG.getWeightedValue(formDist)!)];
-      for (let [arch, roll] of form.appearing) {
-        let appearing = doRoll(roll);
-        while (appearing > 0) {
-          let mx = randInt(room.getLeft(), room.getRight());
-          let my = randInt(room.getTop(), room.getBottom());
-          let c = contentsAt(mx, my);
-          if (!c.blocked) {
-            map.monsters[mx + my * map.w] = spawnMonster(arch);
-          }
-          capacity--;
-          appearing--;
-        }
-      }
-      groups--;
-    }
+    placeMonsters(map, room, formations, formDist);
   }
 
   // Create corridors
@@ -276,6 +264,46 @@ export function newMap(opts?: NewMapOptions) {
 
   recomputeFOV();
   maybeWin();
+}
+
+interface Room {
+  getRight(): number;
+  getLeft(): number;
+  getBottom(): number;
+  getTop(): number;
+}
+
+function placeMonsters(
+  map: LevelMap,
+  room: Room,
+  formations: MonsterFormation[],
+  formDist: {
+    [key: number]: number;
+  }
+) {
+  let capacity = Math.floor(
+    0.5 *
+      (room.getRight() - room.getLeft()) *
+      (room.getBottom() - room.getTop())
+  );
+  let groups = randInt(0, 3);
+  while (capacity > 0 && groups > 0) {
+    let form = formations[parseInt(ROT.RNG.getWeightedValue(formDist)!)];
+    for (let [arch, roll] of form.appearing) {
+      let appearing = doRoll(roll);
+      while (appearing > 0) {
+        let mx = randInt(room.getLeft(), room.getRight());
+        let my = randInt(room.getTop(), room.getBottom());
+        let c = contentsAt(mx, my);
+        if (!c.blocked) {
+          map.monsters[mx + my * map.w] = spawnMonster(arch);
+        }
+        capacity--;
+        appearing--;
+      }
+    }
+    groups--;
+  }
 }
 
 // Reading map contents

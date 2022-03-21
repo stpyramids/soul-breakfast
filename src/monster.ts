@@ -80,6 +80,7 @@ export const Attacks: { [id: string]: Attack } = {
   bite: meleeAttack("snaps at", R(1, 4, 0)),
   touch: meleeAttack("reaches into", R(1, 4, 2)),
   slice: meleeAttack("slices at", R(1, 8, 4)),
+  shock: meleeAttack("shocks", R(3, 4, 1)),
   gaze: rangedAttack("gazes at", R(1, 4, 0)),
   abjure: rangedAttack("abjures", R(1, 4, 2)),
   rock: rangedAttack("pitches a rock at", R(1, 2, 0)),

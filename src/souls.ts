@@ -53,7 +53,7 @@ export type DangerSenseEffect = {
   power: number;
 };
 
-export type ActivatedAbility = "shadow cloak" | "clairvoyance";
+export type ActivatedAbility = "shadow cloak" | "clairvoyance" | "blink";
 
 export type ActivatedAbilityEffect = {
   type: "ability";
@@ -111,7 +111,7 @@ export function describeSoulEffect(e: SoulEffect) {
     case "danger sense":
       return "danger sense " + e.power;
     case "ability":
-      return e.ability + " " + e.power;
+      return e.ability + (e.power ? " " + e.power : "");
   }
 }
 

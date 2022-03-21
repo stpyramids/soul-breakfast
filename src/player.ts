@@ -1,5 +1,5 @@
-import { Game } from "./game";
-import { doMagicMap, newMap } from "./map";
+import { Game, setPlayerXY } from "./game";
+import { contentsAt, doMagicMap, newMap, seenXYs } from "./map";
 import { getDamageDescription } from "./monster";
 import { msg } from "./msg";
 import {
@@ -16,7 +16,7 @@ import {
   WandEffects,
 } from "./souls";
 import { GlyphID } from "./token";
-import { doRoll, keysOf, R, randInt } from "./utils";
+import { doRoll, keysOf, R, randInt, sample } from "./utils";
 
 export const newPlayer = {
   x: 10,
@@ -111,12 +111,38 @@ export function invokeAbility(ability: ActivatedAbility, power: number) {
     case "shadow cloak":
       addPlayerEffect("umbra", power + randInt(1, 2));
       msg.essence("You draw in your essence and conceal yourself.");
+      loseEssence(power * 2);
+      break;
     case "clairvoyance":
       doMagicMap(power);
       msg.essence("You peer briefly beyond the mortal veil.");
+      loseEssence(power);
+      break;
+    case "blink":
+      if (doBlink()) {
+        msg.essence(
+          "You tunnel through your essence aura and emerge elsewhere!"
+        );
+      } else {
+        msg.angry("There is nowhere to flee!");
+      }
+      loseEssence(Math.floor(maxEssence() / 2));
+      break;
   }
-  loseEssence(power);
   Game.player.cooldownAbilities.push(ability);
+}
+
+function doBlink(): boolean {
+  let options = seenXYs
+    .map(([x, y]) => contentsAt(x, y))
+    .filter((c) => !c.blocked);
+  let spot = sample(options);
+  if (spot) {
+    setPlayerXY(spot.x, spot.y);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 export function getSoulEffect<

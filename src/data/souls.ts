@@ -108,6 +108,18 @@ export const SoulFactories = {
       power: Math.floor(a.essence / 5) + 2,
     },
   ]),
+  blink: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: Math.floor(a.essence / 2) + 1,
+    },
+    {
+      type: "ability",
+      ability: "blink",
+      power: 0,
+    },
+  ]),
   // Debug mode super-soul
   megalich: mkSoulF((a) => [
     {

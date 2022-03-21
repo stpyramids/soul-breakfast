@@ -278,7 +278,19 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       attack: "rock",
       soul: "umbra",
     },
-    variants: [],
+    variants: [
+      {
+        name: "will-o-wisp",
+        description:
+          "These malicious creatures flit about, causing meaningless pain. As opposed to the meaningful pain I cause, of course.",
+        essence: 12,
+        color: "danger15",
+        hp: R(3, 5, 1),
+        ai: "blinker",
+        attack: "shock",
+        soul: "blink",
+      },
+    ],
   }),
   ...expandProto({
     base: {

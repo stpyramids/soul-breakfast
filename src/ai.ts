@@ -38,8 +38,12 @@ function doApproach(c: XYContents): number {
     dx = dx == 0 ? 0 : dx / Math.abs(dx);
     let dy = target.y - c.y;
     dy = dy == 0 ? 0 : dy / Math.abs(dy);
-    moveMonster(c, contentsAt(c.x + dx, c.y + dy));
-    return 1.0;
+    if (dx + dy > 0) {
+      moveMonster(c, contentsAt(c.x + dx, c.y + dy));
+      return 1.0;
+    } else {
+      return 0.0;
+    }
   } else {
     return 0.0;
   }
@@ -125,6 +129,8 @@ export const AI: { [id: string]: AIFunc } = {
       AI.wander,
       AI.passive
     ),
+  blinker: (c) =>
+    tryAI(c, maybeDawdle(20), maybeBlink(20), doAttack, doApproach), // should "blink close"
 };
 
 export type Attack = {
