@@ -3388,6 +3388,9 @@ void main() {
     let dy = Math.abs(from.y - to.y);
     return Math.floor(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)));
   }
+  function sample(items) {
+    return rng_default.getItem(items);
+  }
 
   // src/data/monsters.ts
   function expandProto(proto) {
@@ -3629,7 +3632,18 @@ void main() {
       attack: "rock",
       soul: "umbra"
     },
-    variants: []
+    variants: [
+      {
+        name: "will-o-wisp",
+        description: "These malicious creatures flit about, causing meaningless pain. As opposed to the meaningful pain I cause, of course.",
+        essence: 12,
+        color: "danger15",
+        hp: R(3, 5, 1),
+        ai: "blinker",
+        attack: "shock",
+        soul: "blink"
+      }
+    ]
   })), expandProto({
     base: {
       name: "MegaLich 3000",
@@ -3706,6 +3720,7 @@ void main() {
       ],
       danger: 15
     },
+    solo("will-o-wisp", R(1, 1, 0), 15),
     solo("soul sucker", R(2, 2, 2), 17),
     {
       appearing: [
@@ -3850,6 +3865,18 @@ void main() {
         power: Math.floor(a2.essence / 5) + 2
       }
     ]),
+    blink: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "ability",
+        ability: "blink",
+        power: 0
+      }
+    ]),
     megalich: mkSoulF((a2) => [
       {
         type: "stat bonus",
@@ -3943,7 +3970,7 @@ void main() {
       case "danger sense":
         return "danger sense " + e2.power;
       case "ability":
-        return e2.ability + " " + e2.power;
+        return e2.ability + (e2.power ? " " + e2.power : "");
     }
   }
   function describeSoulEffects(s2) {
@@ -4034,12 +4061,33 @@ void main() {
       case "shadow cloak":
         addPlayerEffect("umbra", power + randInt(1, 2));
         msg.essence("You draw in your essence and conceal yourself.");
+        loseEssence(power * 2);
+        break;
       case "clairvoyance":
         doMagicMap(power);
         msg.essence("You peer briefly beyond the mortal veil.");
+        loseEssence(power);
+        break;
+      case "blink":
+        if (doBlink()) {
+          msg.essence("You tunnel through your essence aura and emerge elsewhere!");
+        } else {
+          msg.angry("There is nowhere to flee!");
+        }
+        loseEssence(Math.floor(maxEssence() / 2));
+        break;
     }
-    loseEssence(power);
     Game.player.cooldownAbilities.push(ability);
+  }
+  function doBlink() {
+    let options = seenXYs.map(([x2, y2]) => contentsAt(x2, y2)).filter((c2) => !c2.blocked);
+    let spot = sample(options);
+    if (spot) {
+      setPlayerXY(spot.x, spot.y);
+      return true;
+    } else {
+      return false;
+    }
   }
   function getSoulEffect(type) {
     for (let soul of Game.player.soulSlots.generic) {
@@ -4231,6 +4279,7 @@ void main() {
     bite: meleeAttack("snaps at", R(1, 4, 0)),
     touch: meleeAttack("reaches into", R(1, 4, 2)),
     slice: meleeAttack("slices at", R(1, 8, 4)),
+    shock: meleeAttack("shocks", R(3, 4, 1)),
     gaze: rangedAttack("gazes at", R(1, 4, 0)),
     abjure: rangedAttack("abjures", R(1, 4, 2)),
     rock: rangedAttack("pitches a rock at", R(1, 2, 0))
@@ -4436,6 +4485,9 @@ void main() {
     rooms = rng_default.shuffle(rooms);
     const startRoom = rooms.shift();
     const [px, py] = startRoom.getCenter();
+    if (map.danger === 1) {
+      placeMonsters(map, startRoom, [MonsterFormations[0]], { [0]: 1 });
+    }
     setPlayerXY(px, py);
     const formations = MonsterFormations.filter((f2) => f2.danger <= map.danger + 2);
     const formDist = formations.reduce((d2, form, i2) => {
@@ -4470,25 +4522,7 @@ void main() {
         map.exits.push([ex, ey, exit]);
         map.tiles[ex + ey * map.w] = Tiles.exit;
       }
-      let capacity = Math.floor(0.5 * (room.getRight() - room.getLeft()) * (room.getBottom() - room.getTop()));
-      let groups = randInt(0, 3);
-      while (capacity > 0 && groups > 0) {
-        let form = formations[parseInt(rng_default.getWeightedValue(formDist))];
-        for (let [arch, roll] of form.appearing) {
-          let appearing = doRoll(roll);
-          while (appearing > 0) {
-            let mx = randInt(room.getLeft(), room.getRight());
-            let my = randInt(room.getTop(), room.getBottom());
-            let c2 = contentsAt(mx, my);
-            if (!c2.blocked) {
-              map.monsters[mx + my * map.w] = spawnMonster(arch);
-            }
-            capacity--;
-            appearing--;
-          }
-        }
-        groups--;
-      }
+      placeMonsters(map, room, formations, formDist);
     }
     for (let corridor of digger.getCorridors()) {
       corridor.create((x2, y2, v2) => {
@@ -4497,6 +4531,27 @@ void main() {
     }
     recomputeFOV();
     maybeWin();
+  }
+  function placeMonsters(map, room, formations, formDist) {
+    let capacity = Math.floor(0.5 * (room.getRight() - room.getLeft()) * (room.getBottom() - room.getTop()));
+    let groups = randInt(0, 3);
+    while (capacity > 0 && groups > 0) {
+      let form = formations[parseInt(rng_default.getWeightedValue(formDist))];
+      for (let [arch, roll] of form.appearing) {
+        let appearing = doRoll(roll);
+        while (appearing > 0) {
+          let mx = randInt(room.getLeft(), room.getRight());
+          let my = randInt(room.getTop(), room.getBottom());
+          let c2 = contentsAt(mx, my);
+          if (!c2.blocked) {
+            map.monsters[mx + my * map.w] = spawnMonster(arch);
+          }
+          capacity--;
+          appearing--;
+        }
+      }
+      groups--;
+    }
   }
   function tileAt(x2, y2) {
     return getMap().tiles[x2 + y2 * getMap().w];
@@ -5075,8 +5130,12 @@ void main() {
       dx = dx == 0 ? 0 : dx / Math.abs(dx);
       let dy = target.y - c2.y;
       dy = dy == 0 ? 0 : dy / Math.abs(dy);
-      moveMonster(c2, contentsAt(c2.x + dx, c2.y + dy));
-      return 1;
+      if (dx + dy > 0) {
+        moveMonster(c2, contentsAt(c2.x + dx, c2.y + dy));
+        return 1;
+      } else {
+        return 0;
+      }
     } else {
       return 0;
     }
@@ -5107,6 +5166,9 @@ void main() {
   }
   function maybeBlink(pct) {
     return (c2) => {
+      if (!roll100(pct)) {
+        return 0;
+      }
       let nx = c2.x + randInt(-4, 4);
       let ny = c2.y + randInt(-4, 4);
       let spot = contentsAt(nx, ny);
@@ -5140,7 +5202,8 @@ void main() {
     nipper: (c2) => tryAI(c2, maybeDawdle(25), doAttack, AI.wander),
     stationary: (c2) => tryAI(c2, maybeDawdle(25), doAttack, AI.passive),
     charge: (c2) => tryAI(c2, doAttack, maybeDawdle(25), doApproach, AI.wander, AI.passive),
-    prankster: (c2) => tryAI(c2, maybeDawdle(20, "%The giggles!"), maybeDawdle(20, "%The chortles!"), maybeBlink(20), maybeDawdle(20, "%The makes a rude gesture!"), doAttack, AI.wander, AI.passive)
+    prankster: (c2) => tryAI(c2, maybeDawdle(20, "%The giggles!"), maybeDawdle(20, "%The chortles!"), maybeBlink(20), maybeDawdle(20, "%The makes a rude gesture!"), doAttack, AI.wander, AI.passive),
+    blinker: (c2) => tryAI(c2, maybeBlink(30), maybeDawdle(50), doAttack, doApproach)
   };
 
   // src/tick.ts
