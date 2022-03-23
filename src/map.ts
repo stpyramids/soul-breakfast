@@ -193,7 +193,7 @@ export function newMap(opts?: NewMapOptions) {
   setMap(map);
 
   // Dig a new map
-  let digger = new ROT.Map.Digger(map.w, map.h, { corridorLength: [2, 10] });
+  let digger = new ROT.Map.Digger(map.w, map.h, { corridorLength: [1, 5] });
   digger.create();
 
   // Create rooms
@@ -246,7 +246,7 @@ export function newMap(opts?: NewMapOptions) {
   ]);
   for (let room of rooms) {
     // todo This is a bad way to place exits but it should work
-    if (exits.length > 0 && randInt(1, exits.length / 4) === 1) {
+    if (exits.length > 0) {
       let exit = exits.shift()!;
       let ex = randInt(room.getLeft(), room.getRight());
       let ey = randInt(room.getTop(), room.getBottom());
