@@ -17,7 +17,7 @@ import { monsterHasStatus, weakMonster } from "./monster";
 import { msg } from "./msg";
 import { maxEssence } from "./player";
 import { tick } from "./tick";
-import { ColorID, glyphChar, rgb, rgba } from "./token";
+import { ColorID, glyphChar, rgb, rgba, tokenChar, tokenRGBA } from "./token";
 import { renderControls } from "./ui/controls";
 
 type Choice = {
@@ -120,8 +120,8 @@ function drawMap(display: ROT.Display) {
           display.draw(
             x - sx,
             y - sy,
-            glyphChar(c.tile.glyph),
-            fgColor(c.tile.blocks ? "terrain" : "floor", 1.0),
+            tokenChar(c.tile.token),
+            tokenRGBA(c.tile.token, 1.0),
             bg
           );
         } else {
@@ -143,7 +143,13 @@ function drawMap(display: ROT.Display) {
               "#000"
             );
           } else if (mtile) {
-            display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
+            display.draw(
+              ix,
+              iy,
+              tokenChar(mtile.token),
+              tokenRGBA(mtile.token, 0.5),
+              "#000"
+            );
           }
         }
       }
@@ -175,7 +181,7 @@ export function runGame() {
 
   // Set up the ROT.js playfield
   let playarea = document.getElementById("playarea")!;
-  let options: any = { ...UI.viewport, fontSize: 16 };
+  let options: any = { ...UI.viewport, fontSize: 18 };
   // Secret experimental tiles mode (very broken)
   if (UI.doTiles) {
     let tileSet = document.createElement("img");

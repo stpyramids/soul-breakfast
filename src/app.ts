@@ -1,3 +1,7 @@
 import { runGame } from "./ui";
 
-window.onload = runGame;
+function waitForLoad() {
+  runGame();
+}
+
+window.onload = waitForLoad;

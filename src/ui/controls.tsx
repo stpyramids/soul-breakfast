@@ -1,9 +1,9 @@
 import {
-    Component,
-    ComponentType,
-    createElement,
-    Fragment,
-    render
+  Component,
+  ComponentType,
+  createElement,
+  Fragment,
+  render,
 } from "preact";
 import { MonsterArchetypes } from "../data/monsters";
 import type { GameState } from "../game";
@@ -162,8 +162,8 @@ export function WhatsHereView(props: { here: XYContents }) {
     what = soul.name;
     desc = describeSoulEffects(soul);
   } else if (here.tile) {
-    glyph = glyphChar(here.tile.glyph);
-    what = here.tile.glyph;
+    glyph = tokenChar(here.tile.token);
+    what = here.tile.token[0];
     if (here.exitDanger) {
       desc = "Danger: " + here.exitDanger;
     }

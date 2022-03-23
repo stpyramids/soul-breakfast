@@ -4,6 +4,11 @@ const Colors = {
   dying: [68, 17, 17],
   weak: [34, 17, 17],
   critterBG: [17, 17, 17],
+  darkWall: [25, 25, 25],
+  lightWall: [100, 100, 100],
+  terrain: [190, 190, 190],
+  floor: [127, 127, 127],
+  darkFloor: [80, 70, 65],
   vermin: [170, 170, 170],
   danger0: [124, 83, 53],
   danger5: [157, 137, 59],
@@ -11,8 +16,7 @@ const Colors = {
   danger15: [59, 157, 142],
   danger20: [157, 59, 67],
   danger25: [146, 59, 157],
-  terrain: [190, 190, 190],
-  floor: [127, 127, 127],
+
   player: [255, 255, 255],
 };
 
@@ -32,9 +36,9 @@ const Glyphs = {
   none: " ",
   player: "@",
   exit: ">",
-  wall: "#",
+  wall: "▓",
   floor: ".",
-  rock: ".",
+  rock: "█",
   insect: "i",
   worm: "w",
   rodent: "r",

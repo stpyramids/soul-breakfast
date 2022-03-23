@@ -10,7 +10,7 @@ import {
   weakMonster,
 } from "./monster";
 import { getPlayerVision, getSoulEffect, getWand } from "./player";
-import { GlyphID } from "./token";
+import { Token } from "./token";
 import { doRoll, randInt, xyDistance } from "./utils";
 
 export const baseMap = {
@@ -28,15 +28,15 @@ export type LevelMap = typeof baseMap;
 /// Map tiles
 
 export type Tile = {
-  glyph: GlyphID;
+  token: Token;
   blocks: boolean;
 };
 
 export const Tiles: { [name: string]: Tile } = {
-  rock: { glyph: "rock", blocks: true },
-  wall: { glyph: "wall", blocks: true },
-  floor: { glyph: "floor", blocks: false },
-  exit: { glyph: "exit", blocks: false },
+  rock: { token: Token("rock", "darkWall"), blocks: true },
+  wall: { token: Token("wall", "lightWall"), blocks: true },
+  floor: { token: Token("floor", "darkFloor"), blocks: false },
+  exit: { token: Token("exit", "terrain"), blocks: false },
 };
 
 const DangerDescriptions: [number, string][] = [
@@ -358,7 +358,7 @@ export function contentsAt(x: number, y: number): XYContents {
     }
   }
   let exitDanger = null;
-  if (tile?.glyph === "exit") {
+  if (tile?.token[0] === "exit") {
     let exit = getMap().exits.find(([ex, ey, _]) => ex === x && ey === y);
     exitDanger = exit?.[2] || null;
   }
