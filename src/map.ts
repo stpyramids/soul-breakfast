@@ -157,13 +157,15 @@ interface MapGenFunc {
 }
 
 function mapGenSimple(input: MapGenInput): MapGenOutput {
+  const w = input.segW * 10;
+  const h = input.segH * 10;
   const map: LevelMap = {
     danger: input.danger,
-    w: input.segW * 10,
-    h: input.segH * 10,
-    tiles: [],
-    monsters: [],
-    memory: [],
+    w,
+    h,
+    tiles: Array(w * h),
+    monsters: Array(w * h),
+    memory: Array(w * h),
     exits: [],
   };
 
