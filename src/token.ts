@@ -34,7 +34,7 @@ const Glyphs = {
   exit: ">",
   wall: "#",
   floor: ".",
-  rock: ".",
+  rock: " ",
   insect: "i",
   worm: "w",
   rodent: "r",

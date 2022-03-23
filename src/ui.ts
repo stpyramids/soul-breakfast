@@ -175,41 +175,7 @@ export function runGame() {
 
   // Set up the ROT.js playfield
   let playarea = document.getElementById("playarea")!;
-  let options: any = { ...UI.viewport, fontSize: 16 };
-  // Secret experimental tiles mode (very broken)
-  if (UI.doTiles) {
-    let tileSet = document.createElement("img");
-    tileSet.src = "sprites.png";
-    let T: (x: number, y: number) => [number, number] = (x, y) => [
-      x * 32,
-      y * 32,
-    ];
-    UI.viewport.width /= 2;
-    UI.viewport.height /= 2;
-    options = {
-      ...UI.viewport,
-      tileWidth: 32,
-      tileHeight: 32,
-      tileSet: tileSet,
-      tileColorize: true,
-      tileMap: {
-        [glyphChar("player")]: T(0, 0),
-        [glyphChar("worm")]: T(1, 0),
-        [glyphChar("insect")]: T(2, 0),
-        [glyphChar("wall")]: T(3, 0),
-        [glyphChar("exit")]: T(4, 0),
-        [glyphChar("floor")]: T(5, 0),
-        [glyphChar("none")]: T(6, 0),
-        [glyphChar("rodent")]: T(0, 1),
-        [glyphChar("spider")]: T(1, 1),
-        [glyphChar("ghost")]: T(2, 1),
-        [glyphChar("eyeball")]: T(3, 1),
-        [glyphChar("do-gooder")]: T(4, 1),
-      },
-      layout: "tile",
-    };
-  }
-  let display = new ROT.Display(options);
+  let display = new ROT.Display({ ...UI.viewport, fontSize: 16 });
   let dispC = display.getContainer()!;
   playarea.appendChild(dispC);
 
