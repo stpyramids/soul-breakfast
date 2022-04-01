@@ -20,6 +20,7 @@ import {
 import { msg } from "./msg";
 import {
   gainEssence,
+  getSoulEffect,
   getSoulEffects,
   getWand,
   invokeAbility,
@@ -393,7 +394,12 @@ export function damageMonsterAt(
         msg.tutorial(
           "Enter a dying creature's tile to (d)evour or (c)laim their soul. Be quick, though!"
         );
-        m.statuses.push({ type: "dying", timer: 12 + Math.floor(m.maxHP / 2) });
+        let trap = getSoulEffect("soul trap");
+        if (trap) {
+          msg.essence("You bind the soul of %the to the mortal realm.", D(c))
+        }
+        let deathTimer = Math.floor((12 + m.maxHP / 2) * (trap ? trap.power : 1.0));
+        m.statuses.push({ type: "dying", timer: deathTimer });
         m.hp = 0;
       }
     }

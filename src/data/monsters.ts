@@ -305,6 +305,10 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       attack: "slice",
       soul: "megalich",
     },
-    variants: [],
+    variants: [{
+      name: "ProtoLich 9k",
+      description: "As I could be.",
+      soul: "protolich",
+    }],
   }),
 };

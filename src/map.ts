@@ -6,6 +6,7 @@ import {
   ArchetypeID,
   Monster,
   MonsterFormation,
+  monsterHasStatus,
   spawnMonster,
   weakMonster,
 } from "./monster";
@@ -85,6 +86,17 @@ export function recomputeFOV() {
       seenXYs.push([fx, fy]);
     }
   );
+  let dvision = getSoulEffect("death vision");
+  if (dvision) {
+    let map = getMap()
+    map.monsters.forEach((m, i) => {
+      if (m && monsterHasStatus(m, "dying")) {
+        FOV.compute(i % map.w, Math.floor(i / map.w), dvision!.power, (fx, fy, r, v) => {
+          seenXYs.push([fx, fy])
+        })
+      }
+    })
+  }
 }
 
 export function playerCanSee(x: number, y: number): boolean {

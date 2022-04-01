@@ -120,6 +120,22 @@ export const SoulFactories = {
       power: 0,
     },
   ]),
+  // Debug mode test soul
+  protolich: mkSoulF((a) => [
+    {
+      type: "stat bonus",
+      stat: "max essence",
+      power: 200,
+    },
+    {
+      type: "death vision",
+      power: 5
+    },
+    {
+      type: "soul trap",
+      power: 2.0,
+    }
+  ]),
   // Debug mode super-soul
   megalich: mkSoulF((a) => [
     {

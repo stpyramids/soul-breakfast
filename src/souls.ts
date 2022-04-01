@@ -53,6 +53,16 @@ export type DangerSenseEffect = {
   power: number;
 };
 
+export type DeathVisionEffect = {
+  type: "death vision";
+  power: number;
+}
+
+export type SoulTrapEffect = {
+  type: "soul trap";
+  power: number;
+}
+
 export type ActivatedAbility = "shadow cloak" | "clairvoyance" | "blink";
 
 export type ActivatedAbilityEffect = {
@@ -62,8 +72,8 @@ export type ActivatedAbilityEffect = {
 };
 
 export type RingEffect = SoakDamageEffect;
-export type CrownEffect = ActivatedAbilityEffect;
-export type GenericEffect = StatBonusEffect | DangerSenseEffect;
+export type CrownEffect = ActivatedAbilityEffect | SoulTrapEffect;
+export type GenericEffect = StatBonusEffect | DangerSenseEffect | DeathVisionEffect;
 export type SoulEffect = RingEffect | WandEffect | CrownEffect | GenericEffect;
 
 // TODO:
@@ -110,6 +120,10 @@ export function describeSoulEffect(e: SoulEffect) {
       return e.targeting;
     case "danger sense":
       return "danger sense " + e.power;
+    case "death vision":
+      return "soul vision " + e.power;
+    case "soul trap":
+      return "soul trap " + e.power;
     case "ability":
       return e.ability + (e.power ? " " + e.power : "");
   }

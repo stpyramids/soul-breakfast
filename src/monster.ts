@@ -5,7 +5,7 @@ import { SoulFactories } from "./data/souls";
 import { getMonsterSoul } from "./game";
 import { playerCanSee } from "./map";
 import { msg } from "./msg";
-import { doDamage } from "./player";
+import { doDamage, getSoulEffect } from "./player";
 import { Soul } from "./souls";
 import { ColorID, GlyphID } from "./token";
 import { doRoll, R, Roll } from "./utils";
@@ -123,6 +123,7 @@ export const DeathMessages = {
   drain: "%The crumbles into dust.",
   force: "%The is blown to pieces.",
   bleedout: "The soul of %the departs.",
+  escape: "The soul of %the escapes your grasp."
 };
 
 export type DeathType = keyof typeof DeathMessages;
@@ -171,12 +172,13 @@ export function cureStatus(m: Monster, st: MonsterStatusType) {
 }
 
 export function monsterStatusTick(m: Monster) {
+  let trap = getSoulEffect("soul trap");
   for (let st of m.statuses) {
     switch (st.type) {
       case "dying":
         st.timer--;
         if (st.timer <= 0) {
-          killMonster(m, "bleedout");
+          killMonster(m, trap ? "escape" : "bleedout");
         }
         break;
       case "slow":
