@@ -1,6 +1,12 @@
 import { Game, setPlayerXY } from "./game";
-import { contentsAt, doMagicMap, newMap, seenXYs } from "./map";
-import { getDamageDescription } from "./monster";
+import {
+  contentsAt,
+  doMagicMap,
+  monstersByDistance,
+  newMap,
+  seenXYs,
+} from "./map";
+import { getDamageDescription, monsterHasStatus } from "./monster";
 import { msg } from "./msg";
 import {
   ActivatedAbility,
@@ -128,6 +134,15 @@ export function invokeAbility(ability: ActivatedAbility, power: number) {
       }
       loseEssence(Math.floor(maxEssence() / 2));
       break;
+    case "soul warp":
+      if (doSoulWarp()) {
+        msg.essence(
+          "You tunnel through your essence aura and emerge close to prey!"
+        );
+        loseEssence(Math.floor(maxEssence() / 2));
+      } else {
+        msg.angry("No dying souls are nearby!");
+      }
   }
   Game.player.cooldownAbilities.push(ability);
 }
@@ -139,6 +154,18 @@ function doBlink(): boolean {
   let spot = sample(options);
   if (spot) {
     setPlayerXY(spot.x, spot.y);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function doSoulWarp(): boolean {
+  let closestCorpse = monstersByDistance().find(([_, m]) =>
+    monsterHasStatus(m.monster!, "dying")
+  );
+  if (closestCorpse) {
+    setPlayerXY(closestCorpse[1].x, closestCorpse[1].y);
     return true;
   } else {
     return false;

@@ -129,12 +129,17 @@ export const SoulFactories = {
     },
     {
       type: "death vision",
-      power: 5
+      power: 5,
     },
     {
       type: "soul trap",
       power: 2.0,
-    }
+    },
+    {
+      type: "ability",
+      ability: "soul warp",
+      power: 0,
+    },
   ]),
   // Debug mode super-soul
   megalich: mkSoulF((a) => [

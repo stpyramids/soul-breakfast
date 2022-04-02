@@ -56,14 +56,18 @@ export type DangerSenseEffect = {
 export type DeathVisionEffect = {
   type: "death vision";
   power: number;
-}
+};
 
 export type SoulTrapEffect = {
   type: "soul trap";
   power: number;
-}
+};
 
-export type ActivatedAbility = "shadow cloak" | "clairvoyance" | "blink";
+export type ActivatedAbility =
+  | "shadow cloak"
+  | "clairvoyance"
+  | "blink"
+  | "soul warp";
 
 export type ActivatedAbilityEffect = {
   type: "ability";
@@ -73,7 +77,10 @@ export type ActivatedAbilityEffect = {
 
 export type RingEffect = SoakDamageEffect;
 export type CrownEffect = ActivatedAbilityEffect | SoulTrapEffect;
-export type GenericEffect = StatBonusEffect | DangerSenseEffect | DeathVisionEffect;
+export type GenericEffect =
+  | StatBonusEffect
+  | DangerSenseEffect
+  | DeathVisionEffect;
 export type SoulEffect = RingEffect | WandEffect | CrownEffect | GenericEffect;
 
 // TODO:
