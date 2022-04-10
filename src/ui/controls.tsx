@@ -1,15 +1,20 @@
 import {
-    Component,
-    ComponentType,
-    createElement,
-    Fragment,
-    render
+  Component,
+  ComponentType,
+  createElement,
+  Fragment,
+  render,
 } from "preact";
 import { MonsterArchetypes } from "../data/monsters";
 import type { GameState } from "../game";
 import type { XYContents } from "../map";
 import { getSoul, monsterHasStatus } from "../monster";
-import { describeSoulEffects, Soul } from "../souls";
+import {
+  describeSoulEffect,
+  describeSoulEffects,
+  Soul,
+  StatBonusEffect,
+} from "../souls";
 import { glyphChar, rgb, tokenChar, tokenRGB } from "../token";
 import type { UIState } from "../ui";
 
@@ -192,13 +197,23 @@ function SoulListView(props: { souls: Array<Soul> }) {
 }
 
 function SoulView(props: { soul: Soul }) {
+  let meE = props.soul.effects.find(
+    (e) => e.type == "stat bonus" && e.stat == "max essence"
+  );
+  let nonME = props.soul.effects.filter(
+    (e) => !(e.type == "stat bonus" && e.stat == "max essence")
+  );
+  let meV = meE ? "+" + (meE as StatBonusEffect).power + " ME" : "";
   return (
     <Fragment key={props.soul.name}>
       <div class="soul-glyph" style={"color: " + tokenRGB(props.soul.token)}>
         {tokenChar(props.soul.token)}
       </div>
       <div class="soul-name">{props.soul.name}</div>
-      <div class="soul-effect">{describeSoulEffects(props.soul)}</div>
+      <div class="soul-maxessence">{meV}</div>
+      <div class="soul-effect">
+        {nonME.map((e) => describeSoulEffect(e)).join(", ")}
+      </div>
     </Fragment>
   );
 }

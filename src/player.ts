@@ -148,7 +148,7 @@ export function invokeAbility(ability: ActivatedAbility, power: number) {
 }
 
 function doBlink(): boolean {
-  let options = seenXYs
+  let options = seenXYs()
     .map(([x, y]) => contentsAt(x, y))
     .filter((c) => !c.blocked);
   let spot = sample(options);

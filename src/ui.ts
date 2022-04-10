@@ -87,7 +87,7 @@ function drawMap(display: ROT.Display) {
       let y = sy + iy;
       let c = contentsAt(x, y);
 
-      if (seenXYs.find(([ex, ey]) => x == ex && y == ey)) {
+      if (seenXYs().find(([ex, ey]) => x == ex && y == ey)) {
         let isTarget = !!targets.find((c) => c.x === x && c.y === y);
         let bg = isTarget ? bgColor("target") : bgColor("void");
         Game.map.memory[x + y * Game.map.w] = c.memory;

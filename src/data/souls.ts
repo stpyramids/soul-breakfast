@@ -140,6 +140,11 @@ export const SoulFactories = {
       ability: "soul warp",
       power: 0,
     },
+    {
+      type: "targeting",
+      targeting: "seek strong",
+      count: 3,
+    },
   ]),
   // Debug mode super-soul
   megalich: mkSoulF((a) => [

@@ -375,10 +375,16 @@ export function damageMonsterAt(
   let m = c.monster;
   if (m) {
     let wasDying = weakMonster(m);
-    m.hp -= doRoll(damage.damage);
+    let damageDone = doRoll(damage.damage);
+    m.hp -= damageDone;
     if (m.hp > 1) {
       // todo cooler messages
-      msg.combat("%The %s!", D(c), m.hp == 1 ? "staggers" : "shudders");
+      msg.combat(
+        "%The %s (%s)!",
+        D(c),
+        m.hp == 1 ? "staggers" : "shudders",
+        damageDone
+      );
       if (status) {
         switch (status.status) {
           case "slow":
@@ -390,15 +396,17 @@ export function damageMonsterAt(
       if (wasDying) {
         killMonsterAt(c, "force"); // todo
       } else {
-        msg.combat("%The collapses!", D(c));
+        msg.combat("%The collapses (%s)!", D(c), damageDone);
         msg.tutorial(
           "Enter a dying creature's tile to (d)evour or (c)laim their soul. Be quick, though!"
         );
         let trap = getSoulEffect("soul trap");
         if (trap) {
-          msg.essence("You bind the soul of %the to the mortal realm.", D(c))
+          msg.essence("You bind the soul of %the to the mortal realm.", D(c));
         }
-        let deathTimer = Math.floor((12 + m.maxHP / 2) * (trap ? trap.power : 1.0));
+        let deathTimer = Math.floor(
+          (12 + m.maxHP / 2) * (trap ? trap.power : 1.0)
+        );
         m.statuses.push({ type: "dying", timer: deathTimer });
         m.hp = 0;
       }

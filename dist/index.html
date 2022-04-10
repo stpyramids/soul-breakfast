@@ -150,7 +150,7 @@
 
       #souls {
         display: grid;
-        grid-template-columns: min-content 1fr 2fr;
+        grid-template-columns: min-content 1fr max-content 2fr;
         grid-template-rows: repeat(min-content);
         align-items: center;
       }
@@ -205,9 +205,16 @@
         color: #fff;
       }
 
-      .soul-effect {
-        margin-bottom: 0.3em;
+      .soul-maxessence {
         height: 1.5em;
+        vertical-align: middle;
+        align-self: center;
+        background: #000;
+        color: #36c;
+      }
+
+      .soul-effect {
+        margin-left: 0.8em;
         vertical-align: middle;
         background: #000;
         color: #fff;

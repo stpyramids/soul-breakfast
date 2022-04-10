@@ -69,42 +69,59 @@ export function moveMonster(from: XYContents, to: XYContents): boolean {
   }
 }
 
-export let seenXYs: Array<[number, number]> = [];
+let seenIdxs: Set<number> = new Set();
 const FOV = new ROT.FOV.PreciseShadowcasting((x, y) => {
   let c = contentsAt(x, y);
   // Nothing but tiles block FOV (for now)
   return !(!c.tile || c.tile.blocks);
 });
+function idxToXY(i: number): [number, number] {
+  return [i % getMap().w, Math.floor(i / getMap().w)];
+}
+function xyToIdx(x: number, y: number): number {
+  return x + y * getMap().w;
+}
+export function seenXYs(): [number, number][] {
+  return Array.from(seenIdxs.values()).map(idxToXY);
+}
 
 export function recomputeFOV() {
-  seenXYs.length = 0;
+  const map = getMap();
+  seenIdxs.clear();
   FOV.compute(
     getPlayerXY().x,
     getPlayerXY().y,
     getPlayerVision(),
     (fx, fy, r, v) => {
-      seenXYs.push([fx, fy]);
+      seenIdxs.add(xyToIdx(fx, fy));
     }
   );
   let dvision = getSoulEffect("death vision");
   if (dvision) {
-    let map = getMap()
+    let map = getMap();
     map.monsters.forEach((m, i) => {
       if (m && monsterHasStatus(m, "dying")) {
-        FOV.compute(i % map.w, Math.floor(i / map.w), dvision!.power, (fx, fy, r, v) => {
-          seenXYs.push([fx, fy])
-        })
+        FOV.compute(
+          i % map.w,
+          Math.floor(i / map.w),
+          dvision!.power,
+          (fx, fy, r, v) => {
+            // this should be a SET
+            seenIdxs.add(xyToIdx(fx, fy));
+          }
+        );
       }
-    })
+    });
   }
 }
 
 export function playerCanSee(x: number, y: number): boolean {
-  return !!seenXYs.find(([sx, sy]) => x == sx && y == sy);
+  return seenIdxs.has(xyToIdx(x, y));
 }
 
 export function canSeeThreat(): boolean {
-  for (let [x, y] of seenXYs) {
+  for (let idx of seenIdxs) {
+    let [x, y] = idxToXY(idx);
     let c = contentsAt(x, y);
     if (c.monster && !weakMonster(c.monster)) {
       return true;
@@ -115,7 +132,8 @@ export function canSeeThreat(): boolean {
 
 export function monstersByDistance(): Array<[number, XYContents]> {
   let monstersByDistance: Array<[number, XYContents]> = [];
-  for (let [x, y] of seenXYs) {
+  for (let idx of seenIdxs) {
+    let [x, y] = idxToXY(idx);
     if (x == getPlayerXY().x && y == getPlayerXY().y) {
       continue;
     }
@@ -135,9 +153,15 @@ export function monstersByDistance(): Array<[number, XYContents]> {
 export function findTargets(): Array<XYContents> {
   let targets: Array<XYContents> = [];
   let targetEffect = getWand().targeting;
+  let monsters = monstersByDistance();
   switch (targetEffect.targeting) {
     case "seek closest":
-      let monsters = monstersByDistance();
+      for (let i = 0; i < targetEffect.count && i < monsters.length; i++) {
+        targets.push(monsters[i][1]);
+      }
+      break;
+    case "seek strong":
+      monsters = monsters.filter(([_, c]) => c.monster!.maxHP > 1);
       for (let i = 0; i < targetEffect.count && i < monsters.length; i++) {
         targets.push(monsters[i][1]);
       }
