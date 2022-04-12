@@ -19,6 +19,7 @@
     "typescript": "^4.6.2"
   },
   "dependencies": {
+    "pixi-filters": "^4.1.6",
     "pixi.js": "^6.3.0",
     "preact": "^10.6.6",
     "rot-js": "^2.2.0"

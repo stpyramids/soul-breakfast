@@ -5,13 +5,19 @@ import { contentsAt, seenXYs } from "../../map";
 import { monsterHasStatus, weakMonster } from "../../monster";
 import { glyphChar, ColorID, rgb, hex } from "../../token";
 import { UIState, Renderer } from "../../ui";
+import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
+
+const app = new PIXI.Application();
+const scale = 2.0;
+const tileW = 32 * scale;
 
 export function initPlayarea(
   ui: UIState,
   playarea: HTMLElement,
   onload: (r: Renderer) => void
 ) {
-  const app = new PIXI.Application();
+  PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+
   playarea.appendChild(app.view);
   const playfield = new PIXI.Container();
   app.stage.addChild(playfield);
@@ -36,8 +42,20 @@ export function initPlayarea(
   });
 }
 
-const glyphAtlas = new Map<string, PIXI.Text>();
-const tileMapping = new Map<string, string>([["@", "gourmand.png"]]);
+const glyphAtlas = new Map<string, PIXI.Sprite>();
+const tileMapping = new Map<string, string>([
+  ["@", "gourmand.png"],
+  ["#", "masonry.png"],
+  ["█", "rock.png"],
+  [".", "dirt.png"],
+  ["e", "eyebeast.png"],
+  ["g", "ghost.png"],
+  ["h", "acolyte.png"],
+  ["w", "maggots.png"],
+  ["i", "gnats.png"],
+  ["s", "spider.png"],
+  ["r", "rat.png"],
+]);
 const tileAtlas = new Map<string, PIXI.Sprite>();
 function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
   const key = `${ch}-${fg}-${bg}`;
@@ -45,8 +63,42 @@ function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
   if (mapping) {
     let tile = tileAtlas.get(key);
     if (!tile) {
+      let comp = new PIXI.Container();
+
       let sheet = PIXI.Loader.shared.resources["spritesheet.json"].spritesheet!;
-      tile = new PIXI.Sprite(sheet.textures[mapping]);
+      let baseTile = new PIXI.Sprite(sheet.textures[mapping]);
+      let filter = new MultiColorReplaceFilter([
+        [0x9badb7, parseInt(fg.substring(1), 16)],
+      ]);
+      baseTile.filters = [filter];
+      baseTile.setTransform(
+        Math.floor((tileW - baseTile.width * scale) / 2),
+        Math.floor(tileW - baseTile.height * scale),
+        scale,
+        scale
+      );
+      comp.addChild(baseTile);
+
+      // add a legend for monsters
+      if (ch.match(/[a-z]/i)) {
+        let lowercase = !!ch.match(/[a-z]/);
+        const style = new PIXI.TextStyle({
+          fill: fg,
+          fontFamily: "'Courier', 'Courier New'",
+          fontSize: 12 * scale + "px",
+        });
+        let glyph = new PIXI.Text(ch, style);
+        glyph.setTransform(2 * scale, 2 * scale - (lowercase ? 4 : 0) * scale);
+        comp.addChild(glyph);
+      }
+
+      let renderTexture = PIXI.RenderTexture.create({
+        width: tileW,
+        height: tileW,
+      });
+      app.renderer.render(comp, { renderTexture });
+      tile = PIXI.Sprite.from(renderTexture);
+      tileAtlas.set(key, tile);
     }
     return tile;
   } else {
@@ -54,10 +106,20 @@ function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
     if (!glyph) {
       const style = new PIXI.TextStyle({
         fill: fg,
-        fontFamily: "monospace",
-        fontSize: "32px",
+        fontFamily: "'Courier', 'Courier New'",
+        fontSize: 32 * scale + "px",
       });
-      glyph = new PIXI.Text(ch, style);
+      let baseGlyph = new PIXI.Text(ch, style);
+      baseGlyph.setTransform(
+        Math.floor((tileW - baseGlyph.width) / 2),
+        Math.floor(tileW - baseGlyph.height)
+      );
+      let renderTexture = PIXI.RenderTexture.create({
+        width: tileW,
+        height: tileW,
+      });
+      app.renderer.render(baseGlyph, { renderTexture });
+      glyph = PIXI.Sprite.from(renderTexture);
       glyphAtlas.set(key, glyph);
     }
     return glyph;
@@ -77,13 +139,10 @@ function drawMap(
   playfield.addChild(foregroundC);
 
   let underlay = new PIXI.Graphics();
-  let glyphTemplate = getGlyph("@", "#FFF", "#FFF");
-  let tileW = glyphTemplate.width;
-  let tileH = glyphTemplate.height;
+  let glyphTemplate = getGlyph("#", "#FFF", "#FFF");
 
-  console.log({ tileW, tileH });
   let vpw = Math.floor(ui.viewport.width / tileW);
-  let vph = Math.floor(ui.viewport.height / tileH);
+  let vph = Math.floor(ui.viewport.height / tileW);
 
   let sx = game.player.x - Math.floor(vpw / 2);
   let sy = game.player.y - Math.floor(vph / 2);
@@ -96,13 +155,12 @@ function drawMap(
   }
 
   let targets = ui.state.targets;
-  console.log({ sx, sy });
   for (let ix = 0; ix < vpw; ix += 1) {
     for (let iy = 0; iy < vph; iy += 1) {
       let x = sx + ix;
       let y = sy + iy;
       let c = contentsAt(x, y);
-      let ch = glyphChar("rock");
+      let ch = glyphChar("none");
       let fg = fgColor("void");
       let bg = bgColor("void");
 
@@ -135,7 +193,7 @@ function drawMap(
       } else if (c.sensedDanger && c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
         ch = "?";
-        fg = "#000";
+        fg = "#000000";
         bg = fgColor(arch.color);
       } else {
         let mem = game.map.memory[x + y * game.map.w];
@@ -143,24 +201,25 @@ function drawMap(
           let [mtile, mmons] = mem;
           if (mmons) {
             ch = glyphChar(MonsterArchetypes[mmons].glyph);
-            fg = "#666";
-            bg = "#000";
+            fg = "#666666";
+            bg = "#000000";
           } else if (mtile) {
             ch = glyphChar(mtile.glyph);
-            fg = "#666";
-            bg = "#000";
+            fg = "#666666";
+            bg = "#000000";
           }
         }
       }
 
-      if (ch !== glyphChar("rock")) {
+      if (ch !== glyphChar("none")) {
         underlay.beginFill(parseInt(bg.substring(1), 16));
-        underlay.drawRect(ix * tileW, iy * tileH, tileW, tileH);
+        underlay.drawRect(ix * tileW, iy * tileW, tileW, tileW);
         underlay.endFill();
         const text = getGlyph(ch, fg, bg);
         const sprite = new PIXI.Sprite(text.texture);
+        sprite.filters = text.filters;
         sprite.x = ix * tileW + (tileW - text.width) / 2;
-        sprite.y = iy * tileH + (tileH - text.height) / 2;
+        sprite.y = iy * tileW + (tileW - text.height) / 2;
         foregroundC.addChild(sprite);
       }
     }
