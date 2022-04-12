@@ -98,7 +98,6 @@ export function recomputeFOV() {
   );
   let dvision = getSoulEffect("death vision");
   if (dvision) {
-    let map = getMap();
     map.monsters.forEach((m, i) => {
       if (m && monsterHasStatus(m, "dying")) {
         FOV.compute(
@@ -112,6 +111,9 @@ export function recomputeFOV() {
         );
       }
     });
+  }
+  for (let [x, y] of seenXYs()) {
+    map.memory[x + y * map.w] = contentsAt(x, y).memory;
   }
 }
 
@@ -346,7 +348,7 @@ function placeMonsters(
 
 // Reading map contents
 
-export type RememberedCell = readonly [Tile | null, ArchetypeID | null];
+export type RememberedCell = readonly [Tile | null, Monster | null];
 
 export type XYContents = {
   x: number;
@@ -406,7 +408,7 @@ export function contentsAt(x: number, y: number): XYContents {
     monster,
     player,
     blocked,
-    memory: [tile, archetype],
+    memory: [tile, monster],
     exitDanger,
     sensedDanger,
   };

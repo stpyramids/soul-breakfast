@@ -23,6 +23,11 @@ type Choice = {
   callbacks: { onChoose: (key: string) => boolean };
 };
 
+export type UIFlags = {
+  zoom: boolean;
+  ascii: boolean;
+};
+
 export const UI = {
   commandQueue: [] as Array<keyof typeof Commands>,
   uiCallback: () => {},
@@ -37,6 +42,10 @@ export const UI = {
     mapDescription: "",
     onGround: null as XYContents | null,
   },
+  flags: {
+    zoom: false,
+    ascii: false,
+  } as UIFlags,
   viewport: {
     width: 30,
     height: 30,

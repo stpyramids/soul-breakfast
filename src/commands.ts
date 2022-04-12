@@ -332,6 +332,14 @@ export const Commands: { [key: string]: () => boolean } = {
     );
     return false;
   },
+  Z: () => {
+    UI.flags.zoom = !UI.flags.zoom;
+    return false;
+  },
+  T: () => {
+    UI.flags.ascii = !UI.flags.ascii;
+    return false;
+  },
   // Wizard commands
   W: () => {
     if (document.location.hash.includes("wizard")) {

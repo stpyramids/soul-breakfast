@@ -1,15 +1,16 @@
 import * as PIXI from "pixi.js";
 import { MonsterArchetypes } from "../../data/monsters";
 import { GameState } from "../../game";
-import { contentsAt, seenXYs } from "../../map";
-import { monsterHasStatus, weakMonster } from "../../monster";
-import { glyphChar, ColorID, rgb, hex } from "../../token";
+import { contentsAt, seenXYs, Tile, XYContents } from "../../map";
+import { Monster, monsterHasStatus, weakMonster } from "../../monster";
+import { glyphChar, ColorID, rgb, hex, GlyphID } from "../../token";
 import { UIState, Renderer } from "../../ui";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
 
 const app = new PIXI.Application();
-const scale = 2.0;
-const tileW = 32 * scale;
+let scale = 2.0;
+let tileW = 32 * scale;
+let doTiles = true;
 
 export function initPlayarea(
   ui: UIState,
@@ -25,6 +26,17 @@ export function initPlayarea(
   PIXI.Loader.shared.add("spritesheet.json").load(() => {
     onload({
       drawMap: (ui, game) => {
+        if (ui.flags.zoom) {
+          scale = 1.0;
+        } else {
+          scale = 2.0;
+        }
+        tileW = 32 * scale;
+        doTiles = !ui.flags.ascii;
+        if (!doTiles) {
+          scale /= 2.0;
+        }
+
         drawMap(
           app,
           playfield,
@@ -42,6 +54,24 @@ export function initPlayarea(
   });
 }
 
+type TileSpec = {
+  glyph: GlyphID;
+  identityC: ColorID;
+  highlightC: ColorID;
+  fade: boolean;
+};
+
+function mkTile(pspec: Partial<TileSpec>): TileSpec {
+  return {
+    glyph: "none",
+    identityC: "void",
+    highlightC: "void",
+    fade: false,
+    ...pspec,
+  };
+}
+
+const glyphMapping = new Map<string, string>([["█", " "]]);
 const glyphAtlas = new Map<string, PIXI.Sprite>();
 const tileMapping = new Map<string, string>([
   ["@", "gourmand.png"],
@@ -57,9 +87,12 @@ const tileMapping = new Map<string, string>([
   ["r", "rat.png"],
 ]);
 const tileAtlas = new Map<string, PIXI.Sprite>();
-function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
-  const key = `${ch}-${fg}-${bg}`;
-  let mapping = tileMapping.get(ch);
+function getTile(spec: TileSpec): PIXI.Sprite {
+  const key = `${spec.glyph}-${spec.identityC}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
+  let ch = glyphChar(spec.glyph);
+  const fg = hex(spec.identityC);
+  const bg = hex(spec.highlightC);
+  let mapping = doTiles ? tileMapping.get(ch) : null;
   if (mapping) {
     let tile = tileAtlas.get(key);
     if (!tile) {
@@ -67,10 +100,11 @@ function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
 
       let sheet = PIXI.Loader.shared.resources["spritesheet.json"].spritesheet!;
       let baseTile = new PIXI.Sprite(sheet.textures[mapping]);
-      let filter = new MultiColorReplaceFilter([
-        [0x9badb7, parseInt(fg.substring(1), 16)],
-      ]);
-      baseTile.filters = [filter];
+      baseTile.filters = [
+        new MultiColorReplaceFilter([
+          [0x9badb7, parseInt(fg.substring(1), 16)],
+        ]),
+      ];
       baseTile.setTransform(
         Math.floor((tileW - baseTile.width * scale) / 2),
         Math.floor(tileW - baseTile.height * scale),
@@ -92,6 +126,12 @@ function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
         comp.addChild(glyph);
       }
 
+      if (spec.fade) {
+        let filter = new PIXI.filters.ColorMatrixFilter();
+        filter.desaturate();
+        filter.brightness(0.7, true);
+        comp.filters = [filter];
+      }
       let renderTexture = PIXI.RenderTexture.create({
         width: tileW,
         height: tileW,
@@ -107,19 +147,24 @@ function getGlyph(ch: string, fg: string, bg: string): PIXI.Sprite {
       const style = new PIXI.TextStyle({
         fill: fg,
         fontFamily: "'Courier', 'Courier New'",
-        fontSize: 32 * scale + "px",
+        fontSize: 28 * scale + "px",
       });
+      ch = glyphMapping.get(ch) || ch;
       let baseGlyph = new PIXI.Text(ch, style);
-      baseGlyph.setTransform(
-        Math.floor((tileW - baseGlyph.width) / 2),
-        Math.floor(tileW - baseGlyph.height)
-      );
-      let renderTexture = PIXI.RenderTexture.create({
-        width: tileW,
-        height: tileW,
-      });
-      app.renderer.render(baseGlyph, { renderTexture });
-      glyph = PIXI.Sprite.from(renderTexture);
+      if (doTiles) {
+        baseGlyph.setTransform(
+          Math.floor((tileW - baseGlyph.width) / 2),
+          Math.floor(tileW - baseGlyph.height)
+        );
+        let renderTexture = PIXI.RenderTexture.create({
+          width: tileW,
+          height: tileW,
+        });
+        app.renderer.render(baseGlyph, { renderTexture });
+        glyph = PIXI.Sprite.from(renderTexture);
+      } else {
+        glyph = baseGlyph;
+      }
       glyphAtlas.set(key, glyph);
     }
     return glyph;
@@ -139,10 +184,12 @@ function drawMap(
   playfield.addChild(foregroundC);
 
   let underlay = new PIXI.Graphics();
-  let glyphTemplate = getGlyph("#", "#FFF", "#FFF");
+  let glyphTemplate = getTile(mkTile({ glyph: "wall" }));
+  let tileW = glyphTemplate.width;
+  let tileH = glyphTemplate.height;
 
   let vpw = Math.floor(ui.viewport.width / tileW);
-  let vph = Math.floor(ui.viewport.height / tileW);
+  let vph = Math.floor(ui.viewport.height / tileH);
 
   let sx = game.player.x - Math.floor(vpw / 2);
   let sy = game.player.y - Math.floor(vph / 2);
@@ -160,66 +207,35 @@ function drawMap(
       let x = sx + ix;
       let y = sy + iy;
       let c = contentsAt(x, y);
-      let ch = glyphChar("none");
-      let fg = fgColor("void");
-      let bg = bgColor("void");
+      let tilespec = mkTile({});
 
       if (seenXYs().find(([ex, ey]) => x == ex && y == ey)) {
         let isTarget = !!targets.find((c) => c.x === x && c.y === y);
-        bg = isTarget ? bgColor("target") : bgColor("void");
-
-        // TODO: this should not be where we save memory!
-        game.map.memory[x + y * game.map.w] = c.memory;
-        if (c.player) {
-          ch = glyphChar(game.player.glyph);
-          fg = fgColor("player");
-        } else if (c.monster) {
-          let arch = MonsterArchetypes[c.monster.archetype];
-          ch = glyphChar(arch.glyph);
-          fg = fgColor(arch.color, 0.75);
-          bg = bgColor(
-            monsterHasStatus(c.monster, "dying")
-              ? "dying"
-              : isTarget
-              ? "target"
-              : weakMonster(c.monster)
-              ? "weak"
-              : "critterBG"
-          );
-        } else if (c.tile) {
-          ch = glyphChar(c.tile.glyph);
-          fg = fgColor(c.tile.blocks ? "terrain" : "floor", 1.0);
-        }
+        tilespec = visibleTile(c, isTarget);
       } else if (c.sensedDanger && c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
-        ch = "?";
-        fg = "#000000";
-        bg = fgColor(arch.color);
+        tilespec.glyph = "unknown";
+        tilespec.identityC = "void";
+        tilespec.highlightC = arch.color;
       } else {
         let mem = game.map.memory[x + y * game.map.w];
         if (mem) {
-          let [mtile, mmons] = mem;
-          if (mmons) {
-            ch = glyphChar(MonsterArchetypes[mmons].glyph);
-            fg = "#666666";
-            bg = "#000000";
-          } else if (mtile) {
-            ch = glyphChar(mtile.glyph);
-            fg = "#666666";
-            bg = "#000000";
-          }
+          let [tile, monster] = mem;
+          tilespec = visibleTile({ tile, monster }, false);
+          tilespec.fade = true;
         }
       }
 
-      if (ch !== glyphChar("none")) {
+      if (tilespec.glyph !== "none") {
+        const bg = hex(tilespec.highlightC);
         underlay.beginFill(parseInt(bg.substring(1), 16));
-        underlay.drawRect(ix * tileW, iy * tileW, tileW, tileW);
+        underlay.drawRect(ix * tileW, iy * tileH, tileW, tileH);
         underlay.endFill();
-        const text = getGlyph(ch, fg, bg);
+        const text = getTile(tilespec);
         const sprite = new PIXI.Sprite(text.texture);
         sprite.filters = text.filters;
         sprite.x = ix * tileW + (tileW - text.width) / 2;
-        sprite.y = iy * tileW + (tileW - text.height) / 2;
+        sprite.y = iy * tileH + (tileH - text.height) / 2;
         foregroundC.addChild(sprite);
       }
     }
@@ -228,13 +244,34 @@ function drawMap(
   backdropC.addChild(underlay);
 }
 
-function bgColor(color: ColorID): string {
-  return hex(color);
-}
-
-function fgColor(color: ColorID, alpha?: number): string {
-  if (alpha === undefined) {
-    alpha = 1.0;
+function visibleTile(
+  c: {
+    player?: boolean;
+    monster?: Monster | null;
+    tile?: Tile | null;
+  },
+  isTarget: boolean
+): TileSpec {
+  let tile = mkTile({
+    highlightC: isTarget ? "target" : "void",
+  });
+  if (c.player) {
+    tile.glyph = "player";
+    tile.identityC = "player";
+  } else if (c.monster) {
+    let arch = MonsterArchetypes[c.monster.archetype];
+    tile.glyph = arch.glyph;
+    tile.identityC = arch.color;
+    tile.highlightC = monsterHasStatus(c.monster, "dying")
+      ? "dying"
+      : isTarget
+      ? "target"
+      : weakMonster(c.monster)
+      ? "weak"
+      : "critterBG";
+  } else if (c.tile) {
+    tile.glyph = c.tile.glyph;
+    tile.identityC = c.tile.blocks ? "terrain" : "floor";
   }
-  return hex(color);
+  return tile;
 }
