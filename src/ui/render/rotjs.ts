@@ -95,7 +95,7 @@ function drawMap(display: ROT.Display, ui: UIState, game: GameState) {
             display.draw(
               ix,
               iy,
-              glyphChar(MonsterArchetypes[mmons].glyph),
+              glyphChar(MonsterArchetypes[mmons.archetype].glyph),
               "#666",
               "#000"
             );

@@ -82,7 +82,10 @@ export function runGame() {
 
   // Set up the playfield
   let playarea = document.getElementById("playarea")!;
-  PIXIRender.initPlayarea(UI, playarea, (display) => {
+  (window.location.hash.includes("render=rotjs")
+    ? ROTRender
+    : PIXIRender
+  ).initPlayarea(UI, playarea, (display) => {
     // Set up UI rendering
     UI.uiCallback = () => {
       UI.state = {

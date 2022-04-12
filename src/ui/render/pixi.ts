@@ -71,28 +71,38 @@ function mkTile(pspec: Partial<TileSpec>): TileSpec {
   };
 }
 
-const glyphMapping = new Map<string, string>([["█", " "]]);
 const glyphAtlas = new Map<string, PIXI.Sprite>();
 const tileMapping = new Map<string, string>([
-  ["@", "gourmand.png"],
-  ["#", "masonry.png"],
-  ["█", "rock.png"],
-  [".", "dirt.png"],
-  ["e", "eyebeast.png"],
-  ["g", "ghost.png"],
-  ["h", "acolyte.png"],
-  ["w", "maggots.png"],
-  ["i", "gnats.png"],
-  ["s", "spider.png"],
-  ["r", "rat.png"],
+  ["player", "gourmand.png"],
+  ["wall", "masonry.png"],
+  ["rock", "rock.png"],
+  ["floor", "dirt.png"],
+  ["eyeball", "eyebeast.png"],
+  ["ghost", "ghost.png"],
+  ["do-gooder", "acolyte.png"],
+  ["worm", "maggots.png"],
+  ["insect", "gnats.png"],
+  ["spider", "spider.png"],
+  ["rat", "rat.png"],
 ]);
 const tileAtlas = new Map<string, PIXI.Sprite>();
-function getTile(spec: TileSpec): PIXI.Sprite {
+function getTile(spec: TileSpec, tileW: number, tileH: number): PIXI.Container {
+  const container = new PIXI.Container();
+  const tile = getBaseTile(spec);
+  const sprite = PIXI.Sprite.from(tile.texture);
+  sprite.x = (tileW - tile.width) / 2;
+  sprite.y = (tileH - tile.height) / 2;
+  container.addChild(sprite);
+  return container;
+}
+function getBaseTile(spec: TileSpec): PIXI.Sprite {
+  return getTileGraphic(spec) || getTileGlyph(spec);
+}
+function getTileGraphic(spec: TileSpec): PIXI.Sprite | null {
   const key = `${spec.glyph}-${spec.identityC}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
-  let ch = glyphChar(spec.glyph);
+  const ch = glyphChar(spec.glyph);
   const fg = hex(spec.identityC);
-  const bg = hex(spec.highlightC);
-  let mapping = doTiles ? tileMapping.get(ch) : null;
+  let mapping = doTiles ? tileMapping.get(spec.glyph) : null;
   if (mapping) {
     let tile = tileAtlas.get(key);
     if (!tile) {
@@ -141,34 +151,42 @@ function getTile(spec: TileSpec): PIXI.Sprite {
       tileAtlas.set(key, tile);
     }
     return tile;
-  } else {
-    let glyph = glyphAtlas.get(key);
-    if (!glyph) {
-      const style = new PIXI.TextStyle({
-        fill: fg,
-        fontFamily: "'Courier', 'Courier New'",
-        fontSize: 28 * scale + "px",
-      });
-      ch = glyphMapping.get(ch) || ch;
-      let baseGlyph = new PIXI.Text(ch, style);
-      if (doTiles) {
-        baseGlyph.setTransform(
-          Math.floor((tileW - baseGlyph.width) / 2),
-          Math.floor(tileW - baseGlyph.height)
-        );
-        let renderTexture = PIXI.RenderTexture.create({
-          width: tileW,
-          height: tileW,
-        });
-        app.renderer.render(baseGlyph, { renderTexture });
-        glyph = PIXI.Sprite.from(renderTexture);
-      } else {
-        glyph = baseGlyph;
-      }
-      glyphAtlas.set(key, glyph);
-    }
-    return glyph;
   }
+  return null;
+}
+function getTileGlyph(spec: TileSpec): PIXI.Sprite {
+  const key = `${spec.glyph}-${spec.identityC}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
+  const ch = glyphChar(spec.glyph);
+  const fg = hex(spec.identityC);
+  let glyph = glyphAtlas.get(key);
+  if (!glyph) {
+    const style = new PIXI.TextStyle({
+      fill: fg,
+      fontFamily: "'Courier', 'Courier New'",
+      fontSize: 28 * scale + "px",
+    });
+    let baseGlyph = new PIXI.Text(ch, style);
+    if (spec.fade) {
+      let filter = new PIXI.filters.ColorMatrixFilter();
+      filter.desaturate();
+      filter.brightness(0.7, true);
+      baseGlyph.filters = [filter];
+    }
+    if (doTiles) {
+      baseGlyph.setTransform(
+        Math.floor((tileW - baseGlyph.width) / 2),
+        Math.floor(tileW - baseGlyph.height)
+      );
+    }
+    let renderTexture = PIXI.RenderTexture.create({
+      width: doTiles ? tileW : baseGlyph.width,
+      height: doTiles ? tileW : baseGlyph.height,
+    });
+    app.renderer.render(baseGlyph, { renderTexture });
+    glyph = PIXI.Sprite.from(renderTexture);
+    glyphAtlas.set(key, glyph);
+  }
+  return glyph;
 }
 
 function drawMap(
@@ -184,7 +202,7 @@ function drawMap(
   playfield.addChild(foregroundC);
 
   let underlay = new PIXI.Graphics();
-  let glyphTemplate = getTile(mkTile({ glyph: "wall" }));
+  let glyphTemplate = getBaseTile(mkTile({ glyph: "wall" }));
   let tileW = glyphTemplate.width;
   let tileH = glyphTemplate.height;
 
@@ -231,12 +249,10 @@ function drawMap(
         underlay.beginFill(parseInt(bg.substring(1), 16));
         underlay.drawRect(ix * tileW, iy * tileH, tileW, tileH);
         underlay.endFill();
-        const text = getTile(tilespec);
-        const sprite = new PIXI.Sprite(text.texture);
-        sprite.filters = text.filters;
-        sprite.x = ix * tileW + (tileW - text.width) / 2;
-        sprite.y = iy * tileH + (tileH - text.height) / 2;
-        foregroundC.addChild(sprite);
+        const tile = getTile(tilespec, tileW, tileH);
+        tile.x = ix * tileW;
+        tile.y = iy * tileH;
+        foregroundC.addChild(tile);
       }
     }
   }

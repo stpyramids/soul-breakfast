@@ -40,7 +40,7 @@ const Glyphs = {
   wall: "#",
   floor: ".",
   unknown: "?",
-  rock: "█",
+  rock: " ",
   insect: "i",
   worm: "w",
   rodent: "r",
