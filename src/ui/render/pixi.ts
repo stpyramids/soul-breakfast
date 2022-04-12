@@ -72,7 +72,7 @@ function mkTile(pspec: Partial<TileSpec>): TileSpec {
 }
 
 const glyphAtlas = new Map<string, PIXI.Sprite>();
-const tileMapping = new Map<string, string>([
+const tileMapping = new Map<GlyphID, string>([
   ["player", "gourmand.png"],
   ["wall", "masonry.png"],
   ["rock", "rock.png"],
@@ -83,16 +83,26 @@ const tileMapping = new Map<string, string>([
   ["worm", "maggots.png"],
   ["insect", "gnats.png"],
   ["spider", "spider.png"],
-  ["rat", "rat.png"],
+  ["rodent", "rat.png"],
 ]);
 const tileAtlas = new Map<string, PIXI.Sprite>();
-function getTile(spec: TileSpec, tileW: number, tileH: number): PIXI.Container {
+function getTile(
+  specs: TileSpec[],
+  tileW: number,
+  tileH: number
+): PIXI.Container {
   const container = new PIXI.Container();
-  const tile = getBaseTile(spec);
-  const sprite = PIXI.Sprite.from(tile.texture);
-  sprite.x = (tileW - tile.width) / 2;
-  sprite.y = (tileH - tile.height) / 2;
-  container.addChild(sprite);
+  if (!doTiles) {
+    // Don't layer ASCII
+    specs = [specs[specs.length - 1]];
+  }
+  for (let spec of specs) {
+    const tile = getBaseTile(spec);
+    const sprite = PIXI.Sprite.from(tile.texture);
+    sprite.x = (tileW - tile.width) / 2;
+    sprite.y = (tileH - tile.height) / 2;
+    container.addChild(sprite);
+  }
   return container;
 }
 function getBaseTile(spec: TileSpec): PIXI.Sprite {
@@ -225,31 +235,34 @@ function drawMap(
       let x = sx + ix;
       let y = sy + iy;
       let c = contentsAt(x, y);
-      let tilespec = mkTile({});
+      let tilespecs: TileSpec[] = [];
 
       if (seenXYs().find(([ex, ey]) => x == ex && y == ey)) {
         let isTarget = !!targets.find((c) => c.x === x && c.y === y);
-        tilespec = visibleTile(c, isTarget);
+        tilespecs = visibleTile(c, isTarget);
       } else if (c.sensedDanger && c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
-        tilespec.glyph = "unknown";
-        tilespec.identityC = "void";
-        tilespec.highlightC = arch.color;
+        tilespecs.push(
+          mkTile({
+            glyph: "unknown",
+            highlightC: arch.color,
+          })
+        );
       } else {
         let mem = game.map.memory[x + y * game.map.w];
         if (mem) {
           let [tile, monster] = mem;
-          tilespec = visibleTile({ tile, monster }, false);
-          tilespec.fade = true;
+          tilespecs = visibleTile({ tile, monster }, false);
+          tilespecs.forEach((t) => (t.fade = true));
         }
       }
 
-      if (tilespec.glyph !== "none") {
-        const bg = hex(tilespec.highlightC);
+      if (tilespecs.length > 0) {
+        const bg = hex(tilespecs[tilespecs.length - 1].highlightC);
         underlay.beginFill(parseInt(bg.substring(1), 16));
         underlay.drawRect(ix * tileW, iy * tileH, tileW, tileH);
         underlay.endFill();
-        const tile = getTile(tilespec, tileW, tileH);
+        const tile = getTile(tilespecs, tileW, tileH);
         tile.x = ix * tileW;
         tile.y = iy * tileH;
         foregroundC.addChild(tile);
@@ -267,27 +280,39 @@ function visibleTile(
     tile?: Tile | null;
   },
   isTarget: boolean
-): TileSpec {
-  let tile = mkTile({
-    highlightC: isTarget ? "target" : "void",
-  });
+): TileSpec[] {
+  let tiles = [];
+  if (c.tile) {
+    tiles.push(
+      mkTile({
+        glyph: c.tile.glyph,
+        identityC: c.tile.blocks ? "terrain" : "floor",
+      })
+    );
+  }
   if (c.player) {
-    tile.glyph = "player";
-    tile.identityC = "player";
+    tiles.push(
+      mkTile({
+        glyph: "player",
+        identityC: "player",
+        highlightC: isTarget ? "target" : "void",
+      })
+    );
   } else if (c.monster) {
     let arch = MonsterArchetypes[c.monster.archetype];
-    tile.glyph = arch.glyph;
-    tile.identityC = arch.color;
-    tile.highlightC = monsterHasStatus(c.monster, "dying")
-      ? "dying"
-      : isTarget
-      ? "target"
-      : weakMonster(c.monster)
-      ? "weak"
-      : "critterBG";
-  } else if (c.tile) {
-    tile.glyph = c.tile.glyph;
-    tile.identityC = c.tile.blocks ? "terrain" : "floor";
+    tiles.push(
+      mkTile({
+        glyph: arch.glyph,
+        identityC: arch.color,
+        highlightC: monsterHasStatus(c.monster, "dying")
+          ? "dying"
+          : isTarget
+          ? "target"
+          : weakMonster(c.monster)
+          ? "weak"
+          : "critterBG",
+      })
+    );
   }
-  return tile;
+  return tiles;
 }
