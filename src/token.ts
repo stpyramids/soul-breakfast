@@ -23,6 +23,11 @@ export function rgb(color: ColorID): string {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
+export function hex(color: ColorID): string {
+  let c = Colors[color];
+  return "#" + c[0].toString(16) + c[1].toString(16) + c[2].toString(16);
+}
+
 export function rgba(color: ColorID, alpha: number): string {
   let c = Colors[color];
   return `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;

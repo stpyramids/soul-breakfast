@@ -1,24 +1,21 @@
 import * as ROT from "rot-js";
 import { Commands } from "./commands";
-import { MonsterArchetypes } from "./data/monsters";
-import { Game, resetGame } from "./game";
+import { Game, GameState, resetGame } from "./game";
 import {
-  contentsAt,
   findTargets,
   getMapDescription,
   getVictim,
   monstersByDistance,
   newMap,
   recomputeFOV,
-  seenXYs,
   XYContents,
 } from "./map";
-import { monsterHasStatus, weakMonster } from "./monster";
 import { msg } from "./msg";
 import { maxEssence } from "./player";
 import { tick } from "./tick";
-import { ColorID, glyphChar, rgb, rgba } from "./token";
 import { renderControls } from "./ui/controls";
+import * as ROTRender from "./ui/render/rotjs";
+import * as PIXIRender from "./ui/render/pixi";
 
 type Choice = {
   prompt: string;
@@ -40,7 +37,6 @@ export const UI = {
     mapDescription: "",
     onGround: null as XYContents | null,
   },
-  doTiles: document.location.hash.includes("tiles"),
   viewport: {
     width: 30,
     height: 30,
@@ -49,106 +45,8 @@ export const UI = {
 
 export type UIState = typeof UI;
 
-/// Graphics
-
-function bgColor(color: ColorID): string {
-  return rgb(color);
-}
-
-function fgColor(color: ColorID, alpha?: number): string {
-  if (alpha === undefined) {
-    alpha = 1.0;
-  }
-  if (UI.doTiles) {
-    return rgba(color, alpha);
-  } else {
-    return rgb(color);
-  }
-}
-
-function drawMap(display: ROT.Display) {
-  display.clear();
-
-  let sx = Game.player.x - UI.viewport.width / 2;
-  let sy = Game.player.y - UI.viewport.height / 2;
-
-  if (sx < 0) {
-    sx = 0;
-  }
-  if (sy < 0) {
-    sy = 0;
-  }
-
-  let targets = findTargets();
-
-  for (let ix = 0; ix < UI.viewport.width; ix += 1) {
-    for (let iy = 0; iy < UI.viewport.height; iy += 1) {
-      let x = sx + ix;
-      let y = sy + iy;
-      let c = contentsAt(x, y);
-
-      if (seenXYs().find(([ex, ey]) => x == ex && y == ey)) {
-        let isTarget = !!targets.find((c) => c.x === x && c.y === y);
-        let bg = isTarget ? bgColor("target") : bgColor("void");
-        Game.map.memory[x + y * Game.map.w] = c.memory;
-        if (c.player) {
-          display.draw(
-            x - sx,
-            y - sy,
-            glyphChar(Game.player.glyph),
-            fgColor("player"),
-            bg
-          );
-        } else if (c.monster) {
-          let arch = MonsterArchetypes[c.monster.archetype];
-          display.draw(
-            x - sx,
-            y - sy,
-            glyphChar(arch.glyph),
-            fgColor(arch.color, 0.75),
-            bgColor(
-              monsterHasStatus(c.monster, "dying")
-                ? "dying"
-                : isTarget
-                ? "target"
-                : weakMonster(c.monster)
-                ? "weak"
-                : "critterBG"
-            )
-          );
-        } else if (c.tile) {
-          display.draw(
-            x - sx,
-            y - sy,
-            glyphChar(c.tile.glyph),
-            fgColor(c.tile.blocks ? "terrain" : "floor", 1.0),
-            bg
-          );
-        } else {
-          display.draw(x - sx, y - sy, glyphChar("rock"), "#000", bg);
-        }
-      } else if (c.sensedDanger && c.monster) {
-        let arch = MonsterArchetypes[c.monster.archetype];
-        display.draw(ix, iy, "?", "#000", fgColor(arch.color));
-      } else {
-        let mem = Game.map.memory[x + y * Game.map.w];
-        if (mem) {
-          let [mtile, mmons] = mem;
-          if (mmons) {
-            display.draw(
-              ix,
-              iy,
-              glyphChar(MonsterArchetypes[mmons].glyph),
-              "#666",
-              "#000"
-            );
-          } else if (mtile) {
-            display.draw(ix, iy, glyphChar(mtile.glyph), "#666", "#000");
-          }
-        }
-      }
-    }
-  }
+export interface Renderer {
+  drawMap(ui: UIState, game: GameState): void;
 }
 
 export function offerChoice(
@@ -163,7 +61,7 @@ export function offerChoice(
   }
 }
 
-// Initializes the game state and begins rendering to a ROT.js canvas.
+// Initializes the game state and begins rendering.
 export function runGame() {
   let logMessages: Array<Array<[string, string]>> = [];
 
@@ -173,36 +71,34 @@ export function runGame() {
   // Render the UI for the first time
   renderControls(Game, UI, logMessages);
 
-  // Set up the ROT.js playfield
+  // Set up the playfield
   let playarea = document.getElementById("playarea")!;
-  let display = new ROT.Display({ ...UI.viewport, fontSize: 16 });
-  let dispC = display.getContainer()!;
-  playarea.appendChild(dispC);
-
-  // Set up UI rendering
-  UI.uiCallback = () => {
-    UI.state = {
-      playerEssence: Game.player.essence,
-      playerMaxEssence: maxEssence(),
-      targets: findTargets(),
-      visible: monstersByDistance().map((n) => n[1]),
-      mapDescription: getMapDescription(),
-      onGround: getVictim(),
+  PIXIRender.initPlayarea(UI, playarea, (display) => {
+    // Set up UI rendering
+    UI.uiCallback = () => {
+      UI.state = {
+        playerEssence: Game.player.essence,
+        playerMaxEssence: maxEssence(),
+        targets: findTargets(),
+        visible: monstersByDistance().map((n) => n[1]),
+        mapDescription: getMapDescription(),
+        onGround: getVictim(),
+      };
+      display.drawMap(UI, Game);
+      renderControls(Game, UI, logMessages);
     };
-    drawMap(display);
-    renderControls(Game, UI, logMessages);
-  };
-  UI.logCallback = (msg: string, msgType: string | undefined) => {
-    if (!msgType) {
-      msgType = "info";
-    }
-    if (!logMessages[Game.turns]) {
-      logMessages[Game.turns] = [];
-    }
-    logMessages[Game.turns].push([msg, msgType]);
-  };
-  handleInput();
-  startNewGame();
+    UI.logCallback = (msg: string, msgType: string | undefined) => {
+      if (!msgType) {
+        msgType = "info";
+      }
+      if (!logMessages[Game.turns]) {
+        logMessages[Game.turns] = [];
+      }
+      logMessages[Game.turns].push([msg, msgType]);
+    };
+    handleInput();
+    startNewGame();
+  });
 }
 
 const KeyAliases: { [key: string]: string } = {
