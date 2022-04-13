@@ -2,7 +2,13 @@ import * as PIXI from "pixi.js";
 import { MonsterArchetypes } from "../../data/monsters";
 import { GameState } from "../../game";
 import { contentsAt, seenXYs, Tile, XYContents } from "../../map";
-import { Monster, monsterHasStatus, weakMonster } from "../../monster";
+import {
+  Monster,
+  monsterHasStatus,
+  MonsterStatus,
+  MonsterStatusType,
+  weakMonster,
+} from "../../monster";
 import { glyphChar, ColorID, rgb, hex, GlyphID } from "../../token";
 import { UIState, Renderer } from "../../ui";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
@@ -59,6 +65,7 @@ type TileSpec = {
   identityC: ColorID;
   highlightC: ColorID;
   fade: boolean;
+  status?: MonsterStatusType;
 };
 
 function mkTile(pspec: Partial<TileSpec>): TileSpec {
@@ -102,6 +109,22 @@ function getTile(
     sprite.x = (tileW - tile.width) / 2;
     sprite.y = (tileH - tile.height) / 2;
     container.addChild(sprite);
+    if (doTiles && spec.status) {
+      let texture =
+        PIXI.Loader.shared.resources["spritesheet.json"].spritesheet!.textures[
+          "status-" + spec.status + ".png"
+        ];
+      if (texture) {
+        let statusSprite = new PIXI.Sprite(texture);
+        statusSprite.setTransform(
+          tileW - statusSprite.width * scale - scale,
+          scale,
+          scale,
+          scale
+        );
+        container.addChild(statusSprite);
+      }
+    }
   }
   return container;
 }
@@ -236,9 +259,9 @@ function drawMap(
       let y = sy + iy;
       let c = contentsAt(x, y);
       let tilespecs: TileSpec[] = [];
+      let isTarget = !!targets.find((c) => c.x === x && c.y === y);
 
       if (seenXYs().find(([ex, ey]) => x == ex && y == ey)) {
-        let isTarget = !!targets.find((c) => c.x === x && c.y === y);
         tilespecs = visibleTile(c, isTarget);
       } else if (c.sensedDanger && c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
@@ -266,6 +289,14 @@ function drawMap(
         tile.x = ix * tileW;
         tile.y = iy * tileH;
         foregroundC.addChild(tile);
+        if (isTarget) {
+          const target = new PIXI.Graphics();
+          target.lineStyle(scale, 0x3040d0, 1, 0);
+          target.drawRoundedRect(0, 0, tileW, tileH, 4 * scale);
+          target.x = ix * tileW;
+          target.y = iy * tileH;
+          foregroundC.addChild(target);
+        }
       }
     }
   }
@@ -295,7 +326,6 @@ function visibleTile(
       mkTile({
         glyph: "player",
         identityC: "player",
-        highlightC: isTarget ? "target" : "void",
       })
     );
   } else if (c.monster) {
@@ -311,6 +341,11 @@ function visibleTile(
           : weakMonster(c.monster)
           ? "weak"
           : "critterBG",
+        status: monsterHasStatus(c.monster, "dying")
+          ? "dying"
+          : monsterHasStatus(c.monster, "slow")
+          ? "slow"
+          : undefined,
       })
     );
   }
