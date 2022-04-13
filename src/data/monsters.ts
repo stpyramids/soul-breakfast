@@ -24,7 +24,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       description:
         "A writhing mass of sickly pale grubs, clinging to a few scraps of moldering flesh for sustenance... and now they sustain me.",
       essence: 1,
-      glyph: "worm",
+      glyph: "maggots",
       color: "vermin",
       hp: R(1, 1, 0),
       speed: 0.2,
@@ -45,16 +45,16 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         description:
           "A fat worm with a glowing aura. It must have learned to feed on ambient essence, which is now mine for the taking.",
         essence: 3,
-        glyph: "worm",
-        color: "vermin",
+        glyph: "grub",
+        color: "danger10",
       },
       {
         name: "soul butterfly",
         description:
           "This strange insect leaves trails of essence behind its wings. A beautiful aberration, but also delicious.",
         essence: 5,
-        glyph: "insect",
-        color: "vermin",
+        glyph: "butterfly",
+        color: "danger20",
         speed: 0.4,
         ai: "wander",
       },
@@ -305,10 +305,12 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       attack: "slice",
       soul: "megalich",
     },
-    variants: [{
-      name: "ProtoLich 9k",
-      description: "As I could be.",
-      soul: "protolich",
-    }],
+    variants: [
+      {
+        name: "ProtoLich 9k",
+        description: "As I could be.",
+        soul: "protolich",
+      },
+    ],
   }),
 };
