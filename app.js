@@ -29761,6 +29761,7 @@ void main() {
       let tile = tileAtlas.get(key);
       if (!tile) {
         let comp = new Container();
+        comp.filters = [];
         let sheet = Loader.shared.resources["spritesheet.json"].spritesheet;
         let baseTile = new Sprite(sheet.textures[mapping]);
         baseTile.filters = [
@@ -29780,12 +29781,15 @@ void main() {
           let glyph = new Text(ch, style);
           glyph.setTransform(2 * scale, 2 * scale - (lowercase ? 4 : 0) * scale);
           comp.addChild(glyph);
+          if (spec.fade) {
+            comp.filters.push(new filters.BlurFilter(1));
+          }
         }
         if (spec.fade) {
           let filter = new filters.ColorMatrixFilter();
           filter.desaturate();
-          filter.brightness(0.7, true);
-          comp.filters = [filter];
+          filter.brightness(0.5, true);
+          comp.filters.push(filter);
         }
         let renderTexture = RenderTexture.create({
           width: tileW,
