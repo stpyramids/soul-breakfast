@@ -142,6 +142,7 @@ function getTileGraphic(spec: TileSpec): PIXI.Sprite | null {
     let tile = tileAtlas.get(key);
     if (!tile) {
       let comp = new PIXI.Container();
+      comp.filters = [];
 
       let sheet = PIXI.Loader.shared.resources["spritesheet.json"].spritesheet!;
       let baseTile = new PIXI.Sprite(sheet.textures[mapping]);
@@ -169,13 +170,16 @@ function getTileGraphic(spec: TileSpec): PIXI.Sprite | null {
         let glyph = new PIXI.Text(ch, style);
         glyph.setTransform(2 * scale, 2 * scale - (lowercase ? 4 : 0) * scale);
         comp.addChild(glyph);
+        if (spec.fade) {
+          comp.filters.push(new PIXI.filters.BlurFilter(1));
+        }
       }
 
       if (spec.fade) {
         let filter = new PIXI.filters.ColorMatrixFilter();
         filter.desaturate();
-        filter.brightness(0.7, true);
-        comp.filters = [filter];
+        filter.brightness(0.5, true);
+        comp.filters.push(filter);
       }
       let renderTexture = PIXI.RenderTexture.create({
         width: tileW,
