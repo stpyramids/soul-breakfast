@@ -51,6 +51,77 @@ function Playarea(props: { ui: UIState }) {
   if (props.ui.activeChoice) {
     el = <ChoiceBox ui={props.ui} />;
   }
+  if (props.ui.specialMode === "help-commands") {
+    el = (
+      <div class="info">
+        <h3>Help: Controls</h3>
+        <p>
+          <strong>h/j/k/l:</strong> Move west/south/north/east
+        </p>
+        <p>
+          <strong>H/J/K/L</strong>: Move west/south/north/east until threat is
+          seen
+        </p>
+        <p>
+          <strong>.</strong>: Wait a turn
+        </p>
+        <p>
+          <strong>d</strong>: Devour soul of dying opponent, refilling your
+          essence
+        </p>
+        <p>
+          <strong>c</strong>: Claim soul of dying opponent, increasing your
+          abilities
+        </p>
+        <p>
+          <strong>r</strong>: Release a claimed soul to refill your essence
+        </p>
+        <p>
+          <strong>Space</strong>: Attack targeted opponent
+        </p>
+        <p>
+          <strong>&gt;</strong>: Pass through exit to a different area (requires
+          sufficient essence)
+        </p>
+        <p>
+          <strong>a</strong>: Activate ability, if you have any (gained from
+          claiming souls)
+        </p>
+        <p>
+          <strong>Q</strong>: Forfeit and restart the game
+        </p>
+        <p>
+          <strong>Z</strong>: Toggle 2x/1x zoom mode (2x/1x)
+        </p>
+        <p>
+          <strong>T</strong>: Toggle graphical/ASCII tiles mode
+        </p>
+        <p>
+          <strong>?</strong>: This help
+        </p>
+        <p>
+          <strong>W</strong>: Debug commands (if wizard mode is enabled)
+        </p>
+      </div>
+    );
+  } else if (props.ui.specialMode === "help-tips") {
+    el = (
+      <div class="info">
+        <h3>Help: Tips</h3>
+        <p>
+          <strong>Be cowardly.</strong> You are physically weak but faster and
+          smarter than your opponents. You do not need to kill everything you
+          see. A strategic retreat always beats a glorious death.
+        </p>
+        <p>
+          <strong>Conserve resources.</strong> Dying enemies will eventually
+          die, wasting all of their essence. If you're full up on essence, it
+          might be better to ignore weaker enemies, leaving them to prey on
+          later.
+        </p>
+      </div>
+    );
+  }
   return (
     <div id="playarea">
       <Canvas />

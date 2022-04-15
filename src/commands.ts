@@ -34,7 +34,7 @@ import {
   Soul,
   StatusEffect,
 } from "./souls";
-import { offerChoice, startNewGame, UI } from "./ui";
+import { offerBasicChoice, offerChoice, startNewGame, UI } from "./ui";
 import { doRoll } from "./utils";
 import { wizard } from "./wizard";
 
@@ -338,6 +338,25 @@ export const Commands: { [key: string]: () => boolean } = {
   },
   T: () => {
     UI.flags.ascii = !UI.flags.ascii;
+    return false;
+  },
+  "?": () => {
+    offerBasicChoice("Help", [
+      [
+        "c",
+        "Controls",
+        () => {
+          UI.specialMode = "help-commands";
+        },
+      ],
+      [
+        "t",
+        "Tips",
+        () => {
+          UI.specialMode = "help-tips";
+        },
+      ],
+    ]);
     return false;
   },
   // Wizard commands

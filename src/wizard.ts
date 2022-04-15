@@ -5,45 +5,53 @@ import { doMagicMap, newMap } from "./map";
 import { makeSoul } from "./monster";
 import { gainEssence, maxEssence } from "./player";
 import { glyphChar } from "./token";
-import { offerChoice } from "./ui";
+import { offerBasicChoice, offerChoice } from "./ui";
 
 export function wizard() {
-  offerChoice(
-    "WIZARD MODE",
-    new Map([
-      ["d", "Dump game state to console"],
-      ["e", "Fill essence"],
-      ["m", "Magic map"],
-      ["s", "Get soul"],
-      ["w", "Teleport to danger level 50"],
-      [">", "Descend 5 levels"],
-    ]),
-    {
-      onChoose: (key) => {
-        switch (key) {
-          case "w":
-            newMap({ danger: 50 });
-            return true;
-          case "d":
-            console.log(Game);
-            return true;
-          case "e":
-            gainEssence(maxEssence());
-            return true;
-          case "s":
-            wizardSoul();
-            return true;
-          case "m":
-            doMagicMap(50);
-            return true;
-          case ">":
-            newMap({ danger: Game.map.danger + 5 });
-            return true;
-        }
-        return true;
+  offerBasicChoice("WIZARD MODE", [
+    [
+      "e",
+      "Fill essence",
+      () => {
+        gainEssence(maxEssence());
       },
-    }
-  );
+    ],
+    [
+      "m",
+      "Magic map",
+      () => {
+        doMagicMap(50);
+      },
+    ],
+    [
+      "s",
+      "Get soul",
+      () => {
+        wizardSoul();
+      },
+    ],
+    [
+      ">",
+      "Descend 5 levels",
+      () => {
+        newMap({ danger: Game.map.danger + 5 });
+      },
+    ],
+    [
+      "<",
+      "Ascend 5 levels",
+      () => {
+        newMap({ danger: Game.map.danger - 5 });
+      },
+    ],
+    [
+      "d",
+      "Dump game state to console",
+      () => {
+        console.log(Game);
+      },
+    ],
+  ]);
 }
 
 function wizardSoul() {

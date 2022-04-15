@@ -16,6 +16,7 @@ import { tick } from "./tick";
 import { renderControls } from "./ui/controls";
 import * as ROTRender from "./ui/render/rotjs";
 import * as PIXIRender from "./ui/render/pixi";
+import { uid } from "@pixi/utils";
 
 type Choice = {
   prompt: string;
@@ -42,6 +43,7 @@ export const UI = {
     mapDescription: "",
     onGround: null as XYContents | null,
   },
+  specialMode: null as "help-commands" | "help-tips" | null,
   flags: {
     zoom: false,
     ascii: false,
@@ -68,6 +70,22 @@ export function offerChoice(
   } else {
     UI.activeChoice = { prompt, opts, callbacks };
   }
+}
+
+export function offerBasicChoice(
+  prompt: string,
+  opts: [string, string, () => void][]
+): void {
+  let baseOpts = new Map(opts.map(([key, opt, _]) => [key, opt]));
+  offerChoice(prompt, baseOpts, {
+    onChoose: (key) => {
+      let chosen = opts.find((o) => o[0] === key);
+      if (chosen) {
+        chosen[2]();
+      }
+      return true;
+    },
+  });
 }
 
 // Initializes the game state and begins rendering.
@@ -134,6 +152,11 @@ function handleInput() {
 }
 
 export function handleKey(key: string) {
+  if (UI.specialMode) {
+    UI.specialMode = null;
+    UI.uiCallback();
+    return;
+  }
   if (UI.activeChoice) {
     if (UI.activeChoice.callbacks.onChoose(key)) {
       UI.activeChoice = UI.nextChoice;
@@ -167,9 +190,13 @@ export function startNewGame() {
   msg.angry("And then they will all pay!");
   msg.break();
   msg.help(
-    "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!"
+    "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures and devour their souls."
   );
   msg.break();
-  msg.help("Reach danger level %s to win.", Game.maxLevel);
+  msg.help(
+    "Type '?' for help. Reach danger level %s to win. Go forth and feast!",
+    Game.maxLevel
+  );
+  msg.break();
   UI.uiCallback();
 }
