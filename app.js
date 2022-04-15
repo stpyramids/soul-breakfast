@@ -6163,7 +6163,9 @@ void main() {
   function Interface(props) {
     return /* @__PURE__ */ v("div", {
       class: "wrapper"
-    }, /* @__PURE__ */ v(Playarea, null), /* @__PURE__ */ v(Sidebar, {
+    }, /* @__PURE__ */ v(Playarea, {
+      ui: props.ui
+    }), /* @__PURE__ */ v(Sidebar, {
       ui: props.ui,
       game: props.game
     }), /* @__PURE__ */ v("div", {
@@ -6172,12 +6174,28 @@ void main() {
       messages: props.messages
     }));
   }
-  var Playarea = class extends _ {
+  function Playarea(props) {
+    let el = null;
+    if (props.ui.activeChoice) {
+      el = /* @__PURE__ */ v(ChoiceBox, {
+        ui: props.ui
+      });
+    }
+    return /* @__PURE__ */ v("div", {
+      id: "playarea"
+    }, /* @__PURE__ */ v(Canvas2, null), /* @__PURE__ */ v("div", {
+      id: "dialog",
+      style: el ? "" : "display:none"
+    }, el));
+  }
+  var Canvas2 = class extends _ {
     constructor() {
       super(...arguments);
       this.shouldComponentUpdate = () => false;
-      this.render = (props) => /* @__PURE__ */ v("div", {
-        id: "playarea"
+    }
+    render(props) {
+      return /* @__PURE__ */ v("div", {
+        id: "canvasContainer"
       });
     }
   };
@@ -6219,11 +6237,7 @@ void main() {
       label: "Souls",
       element: SoulListView,
       souls: game.player.soulSlots.generic
-    }), props.ui.activeChoice ? /* @__PURE__ */ v(SidebarSection, {
-      label: "Choose",
-      element: ChoiceBox,
-      ui: props.ui
-    }) : /* @__PURE__ */ v(d, null, props.ui.state.targets.length > 0 ? /* @__PURE__ */ v(SidebarSection, {
+    }), props.ui.state.targets.length > 0 ? /* @__PURE__ */ v(SidebarSection, {
       label: "Targets",
       element: TargetsView,
       targets: props.ui.state.targets,
@@ -6233,7 +6247,7 @@ void main() {
       element: TargetsView,
       targets: props.ui.state.visible,
       brief: true
-    }) : null));
+    }) : null);
   }
   function SidebarSection(props) {
     return /* @__PURE__ */ v("div", {
@@ -29962,7 +29976,7 @@ void main() {
     let logMessages = [];
     Util.format.map.the = "the";
     renderControls(Game, UI, logMessages);
-    let playarea = document.getElementById("playarea");
+    let playarea = document.getElementById("canvasContainer");
     (window.location.hash.includes("render=rotjs") ? rotjs_exports : pixi_exports).initPlayarea(UI, playarea, (display) => {
       UI.uiCallback = () => {
         UI.state = {
