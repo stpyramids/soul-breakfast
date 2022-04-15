@@ -6181,6 +6181,15 @@ void main() {
         ui: props.ui
       });
     }
+    if (props.ui.specialMode === "help-commands") {
+      el = /* @__PURE__ */ v("div", {
+        class: "info"
+      }, /* @__PURE__ */ v("h3", null, "Help: Controls"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "h/j/k/l:"), " Move west/south/north/east"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "H/J/K/L"), ": Move west/south/north/east until threat is seen"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "."), ": Wait a turn"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "d"), ": Devour soul of dying opponent, refilling your essence"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "c"), ": Claim soul of dying opponent, increasing your abilities"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "r"), ": Release a claimed soul to refill your essence"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "Space"), ": Attack targeted opponent"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, ">"), ": Pass through exit to a different area (requires sufficient essence)"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "a"), ": Activate ability, if you have any (gained from claiming souls)"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "Q"), ": Forfeit and restart the game"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "Z"), ": Toggle 2x/1x zoom mode (2x/1x)"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "T"), ": Toggle graphical/ASCII tiles mode"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "?"), ": This help"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "W"), ": Debug commands (if wizard mode is enabled)"));
+    } else if (props.ui.specialMode === "help-tips") {
+      el = /* @__PURE__ */ v("div", {
+        class: "info"
+      }, /* @__PURE__ */ v("h3", null, "Help: Tips"), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "Be cowardly."), " You are physically weak but faster and smarter than your opponents. You do not need to kill everything you see. A strategic retreat always beats a glorious death."), /* @__PURE__ */ v("p", null, /* @__PURE__ */ v("strong", null, "Conserve resources."), " Dying enemies will eventually die, wasting all of their essence. If you're full up on essence, it might be better to ignore weaker enemies, leaving them to prey on later."));
+    }
     return /* @__PURE__ */ v("div", {
       id: "playarea"
     }, /* @__PURE__ */ v(Canvas2, null), /* @__PURE__ */ v("div", {
@@ -6204,23 +6213,32 @@ void main() {
     if (!choice) {
       return null;
     }
+    let doClick = (key) => (e2) => {
+      handleKey(key);
+    };
     return /* @__PURE__ */ v("div", {
       id: "choiceBox"
     }, /* @__PURE__ */ v("div", {
       class: "prompt"
     }, choice.prompt), /* @__PURE__ */ v("div", {
       class: "opts"
-    }, Array.from(choice.opts, ([key, item]) => /* @__PURE__ */ v(d, {
-      key
+    }, Array.from(choice.opts, ([key, item]) => /* @__PURE__ */ v("div", {
+      class: "opt-choice",
+      key,
+      onClick: doClick(key)
     }, /* @__PURE__ */ v("div", {
       class: "choice-key"
     }, key), /* @__PURE__ */ v("div", {
       class: "choice-item"
     }, item))), /* @__PURE__ */ v("div", {
+      class: "opt-choice",
+      key: "ESC",
+      onClick: doClick("Esc")
+    }, /* @__PURE__ */ v("div", {
       class: "choice-key"
     }, "ESC"), /* @__PURE__ */ v("div", {
       class: "choice-item"
-    }, "Cancel")));
+    }, "Cancel"))));
   }
   function Sidebar(props) {
     const game = props.game;
@@ -29956,6 +29974,7 @@ void main() {
       mapDescription: "",
       onGround: null
     },
+    specialMode: null,
     flags: {
       zoom: false,
       ascii: false
@@ -29971,6 +29990,18 @@ void main() {
     } else {
       UI.activeChoice = { prompt, opts, callbacks };
     }
+  }
+  function offerBasicChoice(prompt, opts) {
+    let baseOpts = new Map(opts.map(([key, opt, _2]) => [key, opt]));
+    offerChoice(prompt, baseOpts, {
+      onChoose: (key) => {
+        let chosen = opts.find((o2) => o2[0] === key);
+        if (chosen) {
+          chosen[2]();
+        }
+        return true;
+      }
+    });
   }
   function runGame() {
     let logMessages = [];
@@ -30015,28 +30046,36 @@ void main() {
       if (key === "Shift") {
         return;
       }
-      if (UI.activeChoice) {
-        if (UI.activeChoice.callbacks.onChoose(key)) {
-          UI.activeChoice = UI.nextChoice;
-          UI.nextChoice = null;
-        }
-        recomputeFOV();
-        UI.uiCallback();
-      } else {
-        let alias = KeyAliases[key];
-        if (alias) {
-          key = alias;
-        }
-        if (e2.shiftKey) {
-          key = key.toUpperCase();
-        }
-        let command = Commands[key];
-        if (command !== void 0) {
-          UI.commandQueue.push(key);
-          setTimeout(() => tick(Game, UI), 0);
-        }
+      if (e2.shiftKey) {
+        key = key.toUpperCase();
       }
+      handleKey(key);
     });
+  }
+  function handleKey(key) {
+    if (UI.specialMode) {
+      UI.specialMode = null;
+      UI.uiCallback();
+      return;
+    }
+    if (UI.activeChoice) {
+      if (UI.activeChoice.callbacks.onChoose(key)) {
+        UI.activeChoice = UI.nextChoice;
+        UI.nextChoice = null;
+      }
+      recomputeFOV();
+      UI.uiCallback();
+    } else {
+      let alias = KeyAliases[key];
+      if (alias) {
+        key = alias;
+      }
+      let command = Commands[key];
+      if (command !== void 0) {
+        UI.commandQueue.push(key);
+        setTimeout(() => tick(Game, UI), 0);
+      }
+    }
   }
   function startNewGame() {
     resetGame();
@@ -30048,9 +30087,10 @@ void main() {
     msg.break();
     msg.angry("And then they will all pay!");
     msg.break();
-    msg.help("Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures. Go forth and feast!");
+    msg.help("Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures and devour their souls.");
     msg.break();
-    msg.help("Reach danger level %s to win.", Game.maxLevel);
+    msg.help("Type '?' for help. Reach danger level %s to win. Go forth and feast!", Game.maxLevel);
+    msg.break();
     UI.uiCallback();
   }
 
@@ -30080,38 +30120,50 @@ void main() {
 
   // src/wizard.ts
   function wizard() {
-    offerChoice("WIZARD MODE", /* @__PURE__ */ new Map([
-      ["d", "Dump game state to console"],
-      ["e", "Fill essence"],
-      ["m", "Magic map"],
-      ["s", "Get soul"],
-      ["w", "Teleport to danger level 50"],
-      [">", "Descend 5 levels"]
-    ]), {
-      onChoose: (key) => {
-        switch (key) {
-          case "w":
-            newMap({ danger: 50 });
-            return true;
-          case "d":
-            console.log(Game);
-            return true;
-          case "e":
-            gainEssence(maxEssence());
-            return true;
-          case "s":
-            wizardSoul();
-            return true;
-          case "m":
-            doMagicMap(50);
-            return true;
-          case ">":
-            newMap({ danger: Game.map.danger + 5 });
-            return true;
+    offerBasicChoice("WIZARD MODE", [
+      [
+        "e",
+        "Fill essence",
+        () => {
+          gainEssence(maxEssence());
         }
-        return true;
-      }
-    });
+      ],
+      [
+        "m",
+        "Magic map",
+        () => {
+          doMagicMap(50);
+        }
+      ],
+      [
+        "s",
+        "Get soul",
+        () => {
+          wizardSoul();
+        }
+      ],
+      [
+        ">",
+        "Descend 5 levels",
+        () => {
+          newMap({ danger: Game.map.danger + 5 });
+        }
+      ],
+      [
+        "<",
+        "Ascend 5 levels",
+        () => {
+          newMap({ danger: Game.map.danger - 5 });
+        }
+      ],
+      [
+        "d",
+        "Dump game state to console",
+        () => {
+          console.log(Game);
+        }
+      ]
+    ]);
   }
   function wizardSoul() {
     let byLetter = Object.keys(MonsterArchetypes).reduce((m2, name) => {
@@ -30417,6 +30469,25 @@ void main() {
     },
     T: () => {
       UI.flags.ascii = !UI.flags.ascii;
+      return false;
+    },
+    "?": () => {
+      offerBasicChoice("Help", [
+        [
+          "c",
+          "Controls",
+          () => {
+            UI.specialMode = "help-commands";
+          }
+        ],
+        [
+          "t",
+          "Tips",
+          () => {
+            UI.specialMode = "help-tips";
+          }
+        ]
+      ]);
       return false;
     },
     W: () => {

@@ -58,7 +58,14 @@
       #choiceBox .opts {
         display: grid;
         padding: 0.3em;
+        grid-template-columns: max-content;
+        align-items: stretch;
+      }
+
+      #choiceBox .opt-choice {
+        display: grid;
         grid-template-columns: max-content max-content;
+        padding: 4px;
       }
 
       #choiceBox .choice-key {
@@ -69,12 +76,20 @@
         background: #333;
         color: #ccc;
       }
+      #choiceBox .opt-choice:hover .choice-key {
+        color: #36c;
+        background-color: black;
+      }
 
       #choiceBox .choice-item {
         font-size: 125%;
         color: #ccc;
         padding: 0.3em;
         vertical-align: middle;
+      }
+      #choiceBox .opt-choice:hover .choice-item {
+        color: #36c;
+        background-color: #ccc;
       }
 
       #sidebar {
