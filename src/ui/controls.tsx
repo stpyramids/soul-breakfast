@@ -16,7 +16,7 @@ import {
   StatBonusEffect,
 } from "../souls";
 import { glyphChar, rgb, tokenChar, tokenRGB } from "../token";
-import type { UIState } from "../ui";
+import { handleKey, UIState } from "../ui";
 
 export function renderControls(
   game: GameState,
@@ -73,18 +73,23 @@ function ChoiceBox(props: { ui: UIState }) {
   if (!choice) {
     return null;
   }
+  let doClick = (key: string) => (e: MouseEvent) => {
+    handleKey(key);
+  };
   return (
     <div id="choiceBox">
       <div class="prompt">{choice.prompt}</div>
       <div class="opts">
         {Array.from(choice.opts, ([key, item]) => (
-          <Fragment key={key}>
+          <div class="opt-choice" key={key} onClick={doClick(key)}>
             <div class="choice-key">{key}</div>
             <div class="choice-item">{item}</div>
-          </Fragment>
+          </div>
         ))}
-        <div class="choice-key">ESC</div>
-        <div class="choice-item">Cancel</div>
+        <div class="opt-choice" key="ESC" onClick={doClick("Esc")}>
+          <div class="choice-key">ESC</div>
+          <div class="choice-item">Cancel</div>
+        </div>
       </div>
     </div>
   );

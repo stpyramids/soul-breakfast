@@ -126,28 +126,32 @@ function handleInput() {
     if (key === "Shift") {
       return;
     }
-    if (UI.activeChoice) {
-      if (UI.activeChoice.callbacks.onChoose(key)) {
-        UI.activeChoice = UI.nextChoice;
-        UI.nextChoice = null;
-      }
-      recomputeFOV();
-      UI.uiCallback();
-    } else {
-      let alias = KeyAliases[key];
-      if (alias) {
-        key = alias;
-      }
-      if (e.shiftKey) {
-        key = key.toUpperCase();
-      }
-      let command = Commands[key];
-      if (command !== undefined) {
-        UI.commandQueue.push(key);
-        setTimeout(() => tick(Game, UI), 0);
-      }
+    if (e.shiftKey) {
+      key = key.toUpperCase();
     }
+    handleKey(key);
   });
+}
+
+export function handleKey(key: string) {
+  if (UI.activeChoice) {
+    if (UI.activeChoice.callbacks.onChoose(key)) {
+      UI.activeChoice = UI.nextChoice;
+      UI.nextChoice = null;
+    }
+    recomputeFOV();
+    UI.uiCallback();
+  } else {
+    let alias = KeyAliases[key];
+    if (alias) {
+      key = alias;
+    }
+    let command = Commands[key];
+    if (command !== undefined) {
+      UI.commandQueue.push(key);
+      setTimeout(() => tick(Game, UI), 0);
+    }
+  }
 }
 
 export function startNewGame() {
