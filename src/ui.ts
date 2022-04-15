@@ -81,7 +81,7 @@ export function runGame() {
   renderControls(Game, UI, logMessages);
 
   // Set up the playfield
-  let playarea = document.getElementById("playarea")!;
+  let playarea = document.getElementById("canvasContainer")!;
   (window.location.hash.includes("render=rotjs")
     ? ROTRender
     : PIXIRender

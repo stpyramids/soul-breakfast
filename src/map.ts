@@ -283,7 +283,6 @@ export function newMap(opts?: NewMapOptions) {
     randInt(map.danger, map.danger * 2) + 1,
   ]);
   for (let room of rooms) {
-    // todo This is a bad way to place exits but it should work
     if (exits.length > 0) {
       let exit = exits.shift()!;
       let ex = randInt(room.getLeft(), room.getRight());

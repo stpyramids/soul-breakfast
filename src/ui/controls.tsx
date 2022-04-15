@@ -33,7 +33,7 @@ function Interface(props: {
 }) {
   return (
     <div class="wrapper">
-      <Playarea />
+      <Playarea ui={props.ui} />
       <Sidebar ui={props.ui} game={props.game} />
       <div id="mapDanger">
         {props.ui.state.mapDescription +
@@ -46,9 +46,26 @@ function Interface(props: {
   );
 }
 
-class Playarea extends Component {
+function Playarea(props: { ui: UIState }) {
+  let el: createElement.JSX.Element | null = null;
+  if (props.ui.activeChoice) {
+    el = <ChoiceBox ui={props.ui} />;
+  }
+  return (
+    <div id="playarea">
+      <Canvas />
+      <div id="dialog" style={el ? "" : "display:none"}>
+        {el}
+      </div>
+    </div>
+  );
+}
+
+class Canvas extends Component {
   shouldComponentUpdate = () => false;
-  render = (props: {}) => <div id="playarea"></div>;
+  render(props: {}) {
+    return <div id="canvasContainer"></div>;
+  }
 }
 
 function ChoiceBox(props: { ui: UIState }) {
@@ -91,28 +108,22 @@ function Sidebar(props: { ui: UIState; game: GameState }) {
         element={SoulListView}
         souls={game.player.soulSlots.generic}
       />
-      {props.ui.activeChoice ? (
-        <SidebarSection label="Choose" element={ChoiceBox} ui={props.ui} />
-      ) : (
-        <>
-          {props.ui.state.targets.length > 0 ? (
-            <SidebarSection
-              label="Targets"
-              element={TargetsView}
-              targets={props.ui.state.targets}
-              brief={false}
-            />
-          ) : null}
-          {props.ui.state.visible.length > 0 ? (
-            <SidebarSection
-              label="In View"
-              element={TargetsView}
-              targets={props.ui.state.visible}
-              brief={true}
-            />
-          ) : null}
-        </>
-      )}
+      {props.ui.state.targets.length > 0 ? (
+        <SidebarSection
+          label="Targets"
+          element={TargetsView}
+          targets={props.ui.state.targets}
+          brief={false}
+        />
+      ) : null}
+      {props.ui.state.visible.length > 0 ? (
+        <SidebarSection
+          label="In View"
+          element={TargetsView}
+          targets={props.ui.state.visible}
+          brief={true}
+        />
+      ) : null}
     </div>
   );
 }
