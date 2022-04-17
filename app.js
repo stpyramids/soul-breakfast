@@ -5247,109 +5247,176 @@ void main() {
     ]
   }));
 
-  // src/data/formations.ts
-  function solo(arch, roll, danger) {
-    return {
-      appearing: [[arch, roll]],
-      danger
-    };
+  // src/data/souls.ts
+  function mkSoulF(effects) {
+    return (a2) => ({
+      token: [a2.glyph, a2.color],
+      essence: a2.essence,
+      name: a2.name,
+      effects: effects(a2).filter((f2) => f2)
+    });
   }
-  var MonsterFormations = [
-    solo("maggot heap", R(1, 4, 3), 1),
-    solo("gnat swarm", R(2, 4, 0), 1),
-    solo("luminous grub", R(1, 3, 1), 5),
-    solo("soul butterfly", R(1, 3, 1), 10),
-    solo("torpid ghost", R(1, 1, 0), 10),
-    solo("dusty rat", R(1, 3, 0), 1),
-    solo("crypt spider", R(1, 2, 0), 3),
-    solo("little ghost", R(1, 1, 0), 4),
-    solo("bleary eye", R(1, 1, 0), 5),
-    {
-      appearing: [
-        ["dusty rat", R(2, 2, 1)],
-        ["hungry rat", R(1, 3, 0)]
-      ],
-      danger: 7
-    },
-    solo("knocker", R(1, 1, 0), 7),
-    solo("wolf spider", R(1, 1, 0), 8),
-    solo("weeping ghost", R(1, 1, 0), 10),
-    solo("peering eye", R(1, 1, 0), 12),
-    solo("howling ghost", R(1, 1, 0), 12),
-    {
-      appearing: [
-        ["little ghost", R(2, 2, 1)],
-        ["weeping ghost", R(1, 3, 0)],
-        ["howling ghost", R(1, 1, 0)],
-        ["torpid ghost", R(1, 4, 1)]
-      ],
-      danger: 12
-    },
-    solo("gimlet eye", R(1, 1, 0), 15),
-    solo("ambush spider", R(1, 1, 0), 15),
-    solo("howling ghost", R(1, 3, 1), 17),
-    {
-      appearing: [
-        ["dusty rat", R(2, 2, 1)],
-        ["hungry rat", R(1, 3, 0)]
-      ],
-      danger: 7
-    },
-    solo("wolf spider", R(1, 1, 0), 8),
-    solo("weeping ghost", R(1, 1, 0), 10),
-    solo("peering eye", R(1, 1, 0), 12),
-    solo("howling ghost", R(1, 1, 0), 12),
-    {
-      appearing: [
-        ["luminous grub", R(2, 2, 2)],
-        ["soul butterfly", R(2, 3, 1)],
-        ["soul sucker", R(1, 2, 0)]
-      ],
-      danger: 15
-    },
-    solo("will-o-wisp", R(1, 1, 0), 15),
-    solo("soul sucker", R(2, 2, 2), 17),
-    {
-      appearing: [
-        ["do-gooder", R(1, 2, 0)],
-        ["acolyte", R(1, 2, -1)]
-      ],
-      danger: 9
-    },
-    {
-      appearing: [
-        ["warrior", R(1, 1, 0)],
-        ["acolyte", R(1, 1, 0)]
-      ],
-      danger: 12
-    },
-    {
-      appearing: [
-        ["do-gooder", R(2, 2, 0)],
-        ["warrior", R(1, 2, 0)]
-      ],
-      danger: 15
-    },
-    {
-      appearing: [["warrior", R(2, 2, 1)]],
-      danger: 20
-    },
-    {
-      appearing: [
-        ["warrior", R(1, 2, 0)],
-        ["priest", R(1, 1, 0)]
-      ],
-      danger: 20
-    },
-    {
-      appearing: [
-        ["do-gooder", R(2, 2, 0)],
-        ["warrior", R(1, 2, 0)],
-        ["priest", R(1, 1, 0)]
-      ],
-      danger: 25
-    }
-  ];
+  var SoulFactories = {
+    vermin: mkSoulF((a2) => []),
+    maxEssence: mkSoulF((a2) => [
+      { type: "stat bonus", stat: "max essence", power: a2.essence }
+    ]),
+    extraDamage: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      { type: "damage", damage: R(Math.floor(a2.essence / 2), 4, Rnd(1, 4)) }
+    ]),
+    slow: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "status",
+        status: "slow",
+        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
+      }
+    ]),
+    sight: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence * 0.7)
+      },
+      roll100(20 + a2.essence) ? {
+        type: "danger sense",
+        power: Math.floor(a2.essence / 8) + 2
+      } : null,
+      {
+        type: "stat bonus",
+        stat: "sight",
+        power: Math.floor(a2.essence / 4) + 1
+      }
+    ]),
+    clairvoyance: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence * 0.7)
+      },
+      roll100(20 + a2.essence) ? {
+        type: "danger sense",
+        power: Math.floor(a2.essence / 8) + 2
+      } : null,
+      {
+        type: "ability",
+        ability: "clairvoyance",
+        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
+      }
+    ]),
+    speed: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence * 0.8)
+      },
+      {
+        type: "stat bonus",
+        stat: "speed",
+        power: 0.05 * (Math.floor(a2.essence / 2) + Rnd(1, 3))
+      }
+    ]),
+    soak: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "soak damage",
+        power: Math.floor(a2.essence / Rnd(1, 2, 3))
+      }
+    ]),
+    umbra: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "ability",
+        ability: "shadow cloak",
+        power: Math.floor(a2.essence / 5) + 2
+      }
+    ]),
+    blink: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: Math.floor(a2.essence / 2) + 1
+      },
+      {
+        type: "ability",
+        ability: "blink",
+        power: 0
+      }
+    ]),
+    protolich: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: 200
+      },
+      {
+        type: "death vision",
+        power: 5
+      },
+      {
+        type: "soul trap",
+        power: 2
+      },
+      {
+        type: "ability",
+        ability: "soul warp",
+        power: 0
+      },
+      {
+        type: "targeting",
+        targeting: "seek strong",
+        count: 3
+      }
+    ]),
+    megalich: mkSoulF((a2) => [
+      {
+        type: "stat bonus",
+        stat: "max essence",
+        power: 200
+      },
+      {
+        type: "soak damage",
+        power: 500
+      },
+      {
+        type: "stat bonus",
+        stat: "speed",
+        power: 10
+      },
+      { type: "damage", damage: R(10, 100, 50) },
+      {
+        type: "danger sense",
+        power: 20
+      },
+      {
+        type: "ability",
+        ability: "clairvoyance",
+        power: 50
+      },
+      {
+        type: "ability",
+        ability: "shadow cloak",
+        power: 10
+      }
+    ])
+  };
 
   // src/souls.ts
   var WandEffects = {
@@ -5778,30 +5845,22 @@ void main() {
         break;
       }
     }
-    game.map.monsters.forEach((m2, i2) => {
-      if (m2 && m2.deathCause) {
-        const c2 = contentsAt(i2 % game.map.w, Math.floor(i2 / game.map.w));
-        msg.combat(DeathMessages[m2.deathCause], D(c2));
-        game.map.monsters[i2] = null;
-      }
-    });
+    reapDead(game.map);
     if (game.player.energy < 1) {
       if (!(noop2 || ui.activeChoice)) {
-        game.map.monsters.forEach((m2, i2) => {
-          if (m2) {
-            const c2 = contentsAt(i2 % game.map.w, Math.floor(i2 / game.map.w));
-            monsterStatusTick(m2);
-            if (m2.deathCause) {
-              msg.combat(DeathMessages[m2.deathCause], D(c2));
-              game.map.monsters[i2] = null;
-            } else {
-              if (!monsterHasStatus(m2, "dying")) {
-                const arch = MonsterArchetypes[m2.archetype];
-                const ai = AI[arch.ai];
-                m2.energy += monsterSpeed(m2);
-                while (m2.energy >= 1) {
-                  m2.energy -= ai(c2);
-                }
+        forEachMonster(game.map, (m2, x2, y2) => {
+          const c2 = contentsAt(x2, y2);
+          monsterStatusTick(m2);
+          if (m2.deathCause) {
+            msg.combat(DeathMessages[m2.deathCause], D(c2));
+            deleteMonster(game.map, m2);
+          } else {
+            if (!monsterHasStatus(m2, "dying")) {
+              const arch = MonsterArchetypes[m2.archetype];
+              const ai = AI[arch.ai];
+              m2.energy += monsterSpeed(m2);
+              while (m2.energy >= 1) {
+                m2.energy -= ai(c2);
               }
             }
           }
@@ -30118,6 +30177,138 @@ void main() {
     }
   };
 
+  // src/monster.ts
+  var DamageDescriptions = [
+    [0, "You absorb the attack"],
+    [1, "Your essence trembles"],
+    [5, "Your essence wavers"],
+    [10, "You stagger as your essence is drained"],
+    [20, "Your connection to the mortal world frays"],
+    [30, "Your being is stretched to the breaking point"],
+    [50, "You briefly swim through endless aeons of hell"]
+  ];
+  function getDamageDescription(dmg) {
+    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
+      if (DamageDescriptions[i2][0] <= dmg) {
+        return DamageDescriptions[i2][1];
+      }
+    }
+    return DamageDescriptions[0][1];
+  }
+  function meleeAttack(verb, damage) {
+    return {
+      canReachFrom: (from, target) => (target.x === from.x || target.x === from.x - 1 || target.x === from.x + 1) && (target.y === from.y || target.y === from.y - 1 || target.y === from.y + 1),
+      attackFrom: (c2) => {
+        msg.combat("%The %s you!", D(c2), verb);
+        let m2 = c2.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  function rangedAttack(verb, damage) {
+    return {
+      canReachFrom: (from, target) => playerCanSee(from.x, from.y),
+      attackFrom: (from, target) => {
+        msg.combat("%The %s you!", D(from), verb);
+        let m2 = from.monster;
+        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
+        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
+          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
+          let dmg = doRoll(dmgRoll);
+          doDamage(dmg);
+        }
+      }
+    };
+  }
+  var Attacks = {
+    none: {
+      canReachFrom: (c2, t2) => false,
+      attackFrom: (c2, t2) => {
+      }
+    },
+    bite: meleeAttack("snaps at", R(1, 4, 0)),
+    touch: meleeAttack("reaches into", R(1, 4, 2)),
+    slice: meleeAttack("slices at", R(1, 8, 4)),
+    shock: meleeAttack("shocks", R(3, 4, 1)),
+    gaze: rangedAttack("gazes at", R(1, 4, 0)),
+    abjure: rangedAttack("abjures", R(1, 4, 2)),
+    rock: rangedAttack("pitches a rock at", R(1, 2, 0))
+  };
+  var DeathMessages = {
+    drain: "%The crumbles into dust.",
+    force: "%The is blown to pieces.",
+    bleedout: "The soul of %the departs.",
+    escape: "The soul of %the escapes your grasp."
+  };
+  function spawnMonster(archetype) {
+    let hp = doRoll(MonsterArchetypes[archetype].hp);
+    return {
+      archetype,
+      hp,
+      maxHP: hp,
+      energy: 1,
+      statuses: []
+    };
+  }
+  function killMonster(m2, cause) {
+    if (!m2.deathCause) {
+      m2.deathCause = cause;
+    }
+  }
+  function monsterHasStatus(m2, status) {
+    return !!m2.statuses.find((s2) => s2.type === status);
+  }
+  function inflictStatus(m2, s2) {
+    m2.statuses = m2.statuses.filter((s3) => s3.type !== s3.type);
+    m2.statuses.push(s2);
+  }
+  function cureStatus(m2, st) {
+    m2.statuses = m2.statuses.filter((s2) => s2.type !== st);
+  }
+  function monsterStatusTick(m2) {
+    let trap = getSoulEffect("soul trap");
+    for (let st of m2.statuses) {
+      switch (st.type) {
+        case "dying":
+          st.timer--;
+          if (st.timer <= 0) {
+            killMonster(m2, trap ? "escape" : "bleedout");
+          }
+          break;
+        case "slow":
+          st.timer--;
+          if (st.timer <= 0) {
+            cureStatus(m2, "slow");
+          }
+          break;
+      }
+    }
+  }
+  function monsterSpeed(m2) {
+    let speed = MonsterArchetypes[m2.archetype].speed;
+    if (monsterHasStatus(m2, "slow")) {
+      speed /= 2;
+    }
+    return speed;
+  }
+  function weakMonster(m2) {
+    return m2.hp <= 1 || monsterHasStatus(m2, "dying");
+  }
+  function makeSoul(arch) {
+    let f2 = SoulFactories[arch.soul];
+    return f2(arch);
+  }
+  function getSoul(m2) {
+    return getMonsterSoul(m2.archetype, () => {
+      return makeSoul(MonsterArchetypes[m2.archetype]);
+    });
+  }
+
   // src/wizard.ts
   function wizard() {
     offerBasicChoice("WIZARD MODE", [
@@ -30549,308 +30740,109 @@ void main() {
     }
   }
 
-  // src/data/souls.ts
-  function mkSoulF(effects) {
-    return (a2) => ({
-      token: [a2.glyph, a2.color],
-      essence: a2.essence,
-      name: a2.name,
-      effects: effects(a2).filter((f2) => f2)
-    });
-  }
-  var SoulFactories = {
-    vermin: mkSoulF((a2) => []),
-    maxEssence: mkSoulF((a2) => [
-      { type: "stat bonus", stat: "max essence", power: a2.essence }
-    ]),
-    extraDamage: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      { type: "damage", damage: R(Math.floor(a2.essence / 2), 4, Rnd(1, 4)) }
-    ]),
-    slow: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "status",
-        status: "slow",
-        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
-      }
-    ]),
-    sight: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence * 0.7)
-      },
-      roll100(20 + a2.essence) ? {
-        type: "danger sense",
-        power: Math.floor(a2.essence / 8) + 2
-      } : null,
-      {
-        type: "stat bonus",
-        stat: "sight",
-        power: Math.floor(a2.essence / 4) + 1
-      }
-    ]),
-    clairvoyance: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence * 0.7)
-      },
-      roll100(20 + a2.essence) ? {
-        type: "danger sense",
-        power: Math.floor(a2.essence / 8) + 2
-      } : null,
-      {
-        type: "ability",
-        ability: "clairvoyance",
-        power: Math.floor(a2.essence / 2) + Rnd(1, 3)
-      }
-    ]),
-    speed: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence * 0.8)
-      },
-      {
-        type: "stat bonus",
-        stat: "speed",
-        power: 0.05 * (Math.floor(a2.essence / 2) + Rnd(1, 3))
-      }
-    ]),
-    soak: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "soak damage",
-        power: Math.floor(a2.essence / Rnd(1, 2, 3))
-      }
-    ]),
-    umbra: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "ability",
-        ability: "shadow cloak",
-        power: Math.floor(a2.essence / 5) + 2
-      }
-    ]),
-    blink: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: Math.floor(a2.essence / 2) + 1
-      },
-      {
-        type: "ability",
-        ability: "blink",
-        power: 0
-      }
-    ]),
-    protolich: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: 200
-      },
-      {
-        type: "death vision",
-        power: 5
-      },
-      {
-        type: "soul trap",
-        power: 2
-      },
-      {
-        type: "ability",
-        ability: "soul warp",
-        power: 0
-      },
-      {
-        type: "targeting",
-        targeting: "seek strong",
-        count: 3
-      }
-    ]),
-    megalich: mkSoulF((a2) => [
-      {
-        type: "stat bonus",
-        stat: "max essence",
-        power: 200
-      },
-      {
-        type: "soak damage",
-        power: 500
-      },
-      {
-        type: "stat bonus",
-        stat: "speed",
-        power: 10
-      },
-      { type: "damage", damage: R(10, 100, 50) },
-      {
-        type: "danger sense",
-        power: 20
-      },
-      {
-        type: "ability",
-        ability: "clairvoyance",
-        power: 50
-      },
-      {
-        type: "ability",
-        ability: "shadow cloak",
-        power: 10
-      }
-    ])
-  };
-
-  // src/monster.ts
-  var DamageDescriptions = [
-    [0, "You absorb the attack"],
-    [1, "Your essence trembles"],
-    [5, "Your essence wavers"],
-    [10, "You stagger as your essence is drained"],
-    [20, "Your connection to the mortal world frays"],
-    [30, "Your being is stretched to the breaking point"],
-    [50, "You briefly swim through endless aeons of hell"]
-  ];
-  function getDamageDescription(dmg) {
-    for (let i2 = DamageDescriptions.length - 1; i2 >= 0; i2--) {
-      if (DamageDescriptions[i2][0] <= dmg) {
-        return DamageDescriptions[i2][1];
-      }
-    }
-    return DamageDescriptions[0][1];
-  }
-  function meleeAttack(verb, damage) {
+  // src/data/formations.ts
+  function solo(arch, roll, danger) {
     return {
-      canReachFrom: (from, target) => (target.x === from.x || target.x === from.x - 1 || target.x === from.x + 1) && (target.y === from.y || target.y === from.y - 1 || target.y === from.y + 1),
-      attackFrom: (c2) => {
-        msg.combat("%The %s you!", D(c2), verb);
-        let m2 = c2.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
-        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
-          let dmg = doRoll(dmgRoll);
-          doDamage(dmg);
-        }
-      }
+      appearing: [[arch, roll]],
+      danger
     };
   }
-  function rangedAttack(verb, damage) {
-    return {
-      canReachFrom: (from, target) => playerCanSee(from.x, from.y),
-      attackFrom: (from, target) => {
-        msg.combat("%The %s you!", D(from), verb);
-        let m2 = from.monster;
-        let danger = m2 ? MonsterArchetypes[m2.archetype].essence : 1;
-        if (doRoll(R(1, 100, 0)) > 90 - danger * 2) {
-          let dmgRoll = __spreadProps(__spreadValues({}, damage), { n: damage.n + Math.floor(danger / 5) });
-          let dmg = doRoll(dmgRoll);
-          doDamage(dmg);
-        }
-      }
-    };
-  }
-  var Attacks = {
-    none: {
-      canReachFrom: (c2, t2) => false,
-      attackFrom: (c2, t2) => {
-      }
+  var MonsterFormations = [
+    solo("maggot heap", R(1, 4, 3), 1),
+    solo("gnat swarm", R(2, 4, 0), 1),
+    solo("luminous grub", R(1, 3, 1), 5),
+    solo("soul butterfly", R(1, 3, 1), 10),
+    solo("torpid ghost", R(1, 1, 0), 10),
+    solo("dusty rat", R(1, 3, 0), 1),
+    solo("crypt spider", R(1, 2, 0), 3),
+    solo("little ghost", R(1, 1, 0), 4),
+    solo("bleary eye", R(1, 1, 0), 5),
+    {
+      appearing: [
+        ["dusty rat", R(2, 2, 1)],
+        ["hungry rat", R(1, 3, 0)]
+      ],
+      danger: 7
     },
-    bite: meleeAttack("snaps at", R(1, 4, 0)),
-    touch: meleeAttack("reaches into", R(1, 4, 2)),
-    slice: meleeAttack("slices at", R(1, 8, 4)),
-    shock: meleeAttack("shocks", R(3, 4, 1)),
-    gaze: rangedAttack("gazes at", R(1, 4, 0)),
-    abjure: rangedAttack("abjures", R(1, 4, 2)),
-    rock: rangedAttack("pitches a rock at", R(1, 2, 0))
-  };
-  var DeathMessages = {
-    drain: "%The crumbles into dust.",
-    force: "%The is blown to pieces.",
-    bleedout: "The soul of %the departs.",
-    escape: "The soul of %the escapes your grasp."
-  };
-  function spawnMonster(archetype) {
-    let hp = doRoll(MonsterArchetypes[archetype].hp);
-    return {
-      archetype,
-      hp,
-      maxHP: hp,
-      energy: 1,
-      statuses: []
-    };
-  }
-  function killMonster(m2, cause) {
-    if (!m2.deathCause) {
-      m2.deathCause = cause;
+    solo("knocker", R(1, 1, 0), 7),
+    solo("wolf spider", R(1, 1, 0), 8),
+    solo("weeping ghost", R(1, 1, 0), 10),
+    solo("peering eye", R(1, 1, 0), 12),
+    solo("howling ghost", R(1, 1, 0), 12),
+    {
+      appearing: [
+        ["little ghost", R(2, 2, 1)],
+        ["weeping ghost", R(1, 3, 0)],
+        ["howling ghost", R(1, 1, 0)],
+        ["torpid ghost", R(1, 4, 1)]
+      ],
+      danger: 12
+    },
+    solo("gimlet eye", R(1, 1, 0), 15),
+    solo("ambush spider", R(1, 1, 0), 15),
+    solo("howling ghost", R(1, 3, 1), 17),
+    {
+      appearing: [
+        ["dusty rat", R(2, 2, 1)],
+        ["hungry rat", R(1, 3, 0)]
+      ],
+      danger: 7
+    },
+    solo("wolf spider", R(1, 1, 0), 8),
+    solo("weeping ghost", R(1, 1, 0), 10),
+    solo("peering eye", R(1, 1, 0), 12),
+    solo("howling ghost", R(1, 1, 0), 12),
+    {
+      appearing: [
+        ["luminous grub", R(2, 2, 2)],
+        ["soul butterfly", R(2, 3, 1)],
+        ["soul sucker", R(1, 2, 0)]
+      ],
+      danger: 15
+    },
+    solo("will-o-wisp", R(1, 1, 0), 15),
+    solo("soul sucker", R(2, 2, 2), 17),
+    {
+      appearing: [
+        ["do-gooder", R(1, 2, 0)],
+        ["acolyte", R(1, 2, -1)]
+      ],
+      danger: 9
+    },
+    {
+      appearing: [
+        ["warrior", R(1, 1, 0)],
+        ["acolyte", R(1, 1, 0)]
+      ],
+      danger: 12
+    },
+    {
+      appearing: [
+        ["do-gooder", R(2, 2, 0)],
+        ["warrior", R(1, 2, 0)]
+      ],
+      danger: 15
+    },
+    {
+      appearing: [["warrior", R(2, 2, 1)]],
+      danger: 20
+    },
+    {
+      appearing: [
+        ["warrior", R(1, 2, 0)],
+        ["priest", R(1, 1, 0)]
+      ],
+      danger: 20
+    },
+    {
+      appearing: [
+        ["do-gooder", R(2, 2, 0)],
+        ["warrior", R(1, 2, 0)],
+        ["priest", R(1, 1, 0)]
+      ],
+      danger: 25
     }
-  }
-  function monsterHasStatus(m2, status) {
-    return !!m2.statuses.find((s2) => s2.type === status);
-  }
-  function inflictStatus(m2, s2) {
-    m2.statuses = m2.statuses.filter((s3) => s3.type !== s3.type);
-    m2.statuses.push(s2);
-  }
-  function cureStatus(m2, st) {
-    m2.statuses = m2.statuses.filter((s2) => s2.type !== st);
-  }
-  function monsterStatusTick(m2) {
-    let trap = getSoulEffect("soul trap");
-    for (let st of m2.statuses) {
-      switch (st.type) {
-        case "dying":
-          st.timer--;
-          if (st.timer <= 0) {
-            killMonster(m2, trap ? "escape" : "bleedout");
-          }
-          break;
-        case "slow":
-          st.timer--;
-          if (st.timer <= 0) {
-            cureStatus(m2, "slow");
-          }
-          break;
-      }
-    }
-  }
-  function monsterSpeed(m2) {
-    let speed = MonsterArchetypes[m2.archetype].speed;
-    if (monsterHasStatus(m2, "slow")) {
-      speed /= 2;
-    }
-    return speed;
-  }
-  function weakMonster(m2) {
-    return m2.hp <= 1 || monsterHasStatus(m2, "dying");
-  }
-  function makeSoul(arch) {
-    let f2 = SoulFactories[arch.soul];
-    return f2(arch);
-  }
-  function getSoul(m2) {
-    return getMonsterSoul(m2.archetype, () => {
-      return makeSoul(MonsterArchetypes[m2.archetype]);
-    });
-  }
+  ];
 
   // src/map.ts
   var baseMap = {
@@ -30862,6 +30854,35 @@ void main() {
     memory: [],
     exits: []
   };
+  function forEachMonster(map2, func) {
+    map2.monsters.forEach((m2, i2) => {
+      if (m2) {
+        const [x2, y2] = idxToXY(i2);
+        func(m2, x2, y2);
+      }
+    });
+  }
+  function deleteMonster(map2, monster) {
+    while (true) {
+      const idx = map2.monsters.indexOf(monster);
+      if (idx === -1) {
+        break;
+      }
+      map2.monsters[idx] = null;
+    }
+  }
+  function placeMonster(map2, monster, x2, y2) {
+    map2.monsters[x2 + y2 * map2.w] = monster;
+  }
+  function reapDead(map2) {
+    forEachMonster(map2, (m2, x2, y2) => {
+      if (m2.deathCause) {
+        const c2 = contentsAt(x2, y2);
+        msg.combat(DeathMessages[m2.deathCause], D(c2));
+        deleteMonster(map2, m2);
+      }
+    });
+  }
   var Tiles = {
     rock: { glyph: "rock", blocks: true },
     wall: { glyph: "wall", blocks: true },
@@ -30885,10 +30906,10 @@ void main() {
     return DangerDescriptions[0][1];
   }
   function moveMonster(from, to) {
-    if (!to.blocked) {
+    if (!to.blocked && from.monster) {
       const map2 = getMap();
-      map2.monsters[from.x + from.y * map2.w] = null;
-      map2.monsters[to.x + to.y * map2.w] = from.monster;
+      deleteMonster(map2, from.monster);
+      placeMonster(map2, from.monster, to.x, to.y);
       return true;
     } else {
       return false;
@@ -30916,9 +30937,9 @@ void main() {
     });
     let dvision = getSoulEffect("death vision");
     if (dvision) {
-      map2.monsters.forEach((m2, i2) => {
-        if (m2 && monsterHasStatus(m2, "dying")) {
-          FOV2.compute(i2 % map2.w, Math.floor(i2 / map2.w), dvision.power, (fx, fy, r2, v2) => {
+      forEachMonster(map2, (m2, x2, y2) => {
+        if (monsterHasStatus(m2, "dying")) {
+          FOV2.compute(x2, y2, dvision.power, (fx, fy, r2, v2) => {
             seenIdxs.add(xyToIdx(fx, fy));
           });
         }
@@ -31077,7 +31098,7 @@ void main() {
           let my = randInt(room.getTop(), room.getBottom());
           let c2 = contentsAt(mx, my);
           if (!c2.blocked) {
-            map2.monsters[mx + my * map2.w] = spawnMonster(arch);
+            placeMonster(map2, spawnMonster(arch), mx, my);
           }
           capacity--;
           appearing--;
