@@ -1,11 +1,6 @@
 import { Game, setPlayerXY } from "./game";
-import {
-  contentsAt,
-  doMagicMap,
-  monstersByDistance,
-  newMap,
-  seenXYs,
-} from "./map";
+import { contentsAt, doMagicMap, monstersByDistance, seenXYs } from "./map";
+import { newMap } from "./mapgen";
 import { getDamageDescription, monsterHasStatus } from "./monster";
 import { msg } from "./msg";
 import {

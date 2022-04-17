@@ -1,12 +1,11 @@
 import * as ROT from "rot-js";
 import { Commands } from "./commands";
-import { Game, GameState, resetGame } from "./game";
+import { Game, GameState, getMap, resetGame } from "./game";
 import {
   findTargets,
   getMapDescription,
   getVictim,
   monstersByDistance,
-  newMap,
   recomputeFOV,
   XYContents,
 } from "./map";
@@ -16,7 +15,7 @@ import { tick } from "./tick";
 import { renderControls } from "./ui/controls";
 import * as ROTRender from "./ui/render/rotjs";
 import * as PIXIRender from "./ui/render/pixi";
-import { uid } from "@pixi/utils";
+import { newMap } from "./mapgen";
 
 type Choice = {
   prompt: string;
@@ -106,12 +105,13 @@ export function runGame() {
   ).initPlayarea(UI, playarea, (display) => {
     // Set up UI rendering
     UI.uiCallback = () => {
+      const map = getMap();
       UI.state = {
         playerEssence: Game.player.essence,
         playerMaxEssence: maxEssence(),
         targets: findTargets(),
         visible: monstersByDistance().map((n) => n[1]),
-        mapDescription: getMapDescription(),
+        mapDescription: getMapDescription(map),
         onGround: getVictim(),
       };
       display.drawMap(UI, Game);

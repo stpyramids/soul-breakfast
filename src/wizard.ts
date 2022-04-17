@@ -1,7 +1,8 @@
 import { doClaimSoul } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
 import { Game } from "./game";
-import { doMagicMap, newMap } from "./map";
+import { doMagicMap } from "./map";
+import { newMap } from "./mapgen";
 import { makeSoul } from "./monster";
 import { gainEssence, maxEssence } from "./player";
 import { glyphChar } from "./token";

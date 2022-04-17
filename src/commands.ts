@@ -6,10 +6,10 @@ import {
   canSeeThreat,
   contentsAt,
   findTargets,
-  newMap,
   playerCanSee,
   XYContents,
 } from "./map";
+import { newMap } from "./mapgen";
 import {
   DeathType,
   getSoul,

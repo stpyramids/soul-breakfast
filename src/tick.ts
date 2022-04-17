@@ -44,20 +44,16 @@ export function tick(game: GameState, ui: UIState) {
       forEachMonster(game.map, (m, x, y) => {
         const c = contentsAt(x, y);
         monsterStatusTick(m);
-        if (m.deathCause) {
-          msg.combat(DeathMessages[m.deathCause], D(c));
-          deleteMonster(game.map, m);
-        } else {
-          if (!monsterHasStatus(m, "dying")) {
-            const arch = MonsterArchetypes[m.archetype];
-            const ai = AI[arch.ai];
-            m.energy += monsterSpeed(m);
-            while (m.energy >= 1.0) {
-              m.energy -= ai(c);
-            }
+        if (!m.deathCause && !monsterHasStatus(m, "dying")) {
+          const arch = MonsterArchetypes[m.archetype];
+          const ai = AI[arch.ai];
+          m.energy += monsterSpeed(m);
+          while (m.energy >= 1.0) {
+            m.energy -= ai(c);
           }
         }
       });
+      reapDead(game.map);
       game.turns += 1;
       game.player.energy += getPlayerSpeed();
       tickPlayerStatus();

@@ -1,7 +1,8 @@
 import * as ROT from "rot-js";
 import { MonsterArchetypes } from "../data/monsters";
 import { Game, getMap } from "../game";
-import { contentsAt, newMap } from "../map";
+import { contentsAt } from "../map";
+import { newMap } from "../mapgen";
 import { monsterHasStatus, weakMonster } from "../monster";
 import { ColorID, glyphChar, rgb, rgba } from "../token";
 import { UI } from "../ui";
@@ -14,12 +15,9 @@ function fgColor(color: ColorID, alpha?: number): string {
   if (alpha === undefined) {
     alpha = 1.0;
   }
-  if (UI.doTiles) {
-    return rgba(color, alpha);
-  } else {
-    return rgb(color);
-  }
+  return rgb(color);
 }
+
 function drawMap(display: ROT.Display) {
   display.clear();
   const map = getMap();

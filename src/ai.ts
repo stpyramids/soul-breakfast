@@ -1,6 +1,6 @@
 import { D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
-import { getPlayerXY } from "./game";
+import { getMap, getPlayerXY } from "./game";
 import { contentsAt, moveMonster, playerCanSee, XYContents } from "./map";
 import { Attacks } from "./monster";
 import { msg } from "./msg";
@@ -39,7 +39,7 @@ function doApproach(c: XYContents): number {
     let dy = target.y - c.y;
     dy = dy == 0 ? 0 : dy / Math.abs(dy);
     if (dx + dy > 0) {
-      moveMonster(c, contentsAt(c.x + dx, c.y + dy));
+      moveMonster(getMap(), c, contentsAt(c.x + dx, c.y + dy));
       return 1.0;
     } else {
       return 0.0;
@@ -93,7 +93,7 @@ function maybeBlink(pct: number): AIFunc {
           D(c)
         );
       }
-      moveMonster(c, spot);
+      moveMonster(getMap(), c, spot);
       return 1.0;
     } else {
       return 0.0;
@@ -111,7 +111,7 @@ export const AI: { [id: string]: AIFunc } = {
       let ny = c.y + randInt(-1, 1);
       let spot = contentsAt(nx, ny);
       if (!spot.blocked) {
-        moveMonster(c, spot);
+        moveMonster(getMap(), c, spot);
         return 1.0;
       }
     }
