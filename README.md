@@ -4,7 +4,7 @@ _Revenge, like cereal, is best served cold_
 
 My submission to the [2022 Seven Day Roguelike game jam](https://itch.io/jam/7drl-challenge-2022). The version submitted is the `7drl-2022` tag; this version is under continuing development.
 
-I publish the latest dev release [here](https://mboeh.github.io/7drl-2022/).
+I publish the latest dev release [here](https://stpyramids.github.io/soul-breakfast/).
 
 ## How to play:
 
@@ -16,7 +16,7 @@ The game includes tutorial messages, but the overall structure is:
 - Spend essence to go through passages (>) to more dangerous areas with harder enemies.
 - Try not to hit 0 essence: this can cause you to lose souls or even get kicked back into an earlier level.
 - Release weaker souls (with 'r') and claim stronger ones.
-- Achieve a max essence of 50 or higher and enter a passage to a danger level of 50 or higher. And win!
+- Achieve a max essence of 30 or higher and enter a passage to a danger level of 30 or higher. And win!
 
 ## Controls
 
@@ -38,31 +38,11 @@ Some of these are documented in game. Online
 - Positioning is key.
 - Not all effects stack.
 
-## UI changes
-
-- Use some kind of JS framework or templating library
-- Make the "ground" section clear
-- Add a "target" section
-- Add a spell summary
-
 ## Balance Thoughts
 
 - Spell should cost 1 essence at first
 - Spell upgrades should cause (gradual) cost increases
 - Early enemies should be slightly more difficult
-
-## To Do
-
-- Clean up the codebase
-- Make better use of color
-- More content
-  - More powers: stealth, ESP, area of effect spells, etc.
-- A better goal
-- Better balance
-- More flavor:
-  - Combat messages
-  - Level themes
-- Detailed online help
 
 ## Mechanics Notes
 

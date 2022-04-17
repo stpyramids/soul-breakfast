@@ -18,6 +18,8 @@ import {
 import { glyphChar, rgb, tokenChar, tokenRGB } from "../token";
 import { handleKey, UIState } from "../ui";
 
+declare var APP_VERSION: string;
+
 export function renderControls(
   game: GameState,
   ui: UIState,
@@ -51,7 +53,37 @@ function Playarea(props: { ui: UIState }) {
   if (props.ui.activeChoice) {
     el = <ChoiceBox ui={props.ui} />;
   }
-  if (props.ui.specialMode === "help-commands") {
+  if (props.ui.specialMode === "help-about") {
+    el = (
+      <div class="info">
+        <h3>About This Game</h3>
+        <p>
+          In <i>Soul Breakfast</i>, you play as the undead remnant of a great
+          wizard-king. In ages past, you were overthrown and killed by a gang of
+          mercenaries paid and armed by your rivals. But your ambitions are too
+          superb to be overcome by death. Many times before have you used your
+          mastery of soul essence to reclaim what remains of your physical form
+          and fight your way back to power, only to be struck down again by
+          do-gooder sellswords.
+        </p>
+        <p>
+          This time will be different, however. Over many years you have
+          unraveled the rituals of abjuration and binding woven into your
+          resting ground and twisted them to your purpose. Your soul is bound to
+          this place, true, but so too are the souls of all within it. You have
+          learned to use your sovereign power over this place to trap and devour
+          the souls of all who stand against you, or even turn their power to
+          your own ends. With this power, you shall reclaim what is yours, and
+          your vengeance will never end.
+        </p>
+        <p>
+          But first, you find yourself drained after the exertions necessary to
+          return yourself to the mortal realm. You must replenish your essence
+          by draining the weaklings and vermin. It is time to break the fast.
+        </p>
+      </div>
+    );
+  } else if (props.ui.specialMode === "help-commands") {
     el = (
       <div class="info">
         <h3>Help: Controls</h3>
@@ -118,6 +150,38 @@ function Playarea(props: { ui: UIState }) {
           die, wasting all of their essence. If you're full up on essence, it
           might be better to ignore weaker enemies, leaving them to prey on
           later.
+        </p>
+      </div>
+    );
+  } else if (props.ui.specialMode === "help-credits") {
+    el = (
+      <div class="info credits">
+        <h3>
+          <em>Soul Breakfast version {APP_VERSION}</em>
+        </h3>
+        <p>Original version created for the 2022 7 Day Roguelike challenge</p>
+        <p>
+          <strong>Design, Code, &amp; "Art"</strong>: stepped pyramids (Matt
+          Boeh)
+        </p>
+        <p>
+          <strong>Playtesting &amp; Feedback:</strong> Drew, Garren, Jesse,
+          Robert, Sean
+        </p>
+        <p>
+          <strong>Thanks:</strong> The 'cob, 7DRL community
+        </p>
+        <p>
+          <strong>Built With:</strong> TypeScript, esbuild, rot.js, pixi.js,
+          Preact
+        </p>
+        <p>
+          <a
+            href="https://github.com/stpyramids/soul-breakfast"
+            target="_blank"
+          >
+            Project Page
+          </a>
         </p>
       </div>
     );

@@ -42,7 +42,12 @@ export const UI = {
     mapDescription: "",
     onGround: null as XYContents | null,
   },
-  specialMode: null as "help-commands" | "help-tips" | null,
+  specialMode: null as
+    | "help-about"
+    | "help-commands"
+    | "help-tips"
+    | "help-credits"
+    | null,
   flags: {
     zoom: false,
     ascii: false,

@@ -343,6 +343,13 @@ export const Commands: { [key: string]: () => boolean } = {
   "?": () => {
     offerBasicChoice("Help", [
       [
+        "a",
+        "About",
+        () => {
+          UI.specialMode = "help-about";
+        },
+      ],
+      [
         "c",
         "Controls",
         () => {
@@ -351,9 +358,16 @@ export const Commands: { [key: string]: () => boolean } = {
       ],
       [
         "t",
-        "Tips",
+        "Gameplay Tips",
         () => {
           UI.specialMode = "help-tips";
+        },
+      ],
+      [
+        "r",
+        "Credits",
+        () => {
+          UI.specialMode = "help-credits";
         },
       ],
     ]);

@@ -1,11 +1,11 @@
 {
   "name": "soul-eater-7drl",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/app.ts --jsx-factory=createElement --jsx-fragment=Fragment --minify --bundle --metafile=bundle.json --sourcemap --outfile=dist/app.js",
-    "serve": "npm run build -- --jsx-factory=createElement --jsx-fragment=Fragment --servedir=dist"
+    "build": "esbuild src/app.ts --define:APP_VERSION=\\\"$npm_package_version\\\"  --jsx-factory=createElement --jsx-fragment=Fragment --minify --bundle --metafile=bundle.json --sourcemap --outfile=dist/app.js",
+    "serve": "npm run build -- --define:APP_VERSION=\\\"$npm_package_version-dev\\\" --jsx-factory=createElement --jsx-fragment=Fragment --servedir=dist"
   },
   "keywords": [],
   "author": "",
