@@ -2,7 +2,13 @@ import { AI } from "./ai";
 import { Commands, D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
 import { GameState } from "./game";
-import { contentsAt, recomputeFOV } from "./map";
+import {
+  contentsAt,
+  deleteMonster,
+  forEachMonster,
+  reapDead,
+  recomputeFOV,
+} from "./map";
 import {
   DeathMessages,
   monsterHasStatus,
@@ -30,32 +36,24 @@ export function tick(game: GameState, ui: UIState) {
   }
 
   // Monsters should still die, even if they don't get to act.
-  game.map.monsters.forEach((m, i) => {
-    if (m && m.deathCause) {
-      const c = contentsAt(i % game.map.w, Math.floor(i / game.map.w));
-      msg.combat(DeathMessages[m.deathCause], D(c));
-      game.map.monsters[i] = null;
-    }
-  });
+  reapDead(game.map);
 
   if (game.player.energy < 1.0) {
     // Don't let UI act when game is 'paused'
     if (!(noop || ui.activeChoice)) {
-      game.map.monsters.forEach((m, i) => {
-        if (m) {
-          const c = contentsAt(i % game.map.w, Math.floor(i / game.map.w));
-          monsterStatusTick(m);
-          if (m.deathCause) {
-            msg.combat(DeathMessages[m.deathCause], D(c));
-            game.map.monsters[i] = null;
-          } else {
-            if (!monsterHasStatus(m, "dying")) {
-              const arch = MonsterArchetypes[m.archetype];
-              const ai = AI[arch.ai];
-              m.energy += monsterSpeed(m);
-              while (m.energy >= 1.0) {
-                m.energy -= ai(c);
-              }
+      forEachMonster(game.map, (m, x, y) => {
+        const c = contentsAt(x, y);
+        monsterStatusTick(m);
+        if (m.deathCause) {
+          msg.combat(DeathMessages[m.deathCause], D(c));
+          deleteMonster(game.map, m);
+        } else {
+          if (!monsterHasStatus(m, "dying")) {
+            const arch = MonsterArchetypes[m.archetype];
+            const ai = AI[arch.ai];
+            m.energy += monsterSpeed(m);
+            while (m.energy >= 1.0) {
+              m.energy -= ai(c);
             }
           }
         }

@@ -1,15 +1,17 @@
 import * as ROT from "rot-js";
+import { D } from "./commands";
 import { MonsterFormations } from "./data/formations";
 import { MonsterArchetypes } from "./data/monsters";
 import { getMap, getPlayerXY, maybeWin, setMap, setPlayerXY } from "./game";
 import {
-  ArchetypeID,
+  DeathMessages,
   Monster,
   MonsterFormation,
   monsterHasStatus,
   spawnMonster,
   weakMonster,
 } from "./monster";
+import { msg } from "./msg";
 import { getPlayerVision, getSoulEffect, getWand } from "./player";
 import { GlyphID } from "./token";
 import { doRoll, randInt, xyDistance } from "./utils";
@@ -25,6 +27,47 @@ export const baseMap = {
 };
 
 export type LevelMap = typeof baseMap;
+
+export function forEachMonster(
+  map: LevelMap,
+  func: (m: Monster, x: number, y: number) => void
+): void {
+  map.monsters.forEach((m, i) => {
+    if (m) {
+      const [x, y] = idxToXY(i);
+      func(m, x, y);
+    }
+  });
+}
+
+export function deleteMonster(map: LevelMap, monster: Monster): void {
+  while (true) {
+    const idx = map.monsters.indexOf(monster);
+    if (idx === -1) {
+      break;
+    }
+    map.monsters[idx] = null;
+  }
+}
+
+export function placeMonster(
+  map: LevelMap,
+  monster: Monster,
+  x: number,
+  y: number
+): void {
+  map.monsters[x + y * map.w] = monster;
+}
+
+export function reapDead(map: LevelMap): void {
+  forEachMonster(map, (m, x, y) => {
+    if (m.deathCause) {
+      const c = contentsAt(x, y);
+      msg.combat(DeathMessages[m.deathCause], D(c));
+      deleteMonster(map, m);
+    }
+  });
+}
 
 /// Map tiles
 
@@ -59,10 +102,10 @@ export function getMapDescription(): string {
 }
 
 export function moveMonster(from: XYContents, to: XYContents): boolean {
-  if (!to.blocked) {
+  if (!to.blocked && from.monster) {
     const map = getMap();
-    map.monsters[from.x + from.y * map.w] = null;
-    map.monsters[to.x + to.y * map.w] = from.monster;
+    deleteMonster(map, from.monster);
+    placeMonster(map, from.monster, to.x, to.y);
     return true;
   } else {
     return false;
@@ -98,17 +141,12 @@ export function recomputeFOV() {
   );
   let dvision = getSoulEffect("death vision");
   if (dvision) {
-    map.monsters.forEach((m, i) => {
-      if (m && monsterHasStatus(m, "dying")) {
-        FOV.compute(
-          i % map.w,
-          Math.floor(i / map.w),
-          dvision!.power,
-          (fx, fy, r, v) => {
-            // this should be a SET
-            seenIdxs.add(xyToIdx(fx, fy));
-          }
-        );
+    forEachMonster(map, (m, x, y) => {
+      if (monsterHasStatus(m, "dying")) {
+        FOV.compute(x, y, dvision!.power, (fx, fy, r, v) => {
+          // this should be a SET
+          seenIdxs.add(xyToIdx(fx, fy));
+        });
       }
     });
   }
@@ -335,7 +373,7 @@ function placeMonsters(
         let my = randInt(room.getTop(), room.getBottom());
         let c = contentsAt(mx, my);
         if (!c.blocked) {
-          map.monsters[mx + my * map.w] = spawnMonster(arch);
+          placeMonster(map, spawnMonster(arch), mx, my);
         }
         capacity--;
         appearing--;
