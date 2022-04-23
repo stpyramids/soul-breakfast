@@ -234,6 +234,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
     variants: [
       {
         name: "acolyte",
+        glyph: "priest",
         description:
           "This child has read a book or two and learned enough to be dangerous, but I am a much harsher tutor than any they have ever known.",
         essence: 8,
@@ -254,6 +255,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       },
       {
         name: "priest",
+        glyph: "priest",
         description:
           "Ah, a god-speaker. No doubt sent here to soothe the restless dead. I have a better solution.",
         essence: 15,
@@ -281,6 +283,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
     variants: [
       {
         name: "will-o-wisp",
+        glyph: "wisp",
         description:
           "These malicious creatures flit about, causing meaningless pain. As opposed to the meaningful pain I cause, of course.",
         essence: 12,

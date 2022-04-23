@@ -9,7 +9,14 @@ import {
   MonsterStatusType,
   weakMonster,
 } from "../../monster";
-import { glyphChar, ColorID, rgb, hex, GlyphID } from "../../token";
+import {
+  glyphChar,
+  ColorID,
+  rgb,
+  hex,
+  GlyphID,
+  dangerColor,
+} from "../../token";
 import { UIState, Renderer } from "../../ui";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
 
@@ -33,9 +40,9 @@ export function initPlayarea(
     onload({
       drawMap: (ui, game) => {
         if (ui.flags.zoom) {
-          scale = 1.0;
-        } else {
           scale = 2.0;
+        } else {
+          scale = 1.0;
         }
         tileW = 32 * scale;
         doTiles = !ui.flags.ascii;
@@ -81,18 +88,22 @@ function mkTile(pspec: Partial<TileSpec>): TileSpec {
 const glyphAtlas = new Map<string, PIXI.Sprite>();
 const tileMapping = new Map<GlyphID, string>([
   ["player", "gourmand.png"],
-  ["wall", "masonry.png"],
+  ["wall", "masonry-2.png"],
+  ["exit", "closed-exit.png"],
   ["rock", "rock.png"],
   ["floor", "dirt.png"],
   ["eyeball", "eyebeast.png"],
   ["ghost", "ghost.png"],
-  ["do-gooder", "acolyte.png"],
+  ["priest", "acolyte.png"],
+  ["do-gooder", "do-gooder.png"],
   ["maggots", "maggots.png"],
   ["grub", "grub.png"],
   ["butterfly", "butterfly.png"],
   ["insect", "gnats.png"],
   ["spider", "spider.png"],
   ["rodent", "rat.png"],
+  ["fairy", "knocker.png"],
+  ["wisp", "wisp.png"],
 ]);
 const tileAtlas = new Map<string, PIXI.Sprite>();
 function getTile(
@@ -315,6 +326,7 @@ function visibleTile(
     player?: boolean;
     monster?: Monster | null;
     tile?: Tile | null;
+    exitDanger?: number | null;
   },
   isTarget: boolean
 ): TileSpec[] {
@@ -323,7 +335,11 @@ function visibleTile(
     tiles.push(
       mkTile({
         glyph: c.tile.glyph,
-        identityC: c.tile.blocks ? "terrain" : "floor",
+        identityC: c.tile.blocks
+          ? "terrain"
+          : c.exitDanger
+          ? dangerColor(c.exitDanger)
+          : "floor",
       })
     );
   }

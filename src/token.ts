@@ -18,6 +18,15 @@ const Colors = {
 
 export type ColorID = keyof typeof Colors;
 
+export function dangerColor(danger: number): ColorID {
+  let base = ("danger" + (danger - (danger % 5))) as ColorID;
+  if (Colors[base]) {
+    return base;
+  } else {
+    return "danger25";
+  }
+}
+
 export function rgb(color: ColorID): string {
   let c = Colors[color];
   return `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -50,7 +59,9 @@ const Glyphs = {
   ghost: "g",
   eyeball: "e",
   "do-gooder": "h",
+  priest: "h",
   fairy: "f",
+  wisp: "f",
 };
 
 export type GlyphID = keyof typeof Glyphs;
