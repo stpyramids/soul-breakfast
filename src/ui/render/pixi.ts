@@ -89,7 +89,7 @@ const glyphAtlas = new Map<string, PIXI.Sprite>();
 const tileMapping = new Map<GlyphID, string>([
   ["player", "gourmand.png"],
   ["wall", "masonry-2.png"],
-  ["exit", "closed-exit.png"],
+  ["exit", "open-exit.png"],
   ["rock", "rock.png"],
   ["floor", "dirt.png"],
   ["eyeball", "eyebeast.png"],
