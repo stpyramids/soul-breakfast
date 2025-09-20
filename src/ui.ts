@@ -186,22 +186,26 @@ export function startNewGame() {
   resetGame();
   newMap();
   recomputeFOV();
-  msg.think("The world thought me forever sleeping, yet I arise.");
-  msg.think(
-    "But my essence is still weak. I can barely sustain these remnants of what I once was."
-  );
-  msg.think("I hunger... I must recover my essence and rebuild my power.");
-  msg.break();
-  msg.angry("And then they will all pay!");
-  msg.break();
-  msg.help(
-    "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures and devour their souls."
-  );
-  msg.break();
-  msg.help(
-    "Type '?' for help. Reach danger level %s to win. Go forth and feast!",
-    Game.maxLevel
-  );
-  msg.break();
+  msg
+    .think("The world thought me forever sleeping, yet I arise.")
+    .break()
+    .think(
+      "But my essence is still weak. I can barely sustain these remnants of what I once was."
+    )
+    .break()
+    .think("I hunger... I must recover my essence and rebuild my power.")
+    .break()
+    .angry("And then they will all pay!")
+    .break()
+    .help(
+      "Use 'h'/'j'/'k'/'l' to move. You can enter the squares of weak and dying creatures and devour their souls."
+    )
+    .break()
+    .help(
+      "Type '?' for help. Reach danger level %s to win. Go forth and feast!",
+      Game.maxLevel
+    )
+    .break();
   UI.uiCallback();
+  Game.turns += 1;
 }

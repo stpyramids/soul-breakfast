@@ -268,7 +268,7 @@ export const Commands: { [key: string]: () => boolean } = {
   " ": () => {
     let wand = getWand();
     if (wand.cost > Game.player.essence) {
-      msg.angry("I must have more essence!");
+      msg.angry("I must have more essence!").break();
       return false;
     }
     // Do targeting
@@ -280,7 +280,7 @@ export const Commands: { [key: string]: () => boolean } = {
         damageMonsterAt(target, wand.damage, wand.status);
       }
     } else {
-      msg.think("I see none here to destroy.");
+      msg.think("There is nothing here worthy of my wrath.").break();
       return false;
     }
     Game.player.essence -= wand.cost;
@@ -439,7 +439,7 @@ export function damageMonsterAt(
       } else {
         msg.combat("%The collapses (%s)!", D(c), damageDone);
         msg.tutorial(
-          "Enter a dying creature's tile to (d)evour or (c)laim their soul. Be quick, though!"
+          "Enter a dying creature's tile to (d)evour or (c)laim their soul. Be quick, though, lest their soul slip away!"
         );
         let trap = getSoulEffect("soul trap");
         if (trap) {

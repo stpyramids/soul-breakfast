@@ -61,7 +61,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       {
         name: "torpid ghost",
         description:
-          "A pathetic lost soul that has been ensnared here and reduced to a nearly sessile state.",
+          "A pathetic lost soul that has been ensnared here and reduced to a nearly sessile state, ripe for my delectation.",
         essence: 10,
         glyph: "ghost",
         color: "vermin",
@@ -136,7 +136,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
     base: {
       name: "little ghost",
       description:
-        "A weak spirit, barely clinging to the mortal world. I wandered for decades in a state like this.",
+        "A weak spirit, barely clinging to the mortal world. It reminds me too much of my once-feeble state.",
       essence: 4,
       glyph: "ghost",
       color: "danger0",
@@ -194,7 +194,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
       {
         name: "gimlet eye",
         description:
-          "It arouses memories of the steely, courageous gaze of someone whose eyes I once had put out.",
+          "It arouses memories of the steely, courageous gaze of a hero whose eyes I had put out with hot irons.",
         essence: 15,
         color: "danger15",
         soul: "clairvoyance",
@@ -257,7 +257,7 @@ export const MonsterArchetypes: { [id: ArchetypeID]: MonsterArchetype } = {
         name: "priest",
         glyph: "priest",
         description:
-          "Ah, a god-speaker. No doubt sent here to soothe the restless dead. I have a better solution.",
+          "Ah, a god-speaker. No doubt sent here to soothe the restless dead. I have a better solution for their turmoil.",
         essence: 15,
         color: "danger20",
         hp: R(3, 6, 4),
