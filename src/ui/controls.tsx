@@ -161,8 +161,7 @@ function Playarea(props: { ui: UIState }) {
         </h3>
         <p>Original version created for the 2022 7 Day Roguelike challenge</p>
         <p>
-          <strong>Design, Code, &amp; "Art"</strong>: stepped pyramids (Matt
-          Boeh)
+          <strong>Design, Code, &amp; "Art"</strong>: Marcy Boeh
         </p>
         <p>
           <strong>Playtesting &amp; Feedback:</strong> Drew, Garren, Jesse,
