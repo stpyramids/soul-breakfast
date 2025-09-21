@@ -95,22 +95,23 @@ export function newMap(opts?: NewMapOptions) {
   }, {} as { [key: number]: number });
 
   // todo this sucks
+  // General goal: there's one "retreat" exit
+  // a couple of safe exits
+  // and a variety of easy or hard exits (some of which might be too hard to use)
+  // Progression gets faster as the game goes on
   let exits = ROT.RNG.shuffle([
     map.danger > 1 ? Math.floor(map.danger / 2) : 1,
     map.danger,
-    map.danger,
-    map.danger + 1,
-    map.danger + 1,
     map.danger + 1,
     map.danger + 2,
-    map.danger + 2,
-    map.danger + 2,
-    map.danger + 2,
-    map.danger + 2,
-    map.danger + 2,
-    map.danger + 3,
-    map.danger + 3,
-    map.danger + 3,
+    randInt(map.danger, map.danger * 1.25) + 1,
+    randInt(map.danger, map.danger * 1.25) + 1,
+    randInt(map.danger, map.danger * 1.25) + 1,
+    randInt(map.danger, map.danger * 1.25) + 1,
+    randInt(map.danger, map.danger * 1.5) + 1,
+    randInt(map.danger, map.danger * 1.5) + 1,
+    randInt(map.danger, map.danger * 1.5) + 1,
+    randInt(map.danger, map.danger * 2) + 1,
     randInt(map.danger, map.danger * 2) + 1,
     randInt(map.danger, map.danger * 2) + 1,
     randInt(map.danger, map.danger * 2) + 1,
