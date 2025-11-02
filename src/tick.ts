@@ -28,6 +28,9 @@ export function tick(game: GameState, ui: UIState) {
   while (game.player.energy >= 1.0) {
     let nextCommand = ui.commandQueue.shift();
     if (nextCommand) {
+      // Clear essence change from previous action before executing new command
+      game.player.essenceChange = 0;
+
       noop = !Commands[nextCommand]();
       ui.uiCallback();
     } else {
