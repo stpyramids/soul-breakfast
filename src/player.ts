@@ -288,10 +288,15 @@ export function doDamage(dmg: number) {
   }
   msg.combat("%s (%s)%s", getDamageDescription(dmg), dmg, dmg > 8 ? "!" : ".");
   let wasZero = Game.player.essence === 0;
-  Game.player.essence -= dmg;
-  if (Game.player.essence < 0) {
-    let extra = Math.abs(Game.player.essence);
-    Game.player.essence = 0;
+
+  // Calculate overflow damage before modifying essence
+  let overflow = Math.max(0, dmg - Game.player.essence);
+
+  // Use loseEssence to properly track the change
+  loseEssence(dmg);
+
+  if (overflow > 0) {
+    let extra = overflow;
     let soulChecked = false;
     if (wasZero) {
       for (let slotGroup of keysOf(Game.player.soulSlots)) {

@@ -283,7 +283,7 @@ export const Commands: { [key: string]: () => boolean } = {
       msg.think("There is nothing here worthy of my wrath.").break();
       return false;
     }
-    Game.player.essence -= wand.cost;
+    loseEssence(wand.cost);
     Game.player.energy -= 1.0;
     return true;
   },

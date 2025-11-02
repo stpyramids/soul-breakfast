@@ -56,10 +56,6 @@ export function tick(game: GameState, ui: UIState) {
       reapDead(game.map);
       game.turns += 1;
 
-      // Reset essence change tracking for the new turn
-      game.player.lastTurnEssence = game.player.essence;
-      game.player.essenceChange = 0;
-
       game.player.energy += getPlayerSpeed();
       tickPlayerStatus();
 
