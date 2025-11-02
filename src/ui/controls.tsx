@@ -6,9 +6,9 @@ import {
   render,
 } from "preact";
 import { MonsterArchetypes } from "../data/monsters";
-import type { GameState } from "../game";
+import { Game, type GameState } from "../game";
 import type { XYContents } from "../map";
-import { getSoul, monsterHasStatus } from "../monster";
+import { getSoul, monsterHasStatus, weakMonster } from "../monster";
 import {
   describeSoulEffect,
   describeSoulEffects,
@@ -36,14 +36,51 @@ function Interface(props: {
   return (
     <div class="wrapper">
       <Playarea ui={props.ui} />
-      <Sidebar ui={props.ui} game={props.game} />
+
       <div id="mapDanger">
         {props.ui.state.mapDescription +
           " [Danger: " +
           props.game.map.danger +
           "]"}
       </div>
-      <MessageLog messages={props.messages} />
+
+      <div id="leftColumn">
+        <EssencePanel game={props.game} ui={props.ui} />
+        <TurnsPanel game={props.game} />
+        <SidebarSection
+          label="Souls"
+          element={SoulListView}
+          souls={props.game.player.soulSlots.generic}
+        />
+      </div>
+
+      <div id="rightColumn">
+        <h1>SOUL 👻 BREAK 💀 FAST</h1>
+        <MessageLog messages={props.messages} />
+        {props.ui.state.onGround ? (
+          <SidebarSection
+            label="On Ground"
+            element={WhatsHereView}
+            here={props.ui.state.onGround}
+          />
+        ) : null}
+        {props.ui.state.targets.length > 0 ? (
+          <SidebarSection
+            label="Targets"
+            element={TargetsView}
+            targets={props.ui.state.targets}
+            brief={false}
+          />
+        ) : null}
+        {props.ui.state.visible.length > 0 ? (
+          <SidebarSection
+            label="In View"
+            element={TargetsView}
+            targets={props.ui.state.visible}
+            brief={true}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -229,40 +266,30 @@ function ChoiceBox(props: { ui: UIState }) {
   );
 }
 
-function Sidebar(props: { ui: UIState; game: GameState }) {
-  const game = props.game;
+function EssencePanel(props: { ui: UIState; game: GameState }) {
+  let full = "rgba(0, 108, 139, 1)";
+  let empty = "rgba(94, 94, 94, 1)";
+  let essencePct = Math.floor(
+    (props.ui.state.playerEssence / props.ui.state.playerMaxEssence) * 100
+  );
+  let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
   return (
-    <div id="sidebar">
-      <h1>SOUL 👻 BREAK 💀 FAST</h1>
-      <StatusView game={game} ui={props.ui} />
-      {props.ui.state.onGround ? (
-        <SidebarSection
-          label="On Ground"
-          element={WhatsHereView}
-          here={props.ui.state.onGround}
-        />
-      ) : null}
-      <SidebarSection
-        label="Souls"
-        element={SoulListView}
-        souls={game.player.soulSlots.generic}
-      />
-      {props.ui.state.targets.length > 0 ? (
-        <SidebarSection
-          label="Targets"
-          element={TargetsView}
-          targets={props.ui.state.targets}
-          brief={false}
-        />
-      ) : null}
-      {props.ui.state.visible.length > 0 ? (
-        <SidebarSection
-          label="In View"
-          element={TargetsView}
-          targets={props.ui.state.visible}
-          brief={true}
-        />
-      ) : null}
+    <div class="stat">
+      <div class="stat-label">Essence</div>
+      <div class="stat-value" id="essence" style={gradient}>
+        {props.ui.state.playerEssence} / {props.ui.state.playerMaxEssence}
+      </div>
+    </div>
+  );
+}
+
+function TurnsPanel(props: { game: GameState }) {
+  return (
+    <div class="stat">
+      <div class="stat-label">Turns</div>
+      <div class="stat-value" id="turns">
+        {props.game.turns}
+      </div>
     </div>
   );
 }
@@ -281,48 +308,47 @@ function SidebarSection<P>(
   );
 }
 
-function StatusView(props: { ui: UIState; game: GameState }) {
-  let full = "rgba(0, 108, 139, 1)";
-  let empty = "rgba(94, 94, 94, 1)";
-  let essencePct = Math.floor(
-    (props.ui.state.playerEssence / props.ui.state.playerMaxEssence) * 100
-  );
-  let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
-  return (
-    <div id="status">
-      <div class="stat">
-        <div class="stat-label">Essence</div>
-        <div class="stat-value" id="essence" style={gradient}>
-          {props.ui.state.playerEssence} / {props.ui.state.playerMaxEssence}
-        </div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Turns</div>
-        <div class="stat-value" id="turns">
-          {props.game.turns}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function WhatsHereView(props: { here: XYContents }) {
   const here = props.here;
   let glyph = "";
   let what = "";
-  let desc = "";
+  let claimDesc = "";
+  let devourDesc = "";
+
   if (here.monster) {
-    let soul = getSoul(here.monster);
+    const soul = getSoul(here.monster);
+    const archetype = MonsterArchetypes[here.monster.archetype];
+    const isWeak = weakMonster(here.monster);
+    const isDying = monsterHasStatus(here.monster, "dying");
+
     glyph = tokenChar(soul.token);
     what = soul.name;
-    desc = describeSoulEffects(soul);
+
+    // Show options if monster is weak (can be devoured/claimed)
+    if (isWeak) {
+      // Always show devour option for weak monsters (including vermin)
+      devourDesc = "(d)evour: " + archetype.essence + " essence";
+
+      // Only show claim option for dying non-vermin souls that haven't been claimed
+      if (isDying && soul.effects.length > 0) {
+        const alreadyClaimed = Game.player.soulSlots.generic.some(
+          (s) => s.name === soul.name
+        );
+
+        if (!alreadyClaimed) {
+          claimDesc = "(c)laim: " + describeSoulEffects(soul);
+        }
+      }
+    }
   } else if (here.tile) {
     glyph = glyphChar(here.tile.glyph);
     what = here.tile.glyph;
     if (here.exitDanger) {
-      desc = "Danger: " + here.exitDanger;
+      devourDesc = "Danger: " + here.exitDanger;
     }
   }
+
   return (
     <div id="whatsHere">
       <div class="soul-glyph" id="hereGlyph">
@@ -331,9 +357,16 @@ export function WhatsHereView(props: { here: XYContents }) {
       <div class="soul-name" id="hereWhat">
         {what}
       </div>
-      <div class="soul-effect" id="hereDescription">
-        {desc}
-      </div>
+      {claimDesc && (
+        <div class="soul-action" id="hereClaimAction">
+          {claimDesc}
+        </div>
+      )}
+      {devourDesc && (
+        <div class="soul-action" id="hereDevourAction">
+          {devourDesc}
+        </div>
+      )}
     </div>
   );
 }
@@ -450,12 +483,147 @@ function TargetItem(props: { item: TargetItem; brief: boolean }) {
 }
 
 function MessageLog(props: { messages: [string, string][][] }) {
-  let entries = props.messages
-    .map((msgs, i) => {
-      let log = msgs.map(([msg, msgType], i) => (
-        <span class={"msg-" + msgType}>{msg + " "}</span>
-      ));
-      return <li key={"mgs-turn-" + i}>{...log}</li>;
+  // Check if two message sequences are identical
+  const isPatternMatch = (
+    pattern: [string, string][],
+    chunk: [string, string][]
+  ): boolean => {
+    if (!pattern || !chunk) return false;
+    if (pattern.length !== chunk.length) return false;
+    for (let i = 0; i < pattern.length; i++) {
+      if (!pattern[i] || !chunk[i]) return false;
+      if (pattern[i][0] !== chunk[i][0] || pattern[i][1] !== chunk[i][1]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Check if two turns have identical message sequences
+  const areTurnsIdentical = (
+    turn1: [string, string][],
+    turn2: [string, string][]
+  ): boolean => {
+    if (!turn1 || !turn2) return false;
+    return isPatternMatch(turn1, turn2);
+  };
+
+  // Deduplicate consecutive identical turns
+  const deduplicateTurns = (
+    allMessages: [string, string][][]
+  ): Array<{ messages: [string, string][]; turnCount: number }> => {
+    if (!allMessages || allMessages.length === 0) return [];
+
+    // Filter out undefined or empty turns
+    const validMessages = allMessages.filter((turn) => turn && turn.length > 0);
+    if (validMessages.length === 0) return [];
+
+    const result: Array<{ messages: [string, string][]; turnCount: number }> =
+      [];
+    let i = 0;
+
+    while (i < validMessages.length) {
+      const currentTurn = validMessages[i];
+      let turnCount = 1;
+
+      // Count consecutive identical turns
+      while (
+        i + turnCount < validMessages.length &&
+        areTurnsIdentical(currentTurn, validMessages[i + turnCount])
+      ) {
+        turnCount++;
+      }
+
+      result.push({ messages: currentTurn, turnCount });
+      i += turnCount;
+    }
+
+    return result;
+  };
+
+  // Deduplicate repeating sequences of messages within each turn
+  const deduplicateMessages = (
+    msgs: [string, string][]
+  ): Array<{ messages: [string, string][]; count: number }> => {
+    if (!msgs || msgs.length === 0) return [];
+
+    const result: Array<{ messages: [string, string][]; count: number }> = [];
+    let i = 0;
+
+    while (i < msgs.length) {
+      if (!msgs[i]) {
+        i++;
+        continue;
+      }
+      let patternFound = false;
+
+      // Try pattern lengths from longest possible down to 1
+      for (
+        let patternLen = Math.floor((msgs.length - i) / 2);
+        patternLen >= 1;
+        patternLen--
+      ) {
+        const pattern = msgs.slice(i, i + patternLen);
+        let repeatCount = 1;
+        let j = i + patternLen;
+
+        // Count consecutive repetitions of this pattern
+        while (j + patternLen <= msgs.length) {
+          const nextChunk = msgs.slice(j, j + patternLen);
+          if (isPatternMatch(pattern, nextChunk)) {
+            repeatCount++;
+            j += patternLen;
+          } else {
+            break;
+          }
+        }
+
+        if (repeatCount > 1) {
+          // Found a repeating pattern
+          result.push({ messages: pattern, count: repeatCount });
+          i = j;
+          patternFound = true;
+          break;
+        }
+      }
+
+      if (!patternFound) {
+        // No pattern found, add single message
+        result.push({ messages: [msgs[i]], count: 1 });
+        i++;
+      }
+    }
+
+    return result;
+  };
+
+  // First deduplicate turns, then deduplicate messages within each turn
+  let dedupedTurns = deduplicateTurns(props.messages);
+
+  let entries = dedupedTurns
+    .map((turn, turnIdx) => {
+      let deduped = deduplicateMessages(turn.messages);
+      let log = deduped.map((group, groupIdx) => {
+        const messages = group.messages.map(([msg, msgType], msgIdx) => (
+          <span class={"msg-" + msgType} key={`${groupIdx}-${msgIdx}`}>
+            {msg}{" "}
+          </span>
+        ));
+        return (
+          <span key={groupIdx} class="msg-group">
+            {...messages}
+            {group.count > 1 && <span class="msg-count">x{group.count} </span>}
+          </span>
+        );
+      });
+      return (
+        <li key={"mgs-turn-" + turnIdx}>
+          {...log}
+          {turn.turnCount > 1 && (
+            <span class="msg-turn-count">[{turn.turnCount} turns]</span>
+          )}
+        </li>
+      );
     })
     .reverse();
   return (
