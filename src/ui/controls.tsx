@@ -269,15 +269,47 @@ function ChoiceBox(props: { ui: UIState }) {
 function EssencePanel(props: { ui: UIState; game: GameState }) {
   let full = "rgba(0, 108, 139, 1)";
   let empty = "rgba(94, 94, 94, 1)";
-  let essencePct = Math.floor(
-    (props.ui.state.playerEssence / props.ui.state.playerMaxEssence) * 100
-  );
-  let gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} ${essencePct}%);`;
+  let gain = "rgba(34, 139, 34, 0.7)";  // green for gains
+  let loss = "rgba(220, 20, 60, 0.7)";  // red for losses
+
+  const currentEssence = props.ui.state.playerEssence;
+  const maxEssence = props.ui.state.playerMaxEssence;
+  const essenceChange = props.game.player.essenceChange;
+
+  // Calculate percentages
+  const essencePct = Math.floor((currentEssence / maxEssence) * 100);
+  const changePct = Math.floor((Math.abs(essenceChange) / maxEssence) * 100);
+
+  // Build gradient based on essence change
+  let gradient: string;
+  if (essenceChange > 0) {
+    // Gained essence: show green behind current essence
+    const prevEssencePct = Math.floor(((currentEssence - essenceChange) / maxEssence) * 100);
+    gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${prevEssencePct}%, ${gain} ${prevEssencePct}%, ${gain} ${essencePct}%, ${empty} ${essencePct}%, ${empty} 100%);`;
+  } else if (essenceChange < 0) {
+    // Lost essence: show red after current essence
+    const prevEssencePct = Math.floor(((currentEssence - essenceChange) / maxEssence) * 100);
+    gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${loss} ${essencePct}%, ${loss} ${prevEssencePct}%, ${empty} ${prevEssencePct}%, ${empty} 100%);`;
+  } else {
+    // No change
+    gradient = `background: linear-gradient(90deg, ${full} 0%, ${full} ${essencePct}%, ${empty} ${essencePct}%, ${empty} 100%);`;
+  }
+
+  // Format change text
+  let changeText = "";
+  if (essenceChange > 0) {
+    changeText = ` (+${essenceChange})`;
+  } else if (essenceChange < 0) {
+    changeText = ` (${essenceChange})`;
+  }
+
   return (
     <div class="stat">
       <div class="stat-label">Essence</div>
       <div class="stat-value" id="essence" style={gradient}>
-        {props.ui.state.playerEssence} / {props.ui.state.playerMaxEssence}
+        {currentEssence}
+        {changeText && <span class="essence-change">{changeText}</span>}
+        {" / " + maxEssence}
       </div>
     </div>
   );

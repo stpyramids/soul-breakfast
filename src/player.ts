@@ -24,6 +24,8 @@ export const newPlayer = {
   y: 10,
   essence: 0,
   maxEssence: 10,
+  lastTurnEssence: 0,
+  essenceChange: 0,
   speed: 1.0,
   energy: 1.0,
   effects: [] as PlayerEffect[],

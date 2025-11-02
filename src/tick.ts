@@ -55,6 +55,11 @@ export function tick(game: GameState, ui: UIState) {
       });
       reapDead(game.map);
       game.turns += 1;
+
+      // Track essence change at the end of each turn
+      game.player.essenceChange = game.player.essence - game.player.lastTurnEssence;
+      game.player.lastTurnEssence = game.player.essence;
+
       game.player.energy += getPlayerSpeed();
       tickPlayerStatus();
     }
