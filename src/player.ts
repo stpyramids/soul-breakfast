@@ -51,6 +51,7 @@ export function maxEssence(): number {
 }
 
 export function gainEssence(amt: number) {
+  const before = Game.player.essence;
   Game.player.essence += amt;
   if (Game.player.essence > maxEssence()) {
     Game.player.essence = maxEssence();
@@ -59,13 +60,18 @@ export function gainEssence(amt: number) {
   if (Game.player.essence == maxEssence()) {
     endAbilityCooldowns();
   }
+  // Update essence change immediately for UI
+  Game.player.essenceChange = Game.player.essence - before;
 }
 
 export function loseEssence(amt: number) {
+  const before = Game.player.essence;
   Game.player.essence -= amt;
   if (Game.player.essence < 0) {
     Game.player.essence = 0; // TODO should this cause an effect?
   }
+  // Update essence change immediately for UI
+  Game.player.essenceChange = Game.player.essence - before;
 }
 
 export function getPlayerEffect(

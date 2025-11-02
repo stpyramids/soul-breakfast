@@ -1,8 +1,12 @@
-import { baseMap, LevelMap } from "./map";
+import { baseMap, LevelMap, recomputeFOV } from "./map";
 import { msg } from "./msg";
 import { newPlayer } from "./player";
 import type { Soul } from "./souls";
 import { offerChoice, startNewGame } from "./ui";
+
+declare var APP_VERSION: string;
+
+const SAVE_KEY = "soul-breakfast-save";
 
 export let Game = {
   turns: 0,
@@ -18,6 +22,64 @@ let freshGame = JSON.stringify(Game);
 
 export function resetGame() {
   Game = JSON.parse(freshGame) as GameState;
+}
+
+export function saveGame(): void {
+  try {
+    const saveData = {
+      version: APP_VERSION,
+      game: {
+        turns: Game.turns,
+        player: Game.player,
+        maxLevel: Game.maxLevel,
+        map: Game.map,
+        monsterSouls: Game.monsterSouls,
+      },
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+  } catch (e) {
+    console.error("Failed to save game:", e);
+  }
+}
+
+export function loadGame(): boolean {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (!saved) {
+      return false;
+    }
+
+    const data = JSON.parse(saved);
+
+    // Basic version check - could add migration logic here
+    if (!data.version || !data.game) {
+      console.warn("Invalid save data format");
+      return false;
+    }
+
+    // Restore game state
+    Game.turns = data.game.turns;
+    Game.player = data.game.player;
+    Game.maxLevel = data.game.maxLevel;
+    Game.map = data.game.map;
+    Game.monsterSouls = data.game.monsterSouls;
+
+    // Rebuild non-serializable state
+    recomputeFOV();
+
+    return true;
+  } catch (e) {
+    console.error("Failed to load game:", e);
+    return false;
+  }
+}
+
+export function deleteSave(): void {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch (e) {
+    console.error("Failed to delete save:", e);
+  }
 }
 
 export function setMap(map: LevelMap) {

@@ -1,6 +1,6 @@
 import * as ROT from "rot-js";
 import { Commands } from "./commands";
-import { Game, GameState, getMap, resetGame } from "./game";
+import { Game, GameState, getMap, resetGame, loadGame, deleteSave } from "./game";
 import {
   findTargets,
   getMapDescription,
@@ -132,7 +132,14 @@ export function runGame() {
       logMessages[Game.turns].push([msg, msgType]);
     };
     handleInput();
-    startNewGame();
+
+    // Try to load saved game, otherwise start new game
+    if (loadGame()) {
+      msg.help("Welcome back! Your game has been restored.");
+      UI.uiCallback();
+    } else {
+      startNewGame();
+    }
   });
 }
 
@@ -183,6 +190,9 @@ export function handleKey(key: string) {
 }
 
 export function startNewGame() {
+  // Delete old save (permadeath)
+  deleteSave();
+
   resetGame();
   newMap();
   recomputeFOV();

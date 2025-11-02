@@ -1,7 +1,7 @@
 import { AI } from "./ai";
 import { Commands, D } from "./commands";
 import { MonsterArchetypes } from "./data/monsters";
-import { GameState } from "./game";
+import { GameState, saveGame } from "./game";
 import {
   contentsAt,
   deleteMonster,
@@ -56,12 +56,15 @@ export function tick(game: GameState, ui: UIState) {
       reapDead(game.map);
       game.turns += 1;
 
-      // Track essence change at the end of each turn
-      game.player.essenceChange = game.player.essence - game.player.lastTurnEssence;
+      // Reset essence change tracking for the new turn
       game.player.lastTurnEssence = game.player.essence;
+      game.player.essenceChange = 0;
 
       game.player.energy += getPlayerSpeed();
       tickPlayerStatus();
+
+      // Auto-save after each turn
+      saveGame();
     }
   }
 
