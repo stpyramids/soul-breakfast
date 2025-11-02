@@ -16,6 +16,7 @@ import {
   hex,
   GlyphID,
   dangerColor,
+  interpolateColor,
 } from "../../token";
 import { UIState, Renderer } from "../../ui";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
@@ -69,7 +70,7 @@ export function initPlayarea(
 
 type TileSpec = {
   glyph: GlyphID;
-  identityC: ColorID;
+  identityC: ColorID | [number, number, number];
   highlightC: ColorID;
   fade: boolean;
   status?: MonsterStatusType;
@@ -145,9 +146,12 @@ function getBaseTile(spec: TileSpec): PIXI.Sprite {
   return getTileGraphic(spec) || getTileGlyph(spec);
 }
 function getTileGraphic(spec: TileSpec): PIXI.Sprite | null {
-  const key = `${spec.glyph}-${spec.identityC}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
+  const identityKey = Array.isArray(spec.identityC) ? spec.identityC.join(',') : spec.identityC;
+  const key = `${spec.glyph}-${identityKey}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
   const ch = glyphChar(spec.glyph);
-  const fg = hex(spec.identityC);
+  const fg = Array.isArray(spec.identityC)
+    ? "#" + spec.identityC.map(c => c.toString(16).padStart(2, '0')).join('')
+    : hex(spec.identityC);
   let mapping = doTiles ? tileMapping.get(spec.glyph) : null;
   if (mapping) {
     let tile = tileAtlas.get(key);
@@ -205,9 +209,12 @@ function getTileGraphic(spec: TileSpec): PIXI.Sprite | null {
   return null;
 }
 function getTileGlyph(spec: TileSpec): PIXI.Sprite {
-  const key = `${spec.glyph}-${spec.identityC}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
+  const identityKey = Array.isArray(spec.identityC) ? spec.identityC.join(',') : spec.identityC;
+  const key = `${spec.glyph}-${identityKey}-${spec.highlightC}-${spec.fade}-${scale}-${doTiles}`;
   const ch = glyphChar(spec.glyph);
-  const fg = hex(spec.identityC);
+  const fg = Array.isArray(spec.identityC)
+    ? "#" + spec.identityC.map(c => c.toString(16).padStart(2, '0')).join('')
+    : hex(spec.identityC);
   let glyph = glyphAtlas.get(key);
   if (!glyph) {
     const style = new PIXI.TextStyle({
@@ -279,7 +286,7 @@ function drawMap(
       let isTarget = !!targets.find((c) => c.x === x && c.y === y);
 
       if (seenXYs().find(([ex, ey]) => x == ex && y == ey)) {
-        tilespecs = visibleTile(c, isTarget);
+        tilespecs = visibleTile(c, isTarget, game.map.danger);
       } else if (c.sensedDanger && c.monster) {
         let arch = MonsterArchetypes[c.monster.archetype];
         tilespecs.push(
@@ -292,7 +299,7 @@ function drawMap(
         let mem = game.map.memory[x + y * game.map.w];
         if (mem) {
           let [tile, monster] = mem;
-          tilespecs = visibleTile({ tile, monster }, false);
+          tilespecs = visibleTile({ tile, monster }, false, game.map.danger);
           tilespecs.forEach((t) => (t.fade = true));
         }
       }
@@ -328,18 +335,27 @@ function visibleTile(
     tile?: Tile | null;
     exitDanger?: number | null;
   },
-  isTarget: boolean
+  isTarget: boolean,
+  currentDanger: number
 ): TileSpec[] {
   let tiles = [];
   if (c.tile) {
+    let identityC: ColorID | [number, number, number];
+    if (c.tile.blocks) {
+      // Interpolate between terrain and danger color based on depth
+      const levelDangerColor = dangerColor(currentDanger);
+      const t = Math.min(currentDanger / 25, 1.0); // Normalize to 0-1 range
+      identityC = interpolateColor("terrain", levelDangerColor, t);
+    } else if (c.exitDanger) {
+      identityC = dangerColor(c.exitDanger);
+    } else {
+      identityC = "floor";
+    }
+
     tiles.push(
       mkTile({
         glyph: c.tile.glyph,
-        identityC: c.tile.blocks
-          ? "terrain"
-          : c.exitDanger
-          ? dangerColor(c.exitDanger)
-          : "floor",
+        identityC: identityC,
       })
     );
   }

@@ -42,6 +42,16 @@ export function rgba(color: ColorID, alpha: number): string {
   return `rgba(${c[0]},${c[1]},${c[2]},${alpha})`;
 }
 
+export function interpolateColor(color1: ColorID, color2: ColorID, t: number): [number, number, number] {
+  const c1 = Colors[color1];
+  const c2 = Colors[color2];
+  return [
+    Math.round(c1[0] + (c2[0] - c1[0]) * t),
+    Math.round(c1[1] + (c2[1] - c1[1]) * t),
+    Math.round(c1[2] + (c2[2] - c1[2]) * t),
+  ];
+}
+
 const Glyphs = {
   none: " ",
   player: "@",
