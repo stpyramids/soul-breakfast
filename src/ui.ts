@@ -15,7 +15,7 @@ import { tick } from "./tick";
 import { renderControls } from "./ui/controls";
 import * as ROTRender from "./ui/render/rotjs";
 import * as PIXIRender from "./ui/render/pixi";
-import { newMap } from "./mapgen";
+import { newMap } from "./mapgen/index";
 
 type Choice = {
   prompt: string;
